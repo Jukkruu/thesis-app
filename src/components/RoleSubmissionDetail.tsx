@@ -99,14 +99,14 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Timeline */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
+        {/* Timeline — second on mobile so the action panel is reachable first */}
+        <div className="order-2 lg:order-none lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
           <WorkflowTimeline steps={sub.workflowSteps} />
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
+        {/* Sidebar — first on mobile */}
+        <div className="order-1 lg:order-none space-y-4">
           {/* Documents */}
           {sub.uploads.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-200 p-5">

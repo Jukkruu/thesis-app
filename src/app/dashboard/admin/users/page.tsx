@@ -89,13 +89,19 @@ export default function AdminUsersPage() {
                     รหัส {u.studentId}
                   </span>
                 )}
+                {/* Role chip — inline on mobile only */}
+                <span className="sm:hidden text-xs font-semibold text-gray-700 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                  {ROLE_LABELS[u.role]}
+                </span>
               </div>
-              <p className="text-gray-500 text-sm mt-0.5">{u.email}</p>
+              <p className="text-gray-500 text-sm mt-0.5 truncate">{u.email}</p>
               <p className="text-gray-400 text-xs mt-1">{ROLE_DESC[u.role]}</p>
+              {/* Stats — inline on mobile only */}
+              <p className="sm:hidden text-xs text-gray-500 mt-1">{getStats(u.id, u.role)}</p>
             </div>
 
-            {/* Right */}
-            <div className="text-right shrink-0 space-y-1.5 flex flex-col items-end">
+            {/* Right — desktop only */}
+            <div className="hidden sm:flex text-right shrink-0 space-y-1.5 flex-col items-end">
               <span className="text-sm font-semibold text-gray-700 bg-white px-3 py-1 rounded-full border border-gray-200">
                 {ROLE_LABELS[u.role]}
               </span>

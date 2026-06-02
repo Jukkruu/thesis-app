@@ -127,8 +127,8 @@ export default function AdminDashboard() {
                 className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3"
               >
                 {/* Title row */}
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-lg font-semibold text-gray-900 leading-snug">{sub.title}</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <p className="text-lg font-semibold text-gray-900 leading-snug min-w-0">{sub.title}</p>
                   <div className="flex items-center gap-2 shrink-0">
                     {confirmDelete === sub.id ? (
                       <>

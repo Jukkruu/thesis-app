@@ -38,8 +38,8 @@ function StepCard({
   return (
     <div className={`rounded-xl border-2 p-4 transition-all ${borderColor}`}>
       {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="space-y-0.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-gray-400 uppercase">ขั้นที่ {step.stepOrder}</span>
             <span className="font-semibold text-gray-800">{STEP_NAMES[step.stepOrder]}</span>

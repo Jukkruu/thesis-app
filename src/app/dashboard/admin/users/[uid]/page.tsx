@@ -148,11 +148,11 @@ export default function AdminUserProfilePage() {
               return (
                 <div key={sub.id} className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
                   {/* Title + action button */}
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="font-semibold text-gray-900 text-lg leading-snug">{sub.title}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <p className="font-semibold text-gray-900 text-lg leading-snug min-w-0">{sub.title}</p>
                     <Link
                       href={`/dashboard/admin/${sub.id}`}
-                      className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition"
+                      className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition"
                     >
                       ดู / แก้ไข
                       <ChevronRight className="w-4 h-4" />
