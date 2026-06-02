@@ -7,7 +7,7 @@ export type Role =
   | "FACULTY_DEAN"
   | "GRADUATE_SCHOOL";
 
-export type FormType = "BW1A" | "BW1B" | "B2" | "B3" | "B4" | "THESIS";
+export type FormType = "BW1A" | "BW1B" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED";
 export type StepStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
 export type SubmissionStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
 

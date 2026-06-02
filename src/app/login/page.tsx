@@ -1,73 +1,124 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { ROLE_LABELS } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Role } from "@/types";
-
-const ROLE_COLORS: Record<Role, string> = {
-  STUDENT: "bg-blue-50 border-blue-200 hover:border-blue-400 hover:bg-blue-100",
-  ADVISOR: "bg-purple-50 border-purple-200 hover:border-purple-400 hover:bg-purple-100",
-  PROGRAM_CHAIR: "bg-indigo-50 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100",
-  EXAM_COMMITTEE: "bg-orange-50 border-orange-200 hover:border-orange-400 hover:bg-orange-100",
-  DEPT_STAFF: "bg-teal-50 border-teal-200 hover:border-teal-400 hover:bg-teal-100",
-  FACULTY_DEAN: "bg-red-50 border-red-200 hover:border-red-400 hover:bg-red-100",
-  GRADUATE_SCHOOL: "bg-green-50 border-green-200 hover:border-green-400 hover:bg-green-100",
-};
-
-const ROLE_ICON: Record<Role, string> = {
-  STUDENT: "🎓",
-  ADVISOR: "👨‍🏫",
-  PROGRAM_CHAIR: "🏛️",
-  EXAM_COMMITTEE: "📋",
-  DEPT_STAFF: "🗂️",
-  FACULTY_DEAN: "🏫",
-  GRADUATE_SCHOOL: "🎯",
-};
+import { Eye, EyeOff, LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const { user, login } = useApp();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) router.replace(ROLE_ROUTES[user.role]);
   }, [user, router]);
 
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    const found = MOCK_USERS.find((u) => u.email === email.trim().toLowerCase());
+    if (!found) {
+      setError("ไม่พบอีเมลนี้ในระบบ กรุณาตรวจสอบอีกครั้ง");
+      return;
+    }
+    if (!password.trim()) {
+      setError("กรุณาใส่รหัสผ่าน");
+      return;
+    }
+    login(found.id);
+    router.push(ROLE_ROUTES[found.role]);
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="w-full max-w-3xl">
-        <div className="text-center mb-10">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-sm space-y-5">
+
+        {/* Header */}
+        <div className="text-center space-y-1">
           <h1 className="text-3xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
-          <p className="text-gray-500 mt-2">เลือกบทบาทเพื่อเข้าสู่ระบบ (Mockup Demo)</p>
+          <p className="text-gray-500">คณะวิศวกรรมศาสตร์</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_USERS.map((u) => (
-            <button
-              key={u.id}
-              onClick={() => {
-                login(u.id);
-                router.push(ROLE_ROUTES[u.role]);
-              }}
-              className={`text-left p-5 rounded-2xl border-2 transition-all duration-150 ${ROLE_COLORS[u.role]}`}
-            >
-              <div className="text-3xl mb-3">{ROLE_ICON[u.role]}</div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                {ROLE_LABELS[u.role]}
+        {/* Login form */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1.5">อีเมล</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="อีเมลของท่าน"
+                autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+                  placeholder="รหัสผ่าน"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                {error}
               </p>
-              <p className="font-semibold text-gray-900 text-sm leading-snug">{u.name}</p>
-              {u.studentId && (
-                <p className="text-xs text-gray-500 mt-1">รหัส: {u.studentId}</p>
-              )}
+            )}
+
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition text-base"
+            >
+              <LogIn className="w-5 h-5" />
+              เข้าสู่ระบบ
             </button>
-          ))}
+          </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-8">
-          นี่คือ Mockup Demo — ข้อมูลถูกเก็บใน localStorage เท่านั้น
-        </p>
+        {/* Demo shortcuts */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+            ทดสอบระบบ — เลือกบทบาท
+          </p>
+          <div className="space-y-1.5">
+            {MOCK_USERS.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => { login(u.id); router.push(ROLE_ROUTES[u.role]); }}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition text-left"
+              >
+                <div>
+                  <p className="font-medium text-gray-800">{u.name}</p>
+                  <p className="text-sm text-gray-400">{ROLE_LABELS[u.role]}</p>
+                </div>
+                <span className="text-sm text-blue-500 font-medium shrink-0 ml-2">เข้าใช้ →</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ export const FORM_LABELS: Record<FormType, string> = {
   B3: "บ.3 — ประเมินวิทยานิพนธ์ก่อนสอบ",
   B4: "บ.4 — ลงนามอนุมัติวิทยานิพนธ์",
   THESIS: "วิทยานิพนธ์ฉบับสมบูรณ์",
+  SIGNED: "เอกสารลงนาม",
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
