@@ -30,7 +30,7 @@ export function NotificationBell() {
   const { user, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useApp();
   const router  = useRouter();
   const [open, setOpen]     = useState(false);
-  const [coords, setCoords] = useState<{ top: number; right: number } | null>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
   const [mounted, setMounted] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -43,7 +43,10 @@ export function NotificationBell() {
   const reposition = useCallback(() => {
     if (!btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
-    setCoords({ top: r.bottom + 10, right: Math.max(12, window.innerWidth - r.right) });
+    const width = Math.min(352, window.innerWidth - 24);
+    // Anchor near the bell, but keep fully on-screen
+    const left = Math.min(Math.max(12, r.left), window.innerWidth - width - 12);
+    setCoords({ top: r.bottom + 10, left, width });
   }, []);
 
   function toggle() {
@@ -103,8 +106,8 @@ export function NotificationBell() {
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
 
           <div
-            className="fixed z-[100] w-[min(22rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
-            style={{ top: coords.top, right: coords.right }}
+            className="fixed z-[100] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+            style={{ top: coords.top, left: coords.left, width: coords.width }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">

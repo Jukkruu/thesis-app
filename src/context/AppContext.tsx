@@ -126,6 +126,18 @@ function makeInitialNotifications(): MockNotification[] {
       detail: "การวิเคราะห์ความเสี่ยงในตลาดหลักทรัพย์ด้วย Machine Learning",
       submissionId: "sub-3", isRead: true, createdAt: "2024-09-20T10:05:00Z",
     },
+    {
+      id: "n-4", recipientId: "u-admin", type: "approved",
+      message: "คำร้องดำเนินการเสร็จสมบูรณ์",
+      detail: "การวิเคราะห์ความเสี่ยงในตลาดหลักทรัพย์ด้วย Machine Learning",
+      submissionId: "sub-3", isRead: false, createdAt: "2024-09-20T10:05:00Z",
+    },
+    {
+      id: "n-5", recipientId: "u-admin", type: "info",
+      message: "มีคำร้องกำลังดำเนินการ 2 รายการ",
+      detail: "ติดตามภาพรวมได้ที่หน้าจัดการระบบ",
+      submissionId: "sub-1", isRead: false, createdAt: "2025-01-10T09:10:00Z",
+    },
   ];
 }
 
@@ -161,7 +173,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v3";
+const STORAGE_KEY = "thesis_mock_state_v4";
 
 interface StoredState {
   userId: string | null;
@@ -217,6 +229,13 @@ function notifyRole(role: Role, message: string, detail: string, submissionId: s
   return makeNotif(recipient.id, message, detail, submissionId, type);
 }
 
+// Admin gets a copy of important events for oversight
+function notifyAdmin(message: string, detail: string, submissionId: string, type: MockNotification["type"]): MockNotification | null {
+  const admin = MOCK_USERS.find((u) => u.role === "ADMIN");
+  if (!admin) return null;
+  return makeNotif(admin.id, message, detail, submissionId, type);
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -270,11 +289,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setSubmissions((prev) => [sub, ...prev]);
 
-    // Notify advisor if assigned
+    // Notify advisor if assigned + admin oversight
+    const notifs: (MockNotification | null)[] = [];
     if (advisorId) {
       const adv = MOCK_USERS.find((u) => u.id === advisorId);
-      if (adv) pushNotifs([makeNotif(adv.id, "มีคำร้องใหม่รอการตรวจสอบ", title, id, "pending")]);
+      if (adv) notifs.push(makeNotif(adv.id, "มีคำร้องใหม่รอการตรวจสอบ", title, id, "pending"));
     }
+    notifs.push(notifyAdmin("มีคำร้องวิทยานิพนธ์ใหม่", title, id, "info"));
+    pushNotifs(notifs);
     return sub;
   }
 
@@ -310,6 +332,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (status === "COMPLETED") {
       notifs.push(makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved"));
+      notifs.push(notifyAdmin("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
     }
     pushNotifs(notifs);
   }
@@ -331,8 +354,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps, status: "REJECTED" } : s))
     );
 
-    // Notify student
-    pushNotifs([makeNotif(sub.studentId, `คำร้องถูกปฏิเสธ — กรุณาตรวจสอบและแก้ไข`, sub.title, submissionId, "rejected")]);
+    // Notify student + admin oversight
+    pushNotifs([
+      makeNotif(sub.studentId, `คำร้องถูกปฏิเสธ — กรุณาตรวจสอบและแก้ไข`, sub.title, submissionId, "rejected"),
+      notifyAdmin("มีคำร้องถูกปฏิเสธ", sub.title, submissionId, "rejected"),
+    ]);
   }
 
   function addUpload(submissionId: string, formType: FormType, fileName: string, fileSize: number) {
@@ -402,7 +428,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : s
       );
       setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps, status: "REJECTED" } : s)));
-      pushNotifs([makeNotif(sub.studentId, "กรรมการสอบไม่อนุมัติ — กรุณาตรวจสอบและแก้ไข", sub.title, submissionId, "rejected")]);
+      pushNotifs([
+        makeNotif(sub.studentId, "กรรมการสอบไม่อนุมัติ — กรุณาตรวจสอบและแก้ไข", sub.title, submissionId, "rejected"),
+        notifyAdmin("กรรมการสอบไม่อนุมัติคำร้อง", sub.title, submissionId, "rejected"),
+      ]);
       return;
     }
 
@@ -437,6 +466,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (status === "COMPLETED") {
       notifs.push(makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved"));
+      notifs.push(notifyAdmin("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
     }
     pushNotifs(notifs);
   }
