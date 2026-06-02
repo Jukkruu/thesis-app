@@ -162,7 +162,12 @@ export default function AdminUserProfilePage() {
                   {/* Meta */}
                   <div className="text-sm text-gray-500 space-y-0.5">
                     {user.role !== "STUDENT" && student && (
-                      <p>นักศึกษา: <span className="font-medium text-gray-700">{student.name}</span></p>
+                      <p>
+                        นักศึกษา:{" "}
+                        <Link href={`/dashboard/admin/users/${student.id}`} className="font-medium text-blue-600 hover:underline">
+                          {student.name}
+                        </Link>
+                      </p>
                     )}
                     {user.role !== "ADVISOR" && advisor && (
                       <p>ที่ปรึกษา: <span className="text-gray-700">{advisor.name}</span></p>

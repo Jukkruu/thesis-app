@@ -163,10 +163,17 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Student info */}
+                {/* Student info — clickable to profile */}
                 {student && (
                   <p className="text-gray-600">
-                    นักศึกษา: <span className="font-medium">{student.name}</span>
+                    นักศึกษา:{" "}
+                    <Link
+                      href={`/dashboard/admin/users/${student.id}`}
+                      className="font-medium text-blue-600 hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {student.name}
+                    </Link>
                     {student.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
                   </p>
                 )}

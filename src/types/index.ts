@@ -47,4 +47,5 @@ export interface MockSubmission {
   createdAt: string;
   uploads: MockUpload[];
   workflowSteps: MockWorkflowStep[];
+  adminNote?: string;
 }

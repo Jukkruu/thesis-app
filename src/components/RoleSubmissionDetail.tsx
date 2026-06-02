@@ -6,7 +6,7 @@ import { WorkflowTimeline } from "./WorkflowTimeline";
 import { SignatureButton } from "./SignatureButton";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
-import { Download, FileText, ArrowLeft, Clock, AlertCircle } from "lucide-react";
+import { Download, FileText, ArrowLeft, Clock, AlertCircle, StickyNote } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
@@ -60,6 +60,17 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         </div>
         <SubmissionStatusBadge status={sub.status} />
       </div>
+
+      {/* Admin note */}
+      {sub.adminNote && (
+        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-2xl px-5 py-4">
+          <StickyNote className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-yellow-600 uppercase mb-1">บันทึกจากผู้ดูแลระบบ</p>
+            <p className="text-yellow-800 text-sm">{sub.adminNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* "Your turn" banner */}
       {isMyTurn && sub.status === "IN_PROGRESS" && (

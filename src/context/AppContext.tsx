@@ -141,7 +141,9 @@ interface AppContextType {
   rejectCurrentStep: (submissionId: string, notes: string) => void;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
   getPendingCount: (role: Role) => number;
+  studentResubmit: (submissionId: string) => void;
   // Admin actions
+  adminSetNote: (submissionId: string, note: string) => void;
   adminUpdateSubmission: (id: string, updates: { title?: string; advisorId?: string }) => void;
   adminDeleteSubmission: (id: string) => void;
   adminResetSubmission: (id: string) => void;
@@ -285,6 +287,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }).length;
   }
 
+  function studentResubmit(submissionId: string) {
+    setSubmissions((prev) =>
+      prev.map((sub) => {
+        if (sub.id !== submissionId || sub.status !== "REJECTED") return sub;
+        const rejectedStep = sub.workflowSteps.find((s) => s.status === "REJECTED");
+        if (!rejectedStep) return sub;
+        return {
+          ...sub,
+          status: "IN_PROGRESS" as const,
+          workflowSteps: sub.workflowSteps.map((s) =>
+            s.id === rejectedStep.id
+              ? { ...s, status: "PENDING" as const, actedAt: undefined, actedByName: undefined, notes: undefined }
+              : s
+          ),
+        };
+      })
+    );
+  }
+
+  function adminSetNote(submissionId: string, note: string) {
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === submissionId ? { ...s, adminNote: note } : s))
+    );
+  }
+
   function adminUpdateSubmission(id: string, updates: { title?: string; advisorId?: string }) {
     setSubmissions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
@@ -360,6 +387,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rejectCurrentStep,
         addUpload,
         getPendingCount,
+        studentResubmit,
+        adminSetNote,
         adminUpdateSubmission,
         adminDeleteSubmission,
         adminResetSubmission,

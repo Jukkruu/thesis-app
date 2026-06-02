@@ -7,16 +7,28 @@ import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
 import { FormType } from "@/types";
-import { ArrowLeft, Download, FileText, Send, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
-import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
+import {
+  ArrowLeft, Download, FileText, Send,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote,
+} from "lucide-react";
+import { useToast } from "@/context/ToastContext";
 
-const STEP1_FORMS: FormType[] = ["BW1A", "BW1B"];
+// Which forms are relevant to upload at which step
+const SUGGESTED_BY_STEP: Record<number, { forms: FormType[]; label: string }> = {
+  1: { forms: ["BW1A", "BW1B"],   label: "เอกสารเสนอหัวข้อ" },
+  5: { forms: ["B3"],             label: "แบบประเมินก่อนสอบ" },
+  6: { forms: ["B3"],             label: "แบบประเมินก่อนสอบ (ลงนาม)" },
+  7: { forms: ["B4"],             label: "แบบลงนามอนุมัติ" },
+  8: { forms: ["THESIS"],         label: "วิทยานิพนธ์ฉบับสมบูรณ์" },
+};
+const ALL_STUDENT_FORMS: FormType[] = ["BW1A", "BW1B", "B3", "B4", "THESIS"];
 
 export default function StudentSubmissionDetail() {
-  const { id }   = useParams<{ id: string }>();
-  const { user, submissions, approveCurrentStep } = useApp();
+  const { id } = useParams<{ id: string }>();
+  const { user, submissions, approveCurrentStep, studentResubmit } = useApp();
   const { showToast } = useToast();
+
   const sub = submissions.find((s) => s.id === id);
 
   if (!sub || sub.studentId !== user?.id) {
@@ -28,24 +40,34 @@ export default function StudentSubmissionDetail() {
     );
   }
 
-  const advisor     = MOCK_USERS.find((u) => u.id === sub.advisorId);
-  const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
-  const isMyTurn    = currentStep?.role === "STUDENT";
-  const hasUpload   = sub.uploads.some((u) => u.formType === "BW1A" || u.formType === "BW1B");
-  const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps  = sub.workflowSteps.length;
-  const subStatus   = sub.status;
+  const advisor      = MOCK_USERS.find((u) => u.id === sub.advisorId);
+  const currentStep  = sub.workflowSteps.find((s) => s.status === "PENDING");
+  const isMyTurn     = currentStep?.role === "STUDENT";
+  const doneCount    = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
+  const totalSteps   = sub.workflowSteps.length;
+  const subStatus    = sub.status;
+  const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
-  // What should the student see/do right now
-  function renderActionCard() {
+  // Suggested forms for this step
+  const suggested = currentStep ? (SUGGESTED_BY_STEP[currentStep.stepOrder] ?? null) : null;
+  // Remaining forms student hasn't uploaded yet
+  const remaining = ALL_STUDENT_FORMS.filter((f) => !uploadedTypes.has(f));
+
+  function handleResubmit() {
+    studentResubmit(sub!.id);
+    showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
+  }
+
+  function renderStatusBanner() {
     if (!sub) return null;
+
     if (subStatus === "COMPLETED") {
       return (
         <div className="bg-green-50 border border-green-300 rounded-2xl p-5 flex items-start gap-4">
           <span className="text-3xl">🎉</span>
           <div>
-            <p className="text-green-800 font-bold text-lg">วิทยานิพนธ์ผ่านการอนุมัติ</p>
-            <p className="text-green-600 text-sm mt-1">ผ่านครบทุก {totalSteps} ขั้นตอนแล้ว</p>
+            <p className="text-green-800 font-bold text-lg">วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน</p>
+            <p className="text-green-600 text-sm mt-1">ขอแสดงความยินดี!</p>
           </div>
         </div>
       );
@@ -54,19 +76,28 @@ export default function StudentSubmissionDetail() {
     if (subStatus === "REJECTED") {
       const rejectedStep = sub.workflowSteps.find((s) => s.status === "REJECTED");
       return (
-        <div className="bg-red-50 border border-red-300 rounded-2xl p-5 flex items-start gap-4">
-          <span className="text-3xl">⚠️</span>
-          <div>
-            <p className="text-red-800 font-bold text-lg">คำร้องถูกปฏิเสธ</p>
-            {rejectedStep?.notes && (
-              <p className="text-red-600 text-sm mt-1">
-                เหตุผล: "{rejectedStep.notes}"
+        <div className="bg-red-50 border border-red-300 rounded-2xl p-5 space-y-3">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">⚠️</span>
+            <div className="flex-1">
+              <p className="text-red-800 font-bold text-lg">คำร้องถูกปฏิเสธ</p>
+              <p className="text-red-600 text-sm mt-0.5">
+                จาก: {rejectedStep ? ROLE_LABELS[rejectedStep.role] : "ผู้รับผิดชอบ"}
               </p>
-            )}
-            <p className="text-red-500 text-sm mt-2">
-              โปรดติดต่อ{rejectedStep ? ROLE_LABELS[rejectedStep.role] : "ผู้รับผิดชอบ"}เพื่อขอคำแนะนำ
-            </p>
+              {rejectedStep?.notes && (
+                <p className="text-red-700 text-sm mt-2 bg-red-100 rounded-xl px-3 py-2">
+                  เหตุผล: "{rejectedStep.notes}"
+                </p>
+              )}
+            </div>
           </div>
+          <button
+            onClick={handleResubmit}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+          >
+            <RefreshCw className="w-5 h-5" />
+            แก้ไขและยื่นใหม่อีกครั้ง
+          </button>
         </div>
       );
     }
@@ -78,7 +109,9 @@ export default function StudentSubmissionDetail() {
           <div>
             <p className="text-blue-800 font-bold text-lg">ถึงคิวของท่านแล้ว</p>
             <p className="text-blue-600 text-sm mt-1">
-              กรุณาอัปโหลดแบบ บ.วศ.1ก (ต้องการ) และ บ.วศ.1ข (ถ้ามี) แล้วกดส่ง
+              {suggested
+                ? `กรุณาอัปโหลด${suggested.label} แล้วกดส่ง`
+                : "กรุณาอัปโหลดเอกสารที่จำเป็น แล้วกดส่ง"}
             </p>
           </div>
         </div>
@@ -92,7 +125,7 @@ export default function StudentSubmissionDetail() {
           <div>
             <p className="text-orange-800 font-bold text-lg">รอการดำเนินการ</p>
             <p className="text-orange-600 text-sm mt-1">
-              ขณะนี้รอ <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span> ดำเนินการ (ขั้นที่ {currentStep.stepOrder})
+              ขณะนี้รอ <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span> (ขั้นที่ {currentStep.stepOrder})
             </p>
             <p className="text-orange-500 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
           </div>
@@ -124,8 +157,19 @@ export default function StudentSubmissionDetail() {
         <SubmissionStatusBadge status={sub.status} />
       </div>
 
-      {/* Action card — tells student exactly what to do */}
-      {renderActionCard()}
+      {/* Status banner */}
+      {renderStatusBanner()}
+
+      {/* Admin note */}
+      {sub.adminNote && (
+        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
+          <StickyNote className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-yellow-600 uppercase mb-1">บันทึกจากผู้ดูแลระบบ</p>
+            <p className="text-yellow-800 text-sm">{sub.adminNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="flex items-center gap-3">
@@ -145,7 +189,7 @@ export default function StudentSubmissionDetail() {
           <WorkflowTimeline steps={sub.workflowSteps} />
         </div>
 
-        {/* Right column */}
+        {/* Right: files + upload */}
         <div className="space-y-4">
           {/* Uploaded files */}
           {sub.uploads.length > 0 && (
@@ -173,26 +217,58 @@ export default function StudentSubmissionDetail() {
             </div>
           )}
 
-          {/* Upload + submit — only when it's student's turn */}
-          {isMyTurn && sub.status === "IN_PROGRESS" && (
-            <div className="space-y-3">
-              <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
-              {STEP1_FORMS.map((ft) => (
-                <FileUploader key={ft} submissionId={sub.id} formType={ft} />
-              ))}
+          {/* Upload section — always visible when in progress */}
+          {subStatus === "IN_PROGRESS" && (
+            <div className="bg-white rounded-2xl border border-blue-100 p-4 space-y-3">
+              <div>
+                <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
+                {suggested && (
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    แนะนำตอนนี้: {suggested.label}
+                  </p>
+                )}
+              </div>
 
-              <button
-                onClick={() => { approveCurrentStep(sub.id); showToast("ส่งเอกสารให้อาจารย์ที่ปรึกษาแล้ว ✓"); }}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-              >
-                <Send className="w-5 h-5" />
-                ส่งให้อาจารย์ที่ปรึกษาตรวจสอบ
-              </button>
+              {/* Suggested forms for current step */}
+              {suggested?.forms
+                .filter((f) => !uploadedTypes.has(f))
+                .map((ft) => (
+                  <FileUploader key={ft} submissionId={sub.id} formType={ft} />
+                ))
+              }
 
-              {!hasUpload && (
-                <p className="text-xs text-amber-600 text-center">
-                  ⚠️ แนะนำให้อัปโหลดอย่างน้อย 1 เอกสารก่อนส่ง
-                </p>
+              {/* Other forms not yet uploaded */}
+              {remaining
+                .filter((f) => !suggested?.forms.includes(f))
+                .length > 0 && (
+                  <details className="group">
+                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none">
+                      + เอกสารอื่น ๆ ที่ยังไม่ได้อัปโหลด
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      {remaining
+                        .filter((f) => !suggested?.forms.includes(f))
+                        .map((ft) => (
+                          <FileUploader key={ft} submissionId={sub.id} formType={ft} />
+                        ))
+                      }
+                    </div>
+                  </details>
+                )
+              }
+
+              {/* Submit button — only at step 1 */}
+              {isMyTurn && (
+                <button
+                  onClick={() => {
+                    approveCurrentStep(sub.id);
+                    showToast("ส่งเอกสารให้อาจารย์ที่ปรึกษาแล้ว ✓");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+                >
+                  <Send className="w-5 h-5" />
+                  ส่งให้อาจารย์ที่ปรึกษาตรวจสอบ
+                </button>
               )}
             </div>
           )}

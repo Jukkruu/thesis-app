@@ -31,22 +31,32 @@ export function RolePendingList({ role, title, basePath }: Props) {
     return alreadyActed && !isCurrentlyPending;
   });
 
+  const approved = history.filter((sub) =>
+    sub.workflowSteps.some((s) => s.role === role && s.status === "APPROVED")
+  ).length;
+
   const getStudent = (id: string) => MOCK_USERS.find((u) => u.id === id);
   const list = tab === "pending" ? pending : history;
 
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        <span className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full font-medium text-sm ${
-          pending.length > 0 ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700"
-        }`}>
-          {pending.length > 0
-            ? <><Clock className="w-4 h-4" />{pending.length} รายการรอดำเนินการ</>
-            : <><CheckCircle2 className="w-4 h-4" />ไม่มีรายการค้าง</>
-          }
-        </span>
+      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className={`rounded-2xl border p-4 text-center ${pending.length > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
+          <p className={`text-3xl font-bold ${pending.length > 0 ? "text-orange-600" : "text-gray-500"}`}>{pending.length}</p>
+          <p className="text-sm text-gray-600 mt-0.5">รอดำเนินการ</p>
+        </div>
+        <div className="rounded-2xl border bg-green-50 border-green-100 p-4 text-center">
+          <p className="text-3xl font-bold text-green-600">{approved}</p>
+          <p className="text-sm text-gray-600 mt-0.5">อนุมัติแล้ว</p>
+        </div>
+        <div className="rounded-2xl border bg-blue-50 border-blue-100 p-4 text-center">
+          <p className="text-3xl font-bold text-blue-600">{submissions.length}</p>
+          <p className="text-sm text-gray-600 mt-0.5">ทั้งหมด</p>
+        </div>
       </div>
 
       {/* Tabs */}

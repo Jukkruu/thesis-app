@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock,
+  CheckCircle2, XCircle, Clock, StickyNote,
 } from "lucide-react";
 
 // ─── Step control card ────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ function StepCard({
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { submissions, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep } = useApp();
+  const { submissions, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -149,6 +149,8 @@ export default function AdminSubmissionDetail() {
   const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
+  const [noteText,    setNoteText]    = useState(sub?.adminNote ?? "");
+  const [noteSaved,   setNoteSaved]   = useState(false);
 
   if (!sub) {
     return (
@@ -373,6 +375,36 @@ export default function AdminSubmissionDetail() {
               </ul>
             </div>
           )}
+
+          {/* Admin note — visible to all parties */}
+          <div className="bg-white rounded-2xl border border-yellow-200 p-5 space-y-3">
+            <h2 className="font-semibold text-yellow-700 flex items-center gap-2">
+              <StickyNote className="w-5 h-5" />
+              บันทึกจาก Admin
+            </h2>
+            <p className="text-xs text-gray-500">บันทึกนี้จะปรากฏแก่นักศึกษาและทุกฝ่ายที่เกี่ยวข้อง</p>
+            <textarea
+              value={noteText}
+              onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
+              placeholder="เพิ่มบันทึกหรือคำแนะนำ..."
+              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            {noteSaved && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> บันทึกแล้ว
+              </p>
+            )}
+            <button
+              onClick={() => {
+                if (!sub) return;
+                adminSetNote(sub.id, noteText);
+                setNoteSaved(true);
+              }}
+              className="w-full py-2.5 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition text-sm"
+            >
+              บันทึก
+            </button>
+          </div>
 
           {/* Delete */}
           <div className="bg-white rounded-2xl border border-red-200 p-5 space-y-3">
