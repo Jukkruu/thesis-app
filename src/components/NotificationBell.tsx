@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { Bell, CheckCheck, Clock, CheckCircle2, XCircle, Info, X } from "lucide-react";
 import { MockNotification, NotificationType } from "@/types";
 
@@ -29,46 +29,62 @@ const STYLES: Record<NotificationType, { bg: string; dot: string; icon: React.Re
 export function NotificationBell() {
   const { user, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useApp();
   const router  = useRouter();
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen]     = useState(false);
+  const [coords, setCoords] = useState<{ top: number; right: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   const mine = notifications
     .filter((n) => n.recipientId === user?.id)
     .slice(0, 20);
 
-  // Close on outside click
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+  const reposition = useCallback(() => {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    setCoords({ top: r.bottom + 10, right: Math.max(12, window.innerWidth - r.right) });
   }, []);
 
-  // Close on Escape
+  function toggle() {
+    if (!open) reposition();
+    setOpen((v) => !v);
+  }
+
+  // Reposition on resize; close on Escape
   useEffect(() => {
+    if (!open) return;
+    function onResize() { reposition(); }
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    window.addEventListener("resize", onResize);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, reposition]);
 
   function handleClick(notif: MockNotification) {
     markNotificationRead(notif.id);
     setOpen(false);
     if (!user) return;
-    if (user.role === "STUDENT") router.push(`/dashboard/student/${notif.submissionId}`);
+    if (user.role === "STUDENT")    router.push(`/dashboard/student/${notif.submissionId}`);
     else if (user.role === "ADMIN") router.push(`/dashboard/admin/${notif.submissionId}`);
     else {
-      const base = ROLE_ROUTES[user.role];
-      router.push(`${base}/${notif.submissionId}`);
+      const seg = {
+        ADVISOR: "advisor", PROGRAM_CHAIR: "program-chair", EXAM_COMMITTEE: "exam-committee",
+        DEPT_STAFF: "dept-staff", FACULTY_DEAN: "faculty-dean", GRADUATE_SCHOOL: "graduate-school",
+      }[user.role as string] ?? "";
+      router.push(`/dashboard/${seg}/${notif.submissionId}`);
     }
   }
 
   return (
-    <div ref={wrapRef} className="relative">
-      {/* Bell */}
+    <>
+      {/* Bell button */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={toggle}
         className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition"
         aria-label="การแจ้งเตือน"
       >
@@ -80,27 +96,21 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* Dropdown — fixed on mobile, absolute on desktop */}
-      {open && (
+      {/* Dropdown via portal — never clipped by the sidebar */}
+      {mounted && open && coords && createPortal(
         <>
-          {/* Mobile backdrop */}
-          <div className="lg:hidden fixed inset-0 bg-black/20 z-40" onClick={() => setOpen(false)} />
+          {/* Transparent click-catcher */}
+          <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
 
-          <div className={[
-            "z-50 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden",
-            // Mobile: full-width panel near top
-            "fixed top-14 left-3 right-3",
-            // Desktop: standard dropdown
-            "lg:absolute lg:top-10 lg:right-0 lg:left-auto lg:w-80 lg:fixed-none",
-          ].join(" ")}>
-
+          <div
+            className="fixed z-[100] w-[min(22rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+            style={{ top: coords.top, right: coords.right }}
+          >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
               <h3 className="font-semibold text-gray-800">
                 การแจ้งเตือน
-                {unreadCount > 0 && (
-                  <span className="ml-2 text-sm font-normal text-orange-600">({unreadCount} ใหม่)</span>
-                )}
+                {unreadCount > 0 && <span className="ml-2 text-sm font-normal text-orange-600">({unreadCount} ใหม่)</span>}
               </h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
@@ -112,14 +122,14 @@ export function NotificationBell() {
                     อ่านทั้งหมด
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 lg:hidden">
+                <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Notification list */}
-            <div className="max-h-[60vh] lg:max-h-96 overflow-y-auto divide-y divide-gray-50">
+            {/* List */}
+            <div className="max-h-[70vh] overflow-y-auto divide-y divide-gray-50">
               {mine.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 space-y-2">
                   <Bell className="w-8 h-8 mx-auto opacity-25" />
@@ -134,7 +144,7 @@ export function NotificationBell() {
                       onClick={() => handleClick(notif)}
                       className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition flex items-start gap-3 ${!notif.isRead ? s.bg : ""}`}
                     >
-                      <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                      <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-gray-100">
                         {s.icon}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -144,27 +154,16 @@ export function NotificationBell() {
                         <p className="text-xs text-gray-500 truncate mt-0.5">{notif.detail}</p>
                         <p className="text-xs text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
                       </div>
-                      {!notif.isRead && (
-                        <div className={`w-2 h-2 rounded-full shrink-0 mt-2 ${s.dot}`} />
-                      )}
+                      {!notif.isRead && <div className={`w-2 h-2 rounded-full shrink-0 mt-2 ${s.dot}`} />}
                     </button>
                   );
                 })
               )}
             </div>
-
-            {mine.length > 0 && (
-              <div className="px-4 py-2 border-t border-gray-100 text-center">
-                <p className="text-xs text-gray-400">
-                  {mine.filter((n) => !n.isRead).length > 0
-                    ? `${mine.filter((n) => !n.isRead).length} รายการยังไม่ได้อ่าน`
-                    : "✓ อ่านทั้งหมดแล้ว"}
-                </p>
-              </div>
-            )}
           </div>
-        </>
+        </>,
+        document.body
       )}
-    </div>
+    </>
   );
 }

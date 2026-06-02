@@ -20,7 +20,7 @@ export default function StudentDashboard() {
       <DashboardHeader
         role="STUDENT"
         name={user?.name ?? ""}
-        subtitle="ติดตามและจัดการวิทยานิพนธ์ของท่าน"
+        title="วิทยานิพนธ์ของฉัน"
         highlight={{ label: "กำลังดำเนินการ", value: inProgress }}
       />
 

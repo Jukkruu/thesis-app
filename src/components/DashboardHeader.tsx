@@ -6,19 +6,13 @@ import { ROLE_GRADIENT, ROLE_EMOJI, ROLE_LABELS } from "@/lib/utils";
 interface Props {
   role: Role;
   name: string;
-  subtitle?: string;
+  /** Big heading — the page purpose, e.g. "วิทยานิพนธ์ของฉัน" */
+  title: string;
   /** Optional right-side highlight, e.g. pending count */
   highlight?: { label: string; value: number | string };
 }
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "สวัสดีตอนเช้า";
-  if (h < 17) return "สวัสดีตอนบ่าย";
-  return "สวัสดีตอนเย็น";
-}
-
-export function DashboardHeader({ role, name, subtitle, highlight }: Props) {
+export function DashboardHeader({ role, name, title, highlight }: Props) {
   const today = new Date().toLocaleDateString("th-TH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
@@ -31,14 +25,12 @@ export function DashboardHeader({ role, name, subtitle, highlight }: Props) {
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
+          <div className="flex items-center gap-2 text-white/85 text-sm font-medium">
             <span className="text-lg">{ROLE_EMOJI[role]}</span>
             {ROLE_LABELS[role]}
+            {name && <span className="text-white/60">· {name}</span>}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold mt-1.5 leading-tight">
-            {greeting()}, {name}
-          </h1>
-          {subtitle && <p className="text-white/80 mt-1 text-sm">{subtitle}</p>}
+          <h1 className="text-2xl sm:text-3xl font-bold mt-1.5 leading-tight">{title}</h1>
           <p className="text-white/60 text-xs mt-2">{today}</p>
         </div>
 

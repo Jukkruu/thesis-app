@@ -69,7 +69,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
       <DashboardHeader
         role={role}
         name={user?.name ?? ""}
-        subtitle={title}
+        title={title}
         highlight={{ label: "รอดำเนินการ", value: pending.length }}
       />
 

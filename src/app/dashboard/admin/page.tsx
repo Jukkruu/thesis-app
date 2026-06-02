@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       <DashboardHeader
         role="ADMIN"
         name={user?.name ?? "ผู้ดูแลระบบ"}
-        subtitle="จัดการและติดตามคำร้องวิทยานิพนธ์ทั้งหมด"
+        title="ภาพรวมคำร้อง"
         highlight={{ label: "กำลังดำเนินการ", value: counts.IN_PROGRESS }}
       />
 
