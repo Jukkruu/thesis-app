@@ -12,6 +12,7 @@ import {
   Users, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, getPendingCount } = useApp();
@@ -36,18 +37,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebar = (
     <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
       {/* Brand */}
-      <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-        <div>
+      <div className="p-5 border-b border-gray-100 flex items-center justify-between gap-2">
+        <div className="min-w-0">
           <p className="font-bold text-gray-900 leading-tight">ระบบจัดการวิทยานิพนธ์</p>
           <p className="text-sm font-medium text-blue-600 mt-0.5">{ROLE_LABELS[user.role]}</p>
         </div>
-        {/* Close on mobile */}
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="lg:hidden p-1 text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <NotificationBell />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Nav */}

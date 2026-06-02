@@ -38,6 +38,19 @@ export interface MockWorkflowStep {
   actedByName?: string;
 }
 
+export type NotificationType = "pending" | "approved" | "rejected" | "info";
+
+export interface MockNotification {
+  id: string;
+  recipientId: string;
+  message: string;
+  detail: string;
+  submissionId: string;
+  isRead: boolean;
+  createdAt: string;
+  type: NotificationType;
+}
+
 export interface MockSubmission {
   id: string;
   title: string;
