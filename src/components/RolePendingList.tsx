@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { Role } from "@/types";
 import { SubmissionStatusBadge } from "./StatusBadge";
-import { ROLE_LABELS, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { ChevronRight, Clock, CheckCircle2, History } from "lucide-react";
 
@@ -121,7 +121,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
                     <SubmissionStatusBadge status={sub.status} />
                     {tab === "pending" && currentStep && (
                       <span className="text-sm text-orange-600 font-medium">
-                        ⏳ ขั้นที่ {currentStep.stepOrder} · รอท่านดำเนินการ
+                        ⏳ {STEP_NAMES[currentStep.stepOrder] ?? `ขั้นที่ ${currentStep.stepOrder}`}
                       </span>
                     )}
                     {tab === "history" && lastMyStep && (

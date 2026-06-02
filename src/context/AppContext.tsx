@@ -140,6 +140,7 @@ interface AppContextType {
   approveCurrentStep: (submissionId: string, notes?: string) => void;
   rejectCurrentStep: (submissionId: string, notes: string) => void;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
+  getPendingCount: (role: Role) => number;
   // Admin actions
   adminUpdateSubmission: (id: string, updates: { title?: string; advisorId?: string }) => void;
   adminDeleteSubmission: (id: string) => void;
@@ -277,6 +278,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  function getPendingCount(role: Role): number {
+    return submissions.filter((sub) => {
+      const step = sub.workflowSteps.find((s) => s.status === "PENDING");
+      return step?.role === role;
+    }).length;
+  }
+
   function adminUpdateSubmission(id: string, updates: { title?: string; advisorId?: string }) {
     setSubmissions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
@@ -328,7 +336,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!hydrated) return null;
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AppContext.Provider
@@ -342,6 +359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         approveCurrentStep,
         rejectCurrentStep,
         addUpload,
+        getPendingCount,
         adminUpdateSubmission,
         adminDeleteSubmission,
         adminResetSubmission,

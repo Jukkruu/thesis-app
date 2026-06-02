@@ -8,6 +8,7 @@ import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
 import { FormType } from "@/types";
 import { ArrowLeft, Download, FileText, Send, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
 
 const STEP1_FORMS: FormType[] = ["BW1A", "BW1B"];
@@ -15,6 +16,7 @@ const STEP1_FORMS: FormType[] = ["BW1A", "BW1B"];
 export default function StudentSubmissionDetail() {
   const { id }   = useParams<{ id: string }>();
   const { user, submissions, approveCurrentStep } = useApp();
+  const { showToast } = useToast();
   const sub = submissions.find((s) => s.id === id);
 
   if (!sub || sub.studentId !== user?.id) {
@@ -180,7 +182,7 @@ export default function StudentSubmissionDetail() {
               ))}
 
               <button
-                onClick={() => approveCurrentStep(sub.id)}
+                onClick={() => { approveCurrentStep(sub.id); showToast("ส่งเอกสารให้อาจารย์ที่ปรึกษาแล้ว ✓"); }}
                 className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
               >
                 <Send className="w-5 h-5" />

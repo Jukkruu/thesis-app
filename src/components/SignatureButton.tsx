@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
+import { useToast } from "@/context/ToastContext";
 import { CheckCircle2, XCircle, Upload, FileText, Loader2 } from "lucide-react";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export function SignatureButton({ submissionId, label = "อนุมัติ / ลงนาม", onSuccess }: Props) {
   const { approveCurrentStep, rejectCurrentStep, addUpload } = useApp();
+  const { showToast } = useToast();
   const [notes,       setNotes]       = useState("");
   const [showReject,  setShowReject]  = useState(false);
   const [loading,     setLoading]     = useState(false);
@@ -27,6 +29,7 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
     addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size);
     approveCurrentStep(submissionId, notes || undefined);
     setLoading(false);
+    showToast("ลงนามและอนุมัติเรียบร้อยแล้ว ✓");
     onSuccess?.();
   }
 
@@ -36,6 +39,7 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
     await new Promise((r) => setTimeout(r, 400));
     rejectCurrentStep(submissionId, notes);
     setLoading(false);
+    showToast("บันทึกการปฏิเสธเรียบร้อยแล้ว", "error");
     onSuccess?.();
   }
 
