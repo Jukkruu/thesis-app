@@ -1,10 +1,11 @@
 "use client";
 
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { ROLE_LABELS, formatDate } from "@/lib/utils";
+import { MOCK_USERS } from "@/context/AppContext";
 import Link from "next/link";
-import { ChevronRight, Clock, CheckCircle2, XCircle, FileText, Users, Trash2 } from "lucide-react";
+import { ChevronRight, Clock, CheckCircle2, XCircle, FileText, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function AdminDashboard() {
@@ -128,31 +129,6 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Users */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <Users className="w-5 h-5 text-gray-500" />
-          ผู้ใช้งานในระบบ
-        </h2>
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          {MOCK_USERS.map((u, i) => (
-            <div
-              key={u.id}
-              className={`flex items-center justify-between px-5 py-4 ${
-                i !== MOCK_USERS.length - 1 ? "border-b border-gray-100" : ""
-              }`}
-            >
-              <div>
-                <p className="font-medium text-gray-800">{u.name}</p>
-                <p className="text-sm text-gray-400">{u.email}</p>
-              </div>
-              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                {ROLE_LABELS[u.role]}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

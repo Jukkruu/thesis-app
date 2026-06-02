@@ -9,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
-  RotateCcw, Trash2, ShieldCheck,
+  Trash2, ShieldCheck,
 } from "lucide-react";
 
 export default function AdminSubmissionDetail() {
@@ -19,7 +19,6 @@ export default function AdminSubmissionDetail() {
     submissions,
     adminUpdateSubmission,
     adminDeleteSubmission,
-    adminResetSubmission,
     adminOverrideStep,
   } = useApp();
 
@@ -71,11 +70,6 @@ export default function AdminSubmissionDetail() {
     if (!sub) return;
     adminDeleteSubmission(sub.id);
     router.push("/dashboard/admin");
-  }
-
-  function handleReset() {
-    if (!sub) return;
-    adminResetSubmission(sub.id);
   }
 
   return (
@@ -282,15 +276,7 @@ export default function AdminSubmissionDetail() {
 
           {/* Danger zone */}
           <div className="bg-white rounded-2xl border border-red-200 p-5 space-y-3">
-            <h2 className="font-semibold text-red-700">Danger Zone</h2>
-
-            <button
-              onClick={handleReset}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-orange-300 text-orange-700 font-medium rounded-xl hover:bg-orange-50 transition"
-            >
-              <RotateCcw className="w-5 h-5" />
-              รีเซ็ตทุกขั้นตอน (เริ่มใหม่)
-            </button>
+            <h2 className="font-semibold text-red-700">ลบคำร้อง</h2>
 
             {!confirmDelete ? (
               <button
