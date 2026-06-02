@@ -6,7 +6,7 @@ import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { LogOut, LayoutDashboard, PlusCircle } from "lucide-react";
+import { LogOut, LayoutDashboard, PlusCircle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +46,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               icon={<PlusCircle className="w-5 h-5" />}
               label="ยื่นคำร้องใหม่"
               active={pathname === "/dashboard/student/submit"}
+            />
+          )}
+          {user.role === "ADMIN" && (
+            <NavLink
+              href="/dashboard/admin"
+              icon={<ShieldCheck className="w-5 h-5" />}
+              label="จัดการระบบ"
+              active={pathname.startsWith("/dashboard/admin")}
             />
           )}
         </nav>

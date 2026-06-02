@@ -8,4 +8,5 @@ export const ROLE_ROUTES: Record<Role, string> = {
   DEPT_STAFF: "/dashboard/dept-staff",
   FACULTY_DEAN: "/dashboard/faculty-dean",
   GRADUATE_SCHOOL: "/dashboard/graduate-school",
+  ADMIN: "/dashboard/admin",
 };

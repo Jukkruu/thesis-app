@@ -19,6 +19,7 @@ import {
 // ─── Mock users (one per role) ────────────────────────────────────────────────
 
 export const MOCK_USERS: MockUser[] = [
+  { id: "u-admin", name: "P บู (ผู้ดูแลระบบ)", email: "admin@thesis.ac.th", role: "ADMIN" },
   { id: "u-student", name: "นายอานนท์ ใจดี", email: "student@thesis.ac.th", role: "STUDENT", studentId: "64010042" },
   { id: "u-advisor", name: "รศ.ดร.วิชัย พงษ์สวัสดิ์", email: "advisor@thesis.ac.th", role: "ADVISOR" },
   { id: "u-chair", name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์", email: "chair@thesis.ac.th", role: "PROGRAM_CHAIR" },

@@ -24,6 +24,18 @@ export const ROLE_LABELS: Record<Role, string> = {
   DEPT_STAFF: "เจ้าหน้าที่ภาควิชา",
   FACULTY_DEAN: "คณบดี",
   GRADUATE_SCHOOL: "บัณฑิตวิทยาลัย",
+  ADMIN: "ผู้ดูแลระบบ",
+};
+
+export const ROLE_DESC: Record<Role, string> = {
+  STUDENT: "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
+  ADVISOR: "ตรวจสอบและอนุมัติหัวข้อ ลงนามเอกสาร",
+  PROGRAM_CHAIR: "อนุมัติหัวข้อในระดับหลักสูตร",
+  EXAM_COMMITTEE: "ประเมินวิทยานิพนธ์ก่อนสอบ",
+  DEPT_STAFF: "ออกหนังสือเชิญกรรมการสอบ (บ.2)",
+  FACULTY_DEAN: "อนุมัติวิทยานิพนธ์ระดับคณะ (บ.4)",
+  GRADUATE_SCHOOL: "รับวิทยานิพนธ์ฉบับสมบูรณ์",
+  ADMIN: "ดูภาพรวมและจัดการคำร้องทั้งหมด",
 };
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
