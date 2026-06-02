@@ -1,11 +1,12 @@
 "use client";
 
 import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useRouter } from "next/navigation";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { SignatureButton } from "./SignatureButton";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
-import { Download, FileText, ArrowLeft, Clock } from "lucide-react";
+import { Download, FileText, ArrowLeft, Clock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
@@ -15,41 +16,44 @@ interface Props {
 
 export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   const { user, submissions } = useApp();
+  const router = useRouter();
   const sub = submissions.find((s) => s.id === submissionId);
 
   if (!sub) {
     return (
-      <div className="text-center py-20 text-gray-400">
+      <div className="text-center py-20 text-gray-400 space-y-3">
         <p className="text-lg">ไม่พบข้อมูลคำร้อง</p>
+        <Link href={backPath} className="text-blue-500 hover:underline">กลับหน้าหลัก</Link>
       </div>
     );
   }
 
-  const student = MOCK_USERS.find((u) => u.id === sub.studentId);
+  const student     = MOCK_USERS.find((u) => u.id === sub.studentId);
+  const advisor     = MOCK_USERS.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
-  const isMyTurn = currentStep?.role === user?.role;
+  const isMyTurn    = currentStep?.role === user?.role;
+  const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
+  const totalSteps  = sub.workflowSteps.length;
 
   return (
     <div className="max-w-4xl space-y-6">
       {/* Back */}
-      <Link
-        href={backPath}
-        className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-700 font-medium"
-      >
+      <Link href={backPath} className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 font-medium">
         <ArrowLeft className="w-5 h-5" />
-        ย้อนกลับ
+        ย้อนกลับรายการ
       </Link>
 
-      {/* Title */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
-          {student && (
-            <p className="text-gray-600">
-              นักศึกษา: {student.name}
-              {student.studentId && (
-                <span className="text-gray-400"> ({student.studentId})</span>
-              )}
+          <p className="text-gray-500">
+            นักศึกษา: <span className="font-medium text-gray-700">{student?.name}</span>
+            {student?.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
+          </p>
+          {advisor && (
+            <p className="text-gray-500 text-sm">
+              อาจารย์ที่ปรึกษา: <span className="text-gray-700">{advisor.name}</span>
             </p>
           )}
           <p className="text-sm text-gray-400">{formatDate(sub.createdAt)}</p>
@@ -57,39 +61,59 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         <SubmissionStatusBadge status={sub.status} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* "Your turn" banner */}
+      {isMyTurn && sub.status === "IN_PROGRESS" && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4">
+          <AlertCircle className="w-6 h-6 text-blue-600 shrink-0" />
+          <div>
+            <p className="font-semibold text-blue-800">ถึงคิวของท่านแล้ว</p>
+            <p className="text-sm text-blue-600">
+              กรุณาตรวจสอบเอกสาร แล้วลงนามหรือปฏิเสธด้านล่าง
+            </p>
+          </div>
+        </div>
+      )}
 
-        {/* Workflow timeline */}
+      {/* Progress */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+          />
+        </div>
+        <span className="text-sm font-medium text-gray-600 shrink-0">
+          {doneCount}/{totalSteps} ขั้นตอน
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Timeline */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนการดำเนินการ</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
           <WorkflowTimeline steps={sub.workflowSteps} />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-4">
-
-          {/* Attached documents */}
+          {/* Documents */}
           {sub.uploads.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-gray-800 mb-4">เอกสารแนบ</h2>
+              <h2 className="font-semibold text-gray-800 mb-4">เอกสารแนบ ({sub.uploads.length})</h2>
               <ul className="space-y-3">
                 {sub.uploads.map((u) => (
                   <li key={u.id} className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-700 leading-snug">
-                        {FORM_LABELS[u.formType]}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {u.fileName} · {formatBytes(u.fileSize)}
-                      </p>
+                      <p className="font-medium text-gray-700 text-sm leading-snug">{FORM_LABELS[u.formType]}</p>
+                      <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
                       onClick={() => alert(`[Demo] ดาวน์โหลด: ${u.fileName}`)}
-                      className="shrink-0 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="shrink-0 p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition"
                       title="ดาวน์โหลด"
                     >
-                      <Download className="w-5 h-5" />
+                      <Download className="w-4 h-4" />
                     </button>
                   </li>
                 ))}
@@ -97,34 +121,38 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
-          {/* Action panel */}
+          {/* Action */}
           {isMyTurn && sub.status === "IN_PROGRESS" && (
-            <SignatureButton submissionId={sub.id} />
+            <SignatureButton
+              submissionId={sub.id}
+              onSuccess={() => router.push(backPath)}
+            />
           )}
 
           {!isMyTurn && currentStep && sub.status === "IN_PROGRESS" && (
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 text-orange-700 font-semibold mb-1">
                 <Clock className="w-5 h-5" />
-                รอดำเนินการ
+                รอดำเนินการจาก
               </div>
-              <p className="text-orange-600">
-                {ROLE_LABELS[currentStep.role]} (ขั้นที่ {currentStep.stepOrder})
-              </p>
+              <p className="text-orange-600 font-medium">{ROLE_LABELS[currentStep.role]}</p>
+              <p className="text-sm text-orange-500 mt-1">ขั้นที่ {currentStep.stepOrder} จาก {totalSteps}</p>
             </div>
           )}
 
           {sub.status === "COMPLETED" && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
-              <p className="text-green-700 font-semibold text-lg">✓ อนุมัติเรียบร้อย</p>
-              <p className="text-green-600 text-sm mt-1">วิทยานิพนธ์ผ่านทุกขั้นตอนแล้ว</p>
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center space-y-1">
+              <p className="text-2xl">✅</p>
+              <p className="text-green-800 font-semibold text-lg">อนุมัติครบทุกขั้นตอน</p>
+              <p className="text-green-600 text-sm">วิทยานิพนธ์ผ่านการพิจารณาแล้ว</p>
             </div>
           )}
 
           {sub.status === "REJECTED" && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
-              <p className="text-red-700 font-semibold text-lg">✗ ถูกปฏิเสธ</p>
-              <p className="text-red-600 text-sm mt-1">ดูหมายเหตุในขั้นตอนที่ปฏิเสธ</p>
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center space-y-1">
+              <p className="text-2xl">❌</p>
+              <p className="text-red-800 font-semibold text-lg">คำร้องถูกปฏิเสธ</p>
+              <p className="text-red-600 text-sm">โปรดดูหมายเหตุในขั้นตอนที่ปฏิเสธ</p>
             </div>
           )}
         </div>

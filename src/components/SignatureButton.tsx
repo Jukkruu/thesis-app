@@ -2,55 +2,48 @@
 
 import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
-import { CheckCircle2, XCircle, Upload, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Upload, FileText, Loader2 } from "lucide-react";
 
 interface Props {
   submissionId: string;
   label?: string;
+  onSuccess?: () => void;   // called after approve or reject — use to navigate away
 }
 
-export function SignatureButton({ submissionId, label = "อนุมัติ / ลงนาม" }: Props) {
+export function SignatureButton({ submissionId, label = "อนุมัติ / ลงนาม", onSuccess }: Props) {
   const { approveCurrentStep, rejectCurrentStep, addUpload } = useApp();
-  const [notes, setNotes] = useState("");
-  const [showReject, setShowReject] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [signedFile, setSignedFile] = useState<File | null>(null);
+  const [notes,       setNotes]       = useState("");
+  const [showReject,  setShowReject]  = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const [signedFile,  setSignedFile]  = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (done) {
-    return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-green-700 font-medium flex items-center gap-3">
-        <CheckCircle2 className="w-6 h-6 shrink-0" />
-        <p>ดำเนินการเรียบร้อยแล้ว<br /><span className="font-normal text-sm">กรุณารีเฟรชหน้าเพื่อดูสถานะล่าสุด</span></p>
-      </div>
-    );
-  }
-
-  function handleApprove() {
-    if (!signedFile) {
-      setError("กรุณาแนบเอกสารที่ลงนามแล้วก่อนอนุมัติ");
-      return;
-    }
+  async function handleApprove() {
+    if (!signedFile) { setError("กรุณาแนบเอกสารที่ลงนามแล้วก่อนอนุมัติ"); return; }
+    setLoading(true);
+    // small delay so user sees the loading state
+    await new Promise((r) => setTimeout(r, 600));
     addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size);
     approveCurrentStep(submissionId, notes || undefined);
-    setDone(true);
+    setLoading(false);
+    onSuccess?.();
   }
 
-  function handleReject() {
-    if (!notes.trim()) {
-      setError("กรุณาระบุเหตุผลในการปฏิเสธ");
-      return;
-    }
+  async function handleReject() {
+    if (!notes.trim()) { setError("กรุณาระบุเหตุผลในการปฏิเสธ"); return; }
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 400));
     rejectCurrentStep(submissionId, notes);
-    setDone(true);
+    setLoading(false);
+    onSuccess?.();
   }
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
       <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ</h3>
 
-      {/* Signed file upload — required for approve */}
+      {/* Signed file upload */}
       {!showReject && (
         <div>
           <label className="block font-medium text-gray-700 mb-2">
@@ -58,22 +51,27 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
           </label>
           <div
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
+            className={cn(
+              "flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition",
+              signedFile
+                ? "border-green-300 bg-green-50"
+                : "border-gray-200 hover:border-blue-400 hover:bg-blue-50"
+            )}
           >
             {signedFile ? (
               <>
-                <FileText className="w-6 h-6 text-blue-500 shrink-0" />
+                <FileText className="w-6 h-6 text-green-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-blue-700 truncate">{signedFile.name}</p>
-                  <p className="text-xs text-gray-400">คลิกเพื่อเปลี่ยนไฟล์</p>
+                  <p className="font-medium text-green-700 truncate">{signedFile.name}</p>
+                  <p className="text-xs text-green-600">เลือกแล้ว — คลิกเพื่อเปลี่ยน</p>
                 </div>
               </>
             ) : (
               <>
                 <Upload className="w-6 h-6 text-gray-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
-                  <p className="text-xs text-gray-400">เอกสารที่ลงนามแล้ว</p>
+                  <p className="font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
+                  <p className="text-sm text-gray-400">เอกสารที่ลงนามแล้วเท่านั้น</p>
                 </div>
               </>
             )}
@@ -88,7 +86,7 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
         </div>
       )}
 
-      {/* Notes / reject reason */}
+      {/* Notes */}
       <div>
         <label className="block font-medium text-gray-700 mb-2">
           {showReject ? "เหตุผลในการปฏิเสธ *" : "หมายเหตุ (ไม่บังคับ)"}
@@ -102,25 +100,28 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-          {error}
-        </p>
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <XCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
       )}
 
-      {/* Action buttons */}
+      {/* Buttons */}
       <div className="flex gap-3">
         {!showReject ? (
           <>
             <button
               onClick={handleApprove}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-60 transition"
             >
-              <CheckCircle2 className="w-5 h-5" />
-              {label}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              {loading ? "กำลังบันทึก..." : label}
             </button>
             <button
               onClick={() => setShowReject(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 disabled:opacity-60 transition"
             >
               <XCircle className="w-5 h-5" />
               ปฏิเสธ
@@ -130,13 +131,16 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
           <>
             <button
               onClick={handleReject}
-              className="flex-1 py-3.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-60 transition"
             >
-              ยืนยันการปฏิเสธ
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+              {loading ? "กำลังบันทึก..." : "ยืนยันการปฏิเสธ"}
             </button>
             <button
               onClick={() => { setShowReject(false); setError(null); }}
-              className="px-5 py-3.5 bg-gray-100 text-gray-600 font-medium rounded-xl hover:bg-gray-200 transition"
+              disabled={loading}
+              className="px-5 py-3.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 disabled:opacity-60 transition"
             >
               ยกเลิก
             </button>
@@ -145,4 +149,8 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
       </div>
     </div>
   );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
 }
