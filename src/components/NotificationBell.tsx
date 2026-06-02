@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Bell, CheckCheck, Clock, CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { Bell, Clock, CheckCircle2, XCircle, Info, X } from "lucide-react";
 import { MockNotification, NotificationType } from "@/types";
 
 function timeAgo(dateStr: string): string {
@@ -27,7 +27,7 @@ const STYLES: Record<NotificationType, { bg: string; dot: string; icon: React.Re
 };
 
 export function NotificationBell() {
-  const { user, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useApp();
+  const { user, notifications, unreadCount, markNotificationRead } = useApp();
   const router  = useRouter();
   const [open, setOpen]     = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -115,20 +115,9 @@ export function NotificationBell() {
                 การแจ้งเตือน
                 {unreadCount > 0 && <span className="ml-2 text-sm font-normal text-orange-600">({unreadCount} ใหม่)</span>}
               </h3>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={() => markAllNotificationsRead()}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    อ่านทั้งหมด
-                  </button>
-                )}
-                <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* List */}
