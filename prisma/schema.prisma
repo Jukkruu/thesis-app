@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  ADVISOR
+  PROGRAM_CHAIR
+  EXAM_COMMITTEE
+  DEPT_STAFF
+  FACULTY_DEAN
+  GRADUATE_SCHOOL
+}
+
+enum FormType {
+  BW1A
+  BW1B
+  B2
+  B3
+  B4
+  THESIS
+}
+
+enum StepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role
+  studentId     String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submissions   Submission[]   @relation("StudentSubmissions")
+  advisees      Submission[]   @relation("AdvisorSubmissions")
+  workflowSteps WorkflowStep[]
+  signatures    Signature[]
+  uploads       FormUpload[]
+
+  @@map("users")
+}
+
+model Submission {
+  id        String           @id @default(cuid())
+  title     String
+  status    SubmissionStatus @default(DRAFT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  student   User   @relation("StudentSubmissions", fields: [studentId], references: [id])
+  studentId String
+
+  advisor   User?   @relation("AdvisorSubmissions", fields: [advisorId], references: [id])
+  advisorId String?
+
+  workflowSteps WorkflowStep[]
+  uploads       FormUpload[]
+
+  @@map("submissions")
+}
+
+model WorkflowStep {
+  id          String     @id @default(cuid())
+  stepOrder   Int
+  role        Role
+  status      StepStatus @default(PENDING)
+  notes       String?
+  actedAt     DateTime?
+  createdAt   DateTime   @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId String
+
+  actedBy   User?   @relation(fields: [actedById], references: [id])
+  actedById String?
+
+  signatures Signature[]
+
+  @@unique([submissionId, stepOrder])
+  @@map("workflow_steps")
+}
+
+model FormUpload {
+  id         String   @id @default(cuid())
+  formType   FormType
+  fileUrl    String
+  fileName   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId String
+
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+
+  @@map("form_uploads")
+}
+
+model Signature {
+  id         String   @id @default(cuid())
+  signedAt   DateTime @default(now())
+  ipAddress  String?
+
+  workflowStep   WorkflowStep @relation(fields: [workflowStepId], references: [id], onDelete: Cascade)
+  workflowStepId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@unique([workflowStepId, userId])
+  @@map("signatures")
+}

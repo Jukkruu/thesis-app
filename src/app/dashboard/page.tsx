@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 
-export default function Home() {
+export default function DashboardRedirect() {
   const { user } = useApp();
   const router = useRouter();
 
