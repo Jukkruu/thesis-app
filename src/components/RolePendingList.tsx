@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { Role } from "@/types";
 import { SubmissionStatusBadge } from "./StatusBadge";
-import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
+import { DashboardHeader } from "./DashboardHeader";
+import { STEP_NAMES, formatDate } from "@/lib/utils";
 import Link from "next/link";
-import { ChevronRight, Clock, CheckCircle2, History } from "lucide-react";
+import { ChevronRight, Clock, CheckCircle2, History, FileText, Layers } from "lucide-react";
 
 interface Props {
   role: Role;
@@ -64,23 +65,19 @@ export function RolePendingList({ role, title, basePath }: Props) {
 
   return (
     <div className="max-w-3xl space-y-6">
-      {/* Header */}
-      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+      {/* Gradient header */}
+      <DashboardHeader
+        role={role}
+        name={user?.name ?? ""}
+        subtitle={title}
+        highlight={{ label: "รอดำเนินการ", value: pending.length }}
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className={`rounded-2xl border p-4 text-center ${pending.length > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
-          <p className={`text-3xl font-bold ${pending.length > 0 ? "text-orange-600" : "text-gray-500"}`}>{pending.length}</p>
-          <p className="text-sm text-gray-600 mt-0.5">รอดำเนินการ</p>
-        </div>
-        <div className="rounded-2xl border bg-green-50 border-green-100 p-4 text-center">
-          <p className="text-3xl font-bold text-green-600">{approved}</p>
-          <p className="text-sm text-gray-600 mt-0.5">อนุมัติแล้ว</p>
-        </div>
-        <div className="rounded-2xl border bg-blue-50 border-blue-100 p-4 text-center">
-          <p className="text-3xl font-bold text-blue-600">{submissions.length}</p>
-          <p className="text-sm text-gray-600 mt-0.5">ทั้งหมด</p>
-        </div>
+        <StatCard icon={<Clock className="w-5 h-5" />}        value={pending.length}      label="รอดำเนินการ" tone={pending.length > 0 ? "orange" : "gray"} />
+        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={approved}            label="อนุมัติแล้ว" tone="green" />
+        <StatCard icon={<Layers className="w-5 h-5" />}       value={submissions.length}  label="ทั้งหมด"     tone="blue" />
       </div>
 
       {/* Tabs */}
@@ -134,44 +131,74 @@ export function RolePendingList({ role, title, basePath }: Props) {
             const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
             const mySteps     = sub.workflowSteps.filter((s) => s.role === role && s.status !== "PENDING");
             const lastMyStep  = mySteps.at(-1);
+            const isPendingTab = tab === "pending";
 
             return (
               <Link
                 key={sub.id}
                 href={`${basePath}/${sub.id}`}
-                className="flex items-center justify-between p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition"
+                className="group flex items-stretch gap-0 bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition overflow-hidden"
               >
-                <div className="space-y-2 min-w-0">
-                  <p className="text-lg font-semibold text-gray-900 leading-snug truncate">{sub.title}</p>
+                {/* Colored accent bar */}
+                <div className={`w-1.5 shrink-0 ${isPendingTab ? "bg-orange-400" : "bg-green-400"}`} />
 
-                  {student && (
-                    <p className="text-gray-600">
-                      {student.name}
-                      {student.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <SubmissionStatusBadge status={sub.status} />
-                    {tab === "pending" && currentStep && (
-                      <span className="text-sm text-orange-600 font-medium">
-                        ⏳ {STEP_NAMES[currentStep.stepOrder] ?? `ขั้นที่ ${currentStep.stepOrder}`}
-                      </span>
-                    )}
-                    {tab === "history" && lastMyStep && (
-                      <span className={`text-sm font-medium ${lastMyStep.status === "APPROVED" ? "text-green-600" : "text-red-500"}`}>
-                        {lastMyStep.status === "APPROVED" ? "✓ ท่านอนุมัติแล้ว" : "✗ ท่านปฏิเสธแล้ว"}
-                        {lastMyStep.actedAt && <span className="text-gray-400 font-normal"> · {formatDate(lastMyStep.actedAt)}</span>}
-                      </span>
-                    )}
+                <div className="flex items-center justify-between gap-4 p-5 flex-1 min-w-0">
+                  <div className="flex items-start gap-3 min-w-0">
+                    {/* Avatar initial */}
+                    <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-gray-500">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1.5 min-w-0">
+                      <p className="text-lg font-semibold text-gray-900 leading-snug truncate">{sub.title}</p>
+                      {student && (
+                        <p className="text-sm text-gray-500">
+                          {student.name}
+                          {student.studentId && <span className="text-gray-400"> · {student.studentId}</span>}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <SubmissionStatusBadge status={sub.status} />
+                        {isPendingTab && currentStep && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full">
+                            <Clock className="w-3 h-3" />
+                            {STEP_NAMES[currentStep.stepOrder] ?? `ขั้นที่ ${currentStep.stepOrder}`}
+                          </span>
+                        )}
+                        {!isPendingTab && lastMyStep && (
+                          <span className={`text-xs font-medium ${lastMyStep.status === "APPROVED" ? "text-green-600" : "text-red-500"}`}>
+                            {lastMyStep.status === "APPROVED" ? "✓ ท่านอนุมัติแล้ว" : "✗ ท่านปฏิเสธแล้ว"}
+                            {lastMyStep.actedAt && <span className="text-gray-400 font-normal"> · {formatDate(lastMyStep.actedAt)}</span>}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
                 </div>
-                <ChevronRight className="w-6 h-6 text-gray-300 shrink-0 ml-4" />
               </Link>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+const TONES: Record<string, string> = {
+  orange: "bg-orange-50 border-orange-100 text-orange-600",
+  green:  "bg-green-50 border-green-100 text-green-600",
+  blue:   "bg-blue-50 border-blue-100 text-blue-600",
+  gray:   "bg-gray-50 border-gray-200 text-gray-400",
+};
+
+function StatCard({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: string }) {
+  return (
+    <div className={`rounded-2xl border p-4 ${TONES[tone]}`}>
+      <div className="flex items-center justify-between">
+        {icon}
+        <span className="text-3xl font-bold">{value}</span>
+      </div>
+      <p className="text-sm text-gray-600 mt-1">{label}</p>
     </div>
   );
 }

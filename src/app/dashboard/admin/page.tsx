@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { MOCK_USERS } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
 import { SubmissionStatus } from "@/types";
 import Link from "next/link";
@@ -24,7 +25,7 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
 ];
 
 export default function AdminDashboard() {
-  const { submissions, adminDeleteSubmission } = useApp();
+  const { submissions, adminDeleteSubmission, user } = useApp();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
   const [search,        setSearch]        = useState("");
@@ -63,11 +64,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">ภาพรวมคำร้อง</h1>
-        <p className="text-gray-500 mt-0.5">จัดการและติดตามคำร้องวิทยานิพนธ์ทั้งหมด</p>
-      </div>
+      {/* Gradient header */}
+      <DashboardHeader
+        role="ADMIN"
+        name={user?.name ?? "ผู้ดูแลระบบ"}
+        subtitle="จัดการและติดตามคำร้องวิทยานิพนธ์ทั้งหมด"
+        highlight={{ label: "กำลังดำเนินการ", value: counts.IN_PROGRESS }}
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

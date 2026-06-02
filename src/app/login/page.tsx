@@ -2,24 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
-import { ROLE_LABELS, ROLE_DESC, STEP_NAMES } from "@/lib/utils";
+import { ROLE_LABELS, ROLE_DESC, ROLE_EMOJI, ROLE_GRADIENT, STEP_NAMES } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LogIn, ShieldCheck, ArrowDown } from "lucide-react";
+import { Eye, EyeOff, LogIn, GraduationCap, Sparkles, ChevronRight } from "lucide-react";
 import { Role } from "@/types";
 
-const ROLE_ICON: Record<Role, string> = {
-  ADMIN:          "🛡️",
-  STUDENT:        "🎓",
-  ADVISOR:        "👨‍🏫",
-  PROGRAM_CHAIR:  "🏛️",
-  EXAM_COMMITTEE: "📋",
-  DEPT_STAFF:     "🗂️",
-  FACULTY_DEAN:   "🏫",
-  GRADUATE_SCHOOL:"🎯",
-};
-
-// Ordered workflow shown on the login page
 const WORKFLOW_STEPS: { order: number; role: Role }[] = [
   { order: 1, role: "STUDENT" },
   { order: 2, role: "ADVISOR" },
@@ -58,23 +46,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-gray-50 to-gray-50 flex flex-col items-center px-4 py-10">
       <div className="w-full max-w-5xl space-y-8">
 
-        {/* Header */}
-        <div className="text-center space-y-1">
-          <h1 className="text-3xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
-          <p className="text-gray-500">คณะวิศวกรรมศาสตร์</p>
+        {/* Hero header */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-200">
+            <GraduationCap className="w-9 h-9 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
+            <p className="text-gray-500 mt-1.5">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
+          </div>
         </div>
 
-        {/* Two columns on desktop */}
+        {/* Two columns */}
         <div className="grid lg:grid-cols-2 gap-6 items-start">
 
           {/* LEFT — login + demo */}
-          <div className="space-y-6 order-1">
+          <div className="space-y-6">
             {/* Login form */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-              <h2 className="font-semibold text-gray-700">เข้าสู่ระบบ</h2>
+              <h2 className="font-semibold text-gray-800 text-lg">เข้าสู่ระบบ</h2>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block font-medium text-gray-700 mb-1.5">อีเมล</label>
@@ -117,7 +110,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition text-base"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm"
                 >
                   <LogIn className="w-5 h-5" />
                   เข้าสู่ระบบ
@@ -128,9 +121,9 @@ export default function LoginPage() {
             {/* Demo shortcuts */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
               <div className="flex items-center gap-2 text-gray-500">
-                <ShieldCheck className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 text-amber-500" />
                 <p className="text-sm font-semibold uppercase tracking-wide">
-                  ทดสอบระบบ — คลิกเพื่อเข้าใช้งานตามบทบาท
+                  ทดสอบระบบ — คลิกเข้าใช้งานตามบทบาท
                 </p>
               </div>
 
@@ -139,16 +132,16 @@ export default function LoginPage() {
                   <button
                     key={u.id}
                     onClick={() => quickLogin(u.id, u.role)}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition text-left"
+                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left"
                   >
-                    <span className="text-xl shrink-0">{ROLE_ICON[u.role]}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800">{u.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {ROLE_LABELS[u.role]} — {ROLE_DESC[u.role]}
-                      </p>
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${ROLE_GRADIENT[u.role]} flex items-center justify-center shrink-0 text-lg`}>
+                      {ROLE_EMOJI[u.role]}
                     </div>
-                    <span className="text-sm text-blue-500 font-medium shrink-0">เข้าใช้ →</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-800 truncate">{u.name}</p>
+                      <p className="text-sm text-gray-500 truncate">{ROLE_LABELS[u.role]}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
                   </button>
                 ))}
               </div>
@@ -160,44 +153,40 @@ export default function LoginPage() {
           </div>
 
           {/* RIGHT — workflow */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 order-2">
-            <div className="mb-5">
-              <h2 className="font-semibold text-gray-800 text-lg">ขั้นตอนการอนุมัติวิทยานิพนธ์</h2>
-              <p className="text-sm text-gray-500 mt-0.5">
-                เอกสารจะถูกส่งต่อโดยอัตโนมัติเมื่อแต่ละฝ่ายลงนาม
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 lg:sticky lg:top-6">
+            <div className="mb-6">
+              <h2 className="font-bold text-gray-900 text-xl">ขั้นตอนการอนุมัติ</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                เอกสารส่งต่ออัตโนมัติเมื่อแต่ละฝ่ายลงนาม — 8 ขั้นตอน
               </p>
             </div>
 
-            <ol className="space-y-1">
+            <ol className="relative">
               {WORKFLOW_STEPS.map((step, i) => (
-                <li key={i}>
-                  <div className="flex items-center gap-3">
-                    {/* Number badge */}
-                    <div className="w-9 h-9 rounded-full bg-blue-50 border-2 border-blue-200 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-blue-600">{step.order}</span>
-                    </div>
-                    {/* Step info */}
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-lg shrink-0">{ROLE_ICON[step.role]}</span>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 leading-snug">{STEP_NAMES[step.order]}</p>
-                        <p className="text-xs text-gray-400">{ROLE_LABELS[step.role]}</p>
-                      </div>
+                <li key={i} className="relative flex gap-4 pb-5 last:pb-0">
+                  {/* Vertical connector line */}
+                  {i < WORKFLOW_STEPS.length - 1 && (
+                    <span className="absolute left-5 top-11 bottom-0 w-0.5 bg-gradient-to-b from-gray-200 to-gray-100" />
+                  )}
+                  {/* Number badge with role color */}
+                  <div className={`relative z-10 w-10 h-10 rounded-full bg-gradient-to-br ${ROLE_GRADIENT[step.role]} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <span className="text-sm font-bold text-white">{step.order}</span>
+                  </div>
+                  {/* Step content */}
+                  <div className="flex items-center gap-2 min-w-0 pt-1.5">
+                    <span className="text-xl shrink-0">{ROLE_EMOJI[step.role]}</span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 leading-snug">{STEP_NAMES[step.order]}</p>
+                      <p className="text-xs text-gray-400">{ROLE_LABELS[step.role]}</p>
                     </div>
                   </div>
-                  {/* Connector arrow */}
-                  {i < WORKFLOW_STEPS.length - 1 && (
-                    <div className="flex justify-center my-0.5 ml-[18px]">
-                      <ArrowDown className="w-4 h-4 text-gray-300" />
-                    </div>
-                  )}
                 </li>
               ))}
             </ol>
 
-            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-xl px-4 py-3">
-              <span className="text-lg">🎉</span>
-              เมื่อครบทุกขั้นตอน วิทยานิพนธ์จะได้รับการอนุมัติสมบูรณ์
+            <div className="mt-2 flex items-center gap-3 text-sm font-medium text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl px-4 py-3">
+              <span className="text-xl">🎉</span>
+              ครบทุกขั้นตอน = วิทยานิพนธ์อนุมัติสมบูรณ์
             </div>
           </div>
 

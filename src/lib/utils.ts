@@ -27,6 +27,30 @@ export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "ผู้ดูแลระบบ",
 };
 
+// Emoji per role — kept as full static values so Tailwind never purges anything
+export const ROLE_EMOJI: Record<Role, string> = {
+  STUDENT:         "🎓",
+  ADVISOR:         "👨‍🏫",
+  PROGRAM_CHAIR:   "🏛️",
+  EXAM_COMMITTEE:  "📋",
+  DEPT_STAFF:      "🗂️",
+  FACULTY_DEAN:    "🏫",
+  GRADUATE_SCHOOL: "🎯",
+  ADMIN:           "🛡️",
+};
+
+// Gradient (for headers / banners) per role — static strings for Tailwind
+export const ROLE_GRADIENT: Record<Role, string> = {
+  STUDENT:         "from-blue-500 to-indigo-600",
+  ADVISOR:         "from-violet-500 to-purple-600",
+  PROGRAM_CHAIR:   "from-indigo-500 to-blue-600",
+  EXAM_COMMITTEE:  "from-amber-500 to-orange-600",
+  DEPT_STAFF:      "from-teal-500 to-emerald-600",
+  FACULTY_DEAN:    "from-rose-500 to-red-600",
+  GRADUATE_SCHOOL: "from-emerald-500 to-green-600",
+  ADMIN:           "from-slate-700 to-gray-900",
+};
+
 export const ROLE_DESC: Record<Role, string> = {
   STUDENT: "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
   ADVISOR: "ตรวจสอบและอนุมัติหัวข้อ ลงนามเอกสาร",

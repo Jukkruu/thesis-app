@@ -3,8 +3,9 @@
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { ROLE_LABELS, formatDate } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import Link from "next/link";
-import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers } from "lucide-react";
 
 export default function StudentDashboard() {
   const { user, submissions } = useApp();
@@ -15,34 +16,46 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">วิทยานิพนธ์ของฉัน</h1>
-          <p className="text-gray-500 mt-0.5">สวัสดี, {user?.name}</p>
-        </div>
-        <Link
-          href="/dashboard/student/submit"
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-        >
-          <PlusCircle className="w-5 h-5" />
-          ยื่นคำร้องใหม่
-        </Link>
-      </div>
+      {/* Gradient header */}
+      <DashboardHeader
+        role="STUDENT"
+        name={user?.name ?? ""}
+        subtitle="ติดตามและจัดการวิทยานิพนธ์ของท่าน"
+        highlight={{ label: "กำลังดำเนินการ", value: inProgress }}
+      />
+
+      {/* New submission button */}
+      <Link
+        href="/dashboard/student/submit"
+        className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-sm"
+      >
+        <PlusCircle className="w-5 h-5" />
+        ยื่นคำร้องวิทยานิพนธ์ใหม่
+      </Link>
 
       {/* Quick stats */}
       {mine.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{mine.length}</p>
-            <p className="text-sm text-gray-500 mt-0.5">คำร้องทั้งหมด</p>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="flex items-center justify-between text-gray-400">
+              <Layers className="w-5 h-5" />
+              <span className="text-3xl font-bold text-gray-900">{mine.length}</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">ทั้งหมด</p>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-blue-700">{inProgress}</p>
-            <p className="text-sm text-blue-600 mt-0.5">กำลังดำเนินการ</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+            <div className="flex items-center justify-between text-blue-500">
+              <Clock className="w-5 h-5" />
+              <span className="text-3xl font-bold text-blue-700">{inProgress}</span>
+            </div>
+            <p className="text-sm text-blue-600 mt-1">กำลังดำเนินการ</p>
           </div>
-          <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-green-700">{completed}</p>
-            <p className="text-sm text-green-600 mt-0.5">เสร็จสิ้น</p>
+          <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
+            <div className="flex items-center justify-between text-green-500">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="text-3xl font-bold text-green-700">{completed}</span>
+            </div>
+            <p className="text-sm text-green-600 mt-1">เสร็จสิ้น</p>
           </div>
         </div>
       )}
@@ -72,12 +85,22 @@ export default function StudentDashboard() {
             const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
             const totalSteps  = sub.workflowSteps.length;
 
+            const accent =
+              sub.status === "COMPLETED" ? "bg-green-400"
+              : sub.status === "REJECTED" ? "bg-red-400"
+              : isMyTurn ? "bg-blue-400"
+              : "bg-orange-400";
+
             return (
               <Link
                 key={sub.id}
                 href={`/dashboard/student/${sub.id}`}
-                className="flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition"
+                className="group flex items-stretch bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition overflow-hidden"
               >
+                {/* Accent bar */}
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+
+                <div className="flex items-center gap-4 p-5 flex-1 min-w-0">
                 {/* Status icon */}
                 <div className="shrink-0">
                   {sub.status === "COMPLETED"  && <CheckCircle2 className="w-8 h-8 text-green-500" />}
@@ -119,7 +142,8 @@ export default function StudentDashboard() {
                   <p className="text-xs text-gray-400">{formatDate(sub.createdAt)}</p>
                 </div>
 
-                <ChevronRight className="w-6 h-6 text-gray-300 shrink-0" />
+                <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
+                </div>
               </Link>
             );
           })}
