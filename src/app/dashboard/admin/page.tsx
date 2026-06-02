@@ -9,8 +9,12 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search,
+  Trash2, Search, AlertCircle,
 } from "lucide-react";
+
+function daysSince(dateStr: string): number {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+}
 
 const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
   { label: "ทั้งหมด",            value: "ALL" },
@@ -111,6 +115,11 @@ export default function AdminDashboard() {
             const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
             const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
             const totalSteps  = sub.workflowSteps.length;
+            const lastAction  = sub.workflowSteps
+              .filter((s) => s.actedAt)
+              .sort((a, b) => new Date(b.actedAt!).getTime() - new Date(a.actedAt!).getTime())[0];
+            const stuckDays   = sub.status === "IN_PROGRESS" && lastAction?.actedAt
+              ? daysSince(lastAction.actedAt) : 0;
 
             return (
               <div
@@ -172,6 +181,12 @@ export default function AdminDashboard() {
                   ) : sub.status === "COMPLETED" ? (
                     <span className="text-sm text-green-600 font-medium">✓ ผ่านครบทุกขั้นตอน</span>
                   ) : null}
+                  {stuckDays > 7 && (
+                    <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      ค้างมา {stuckDays} วัน
+                    </span>
+                  )}
                 </div>
 
                 {/* Progress bar */}
