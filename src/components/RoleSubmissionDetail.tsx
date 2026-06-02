@@ -4,6 +4,7 @@ import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { useRouter } from "next/navigation";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { SignatureButton } from "./SignatureButton";
+import { CommitteeSignPanel } from "./CommitteeSignPanel";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
 import { Download, FileText, ArrowLeft, Clock, AlertCircle, StickyNote } from "lucide-react";
@@ -132,8 +133,16 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
-          {/* Action */}
-          {isMyTurn && sub.status === "IN_PROGRESS" && (
+          {/* Action — committee step uses multi-member panel */}
+          {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role === "EXAM_COMMITTEE" && (
+            <CommitteeSignPanel
+              submissionId={sub.id}
+              step={currentStep}
+              onSuccess={() => router.push(backPath)}
+            />
+          )}
+
+          {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role !== "EXAM_COMMITTEE" && (
             <SignatureButton
               submissionId={sub.id}
               onSuccess={() => router.push(backPath)}

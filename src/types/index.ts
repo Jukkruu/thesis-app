@@ -28,6 +28,14 @@ export interface MockUpload {
   uploadedAt: string;
 }
 
+export interface CommitteeAction {
+  userId: string;
+  name: string;
+  decision: "APPROVED" | "REJECTED";
+  notes?: string;
+  actedAt: string;
+}
+
 export interface MockWorkflowStep {
   id: string;
   stepOrder: number;
@@ -36,6 +44,9 @@ export interface MockWorkflowStep {
   notes?: string;
   actedAt?: string;
   actedByName?: string;
+  // For multi-member committee steps (EXAM_COMMITTEE):
+  committeeMembers?: string[];        // assigned committee user IDs
+  committeeActions?: CommitteeAction[]; // per-member sign-offs
 }
 
 export type NotificationType = "pending" | "approved" | "rejected" | "info";

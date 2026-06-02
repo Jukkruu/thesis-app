@@ -15,25 +15,49 @@ interface Props {
 }
 
 export function RolePendingList({ role, title, basePath }: Props) {
-  const { submissions } = useApp();
+  const { submissions, user } = useApp();
   const [tab, setTab] = useState<"pending" | "history">("pending");
+
+  const isCommittee = role === "EXAM_COMMITTEE";
+
+  // Has the current committee member personally acted on this submission's committee step?
+  const iSignedCommittee = (sub: typeof submissions[number]) =>
+    sub.workflowSteps.some(
+      (s) => s.role === "EXAM_COMMITTEE" && (s.committeeActions ?? []).some((a) => a.userId === user?.id)
+    );
 
   const pending = submissions.filter((sub) => {
     const step = sub.workflowSteps.find((s) => s.status === "PENDING");
-    return step?.role === role;
+    if (step?.role !== role) return false;
+    // Committee: only show if THIS member still needs to sign
+    if (isCommittee && user) {
+      if (!step.committeeMembers?.includes(user.id)) return false;
+      return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+    }
+    return true;
   });
 
   const history = submissions.filter((sub) => {
+    const isCurrentlyPending = pending.some((p) => p.id === sub.id);
+    if (isCommittee) {
+      return iSignedCommittee(sub) && !isCurrentlyPending;
+    }
     const alreadyActed = sub.workflowSteps.some(
       (s) => s.role === role && (s.status === "APPROVED" || s.status === "REJECTED")
     );
-    const isCurrentlyPending = pending.some((p) => p.id === sub.id);
     return alreadyActed && !isCurrentlyPending;
   });
 
-  const approved = history.filter((sub) =>
-    sub.workflowSteps.some((s) => s.role === role && s.status === "APPROVED")
-  ).length;
+  const approved = isCommittee
+    ? history.filter((sub) =>
+        sub.workflowSteps.some((s) =>
+          s.role === "EXAM_COMMITTEE" &&
+          (s.committeeActions ?? []).some((a) => a.userId === user?.id && a.decision === "APPROVED")
+        )
+      ).length
+    : history.filter((sub) =>
+        sub.workflowSteps.some((s) => s.role === role && s.status === "APPROVED")
+      ).length;
 
   const getStudent = (id: string) => MOCK_USERS.find((u) => u.id === id);
   const list = tab === "pending" ? pending : history;

@@ -10,15 +10,20 @@ import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
 // ─── Mock users ───────────────────────────────────────────────────────────────
 
 export const MOCK_USERS: MockUser[] = [
-  { id: "u-admin",     name: "P โบ้ (ผู้ดูแลระบบ)",      email: "admin@thesis.ac.th",     role: "ADMIN" },
-  { id: "u-student",   name: "นายอานนท์ ใจดี",            email: "student@thesis.ac.th",   role: "STUDENT", studentId: "64010042" },
-  { id: "u-advisor",   name: "รศ.ดร.วิชัย พงษ์สวัสดิ์",  email: "advisor@thesis.ac.th",   role: "ADVISOR" },
-  { id: "u-chair",     name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์", email: "chair@thesis.ac.th",     role: "PROGRAM_CHAIR" },
-  { id: "u-committee", name: "ดร.นภา รัตนวงศ์",           email: "committee@thesis.ac.th", role: "EXAM_COMMITTEE" },
-  { id: "u-staff",     name: "น.ส.สุภาพร มั่นคง",        email: "staff@thesis.ac.th",     role: "DEPT_STAFF" },
-  { id: "u-dean",      name: "ศ.ดร.ประเสริฐ กิจสุวรรณ",  email: "dean@thesis.ac.th",      role: "FACULTY_DEAN" },
-  { id: "u-grad",      name: "น.ส.มนัสนันท์ อยู่สุข",    email: "grad@thesis.ac.th",      role: "GRADUATE_SCHOOL" },
+  { id: "u-admin",      name: "P โบ้ (ผู้ดูแลระบบ)",       email: "admin@thesis.ac.th",      role: "ADMIN" },
+  { id: "u-student",    name: "นายอานนท์ ใจดี",             email: "student@thesis.ac.th",    role: "STUDENT", studentId: "64010042" },
+  { id: "u-advisor",    name: "รศ.ดร.วิชัย พงษ์สวัสดิ์",   email: "advisor@thesis.ac.th",    role: "ADVISOR" },
+  { id: "u-chair",      name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์",  email: "chair@thesis.ac.th",      role: "PROGRAM_CHAIR" },
+  { id: "u-committee",  name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", email: "committee@thesis.ac.th",  role: "EXAM_COMMITTEE" },
+  { id: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",         email: "committee2@thesis.ac.th", role: "EXAM_COMMITTEE" },
+  { id: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",      email: "committee3@thesis.ac.th", role: "EXAM_COMMITTEE" },
+  { id: "u-staff",      name: "น.ส.สุภาพร มั่นคง",         email: "staff@thesis.ac.th",      role: "DEPT_STAFF" },
+  { id: "u-dean",       name: "ศ.ดร.ประเสริฐ กิจสุวรรณ",   email: "dean@thesis.ac.th",       role: "FACULTY_DEAN" },
+  { id: "u-grad",       name: "น.ส.มนัสนันท์ อยู่สุข",     email: "grad@thesis.ac.th",       role: "GRADUATE_SCHOOL" },
 ];
+
+// All committee members assigned to a defense by default
+const COMMITTEE_IDS = ["u-committee", "u-committee2", "u-committee3"];
 
 const WORKFLOW_ROLES: Role[] = [
   "STUDENT", "ADVISOR", "PROGRAM_CHAIR", "DEPT_STAFF",
@@ -39,7 +44,7 @@ function makeInitial(): MockSubmission[] {
         { id: "sub-1-s2", stepOrder: 2, role: "ADVISOR",        status: "PENDING" },
         { id: "sub-1-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "PENDING" },
         { id: "sub-1-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "PENDING" },
-        { id: "sub-1-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING" },
+        { id: "sub-1-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING", committeeMembers: COMMITTEE_IDS },
         { id: "sub-1-s6", stepOrder: 6, role: "ADVISOR",        status: "PENDING" },
         { id: "sub-1-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "PENDING" },
         { id: "sub-1-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "PENDING" },
@@ -59,7 +64,10 @@ function makeInitial(): MockSubmission[] {
         { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
         { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
         { id: "sub-2-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "น.ส.สุภาพร มั่นคง", notes: "ออกหนังสือเชิญกรรมการเรียบร้อย" },
-        { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING" },
+        { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING", committeeMembers: COMMITTEE_IDS,
+          committeeActions: [
+            { userId: "u-committee", name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", decision: "APPROVED", notes: "เนื้อหาครบถ้วน", actedAt: "2024-12-04T10:00:00Z" },
+          ] },
         { id: "sub-2-s6", stepOrder: 6, role: "ADVISOR",        status: "PENDING" },
         { id: "sub-2-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "PENDING" },
         { id: "sub-2-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "PENDING" },
@@ -82,7 +90,12 @@ function makeInitial(): MockSubmission[] {
         { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
         { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
         { id: "sub-3-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "APPROVED", actedAt: "2024-07-20T09:00:00Z", actedByName: "น.ส.สุภาพร มั่นคง" },
-        { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "ดร.นภา รัตนวงศ์", notes: "ผลงานดีเยี่ยม ผ่านการประเมิน" },
+        { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "กรรมการสอบ 3 ท่าน", notes: "ผลงานดีเยี่ยม ผ่านการประเมิน", committeeMembers: COMMITTEE_IDS,
+          committeeActions: [
+            { userId: "u-committee",  name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", decision: "APPROVED", notes: "ผลงานดีเยี่ยม", actedAt: "2024-08-03T10:00:00Z" },
+            { userId: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",         decision: "APPROVED", actedAt: "2024-08-04T11:00:00Z" },
+            { userId: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",      decision: "APPROVED", actedAt: "2024-08-05T10:00:00Z" },
+          ] },
         { id: "sub-3-s6", stepOrder: 6, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-08-10T14:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
         { id: "sub-3-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "APPROVED", actedAt: "2024-09-05T10:00:00Z", actedByName: "ศ.ดร.ประเสริฐ กิจสุวรรณ" },
         { id: "sub-3-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "APPROVED", actedAt: "2024-09-20T10:00:00Z", actedByName: "น.ส.มนัสนันท์ อยู่สุข", notes: "รับวิทยานิพนธ์เรียบร้อย ขอแสดงความยินดี" },
@@ -132,6 +145,8 @@ interface AppContextType {
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
   getPendingCount: (role: Role) => number;
   studentResubmit: (submissionId: string) => void;
+  committeeSign: (submissionId: string, decision: "APPROVED" | "REJECTED", notes?: string) => void;
+  needsMyAction: (sub: MockSubmission) => boolean;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   // Admin
@@ -146,7 +161,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v2";
+const STORAGE_KEY = "thesis_mock_state_v3";
 
 interface StoredState {
   userId: string | null;
@@ -249,7 +264,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: now,
       uploads: [],
       workflowSteps: WORKFLOW_ROLES.map((role, i) => ({
-        id: `${id}-s${i + 1}`, stepOrder: i + 1, role, status: "PENDING",
+        id: `${id}-s${i + 1}`, stepOrder: i + 1, role, status: "PENDING" as const,
+        ...(role === "EXAM_COMMITTEE" ? { committeeMembers: COMMITTEE_IDS } : {}),
       })),
     };
     setSubmissions((prev) => [sub, ...prev]);
@@ -334,11 +350,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // Does this submission currently need action from the logged-in user?
+  function needsMyAction(sub: MockSubmission): boolean {
+    if (!user) return false;
+    const step = sub.workflowSteps.find((s) => s.status === "PENDING");
+    if (!step || step.role !== user.role) return false;
+    if (step.role === "EXAM_COMMITTEE") {
+      if (!step.committeeMembers?.includes(user.id)) return false;
+      return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+    }
+    return true;
+  }
+
   function getPendingCount(role: Role): number {
     return submissions.filter((sub) => {
       const step = sub.workflowSteps.find((s) => s.status === "PENDING");
-      return step?.role === role;
+      if (step?.role !== role) return false;
+      // Committee step: only count if THIS user still needs to sign
+      if (role === "EXAM_COMMITTEE" && user) {
+        if (!step.committeeMembers?.includes(user.id)) return false;
+        return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+      }
+      return true;
     }).length;
+  }
+
+  function committeeSign(submissionId: string, decision: "APPROVED" | "REJECTED", notes?: string) {
+    const sub = submissions.find((s) => s.id === submissionId);
+    if (!sub || !user) return;
+
+    const stepIdx = sub.workflowSteps.findIndex((s) => s.status === "PENDING");
+    if (stepIdx === -1) return;
+    const step = sub.workflowSteps[stepIdx];
+    if (step.role !== "EXAM_COMMITTEE") return;
+    if (!step.committeeMembers?.includes(user.id)) return;
+
+    const prevActions = step.committeeActions ?? [];
+    if (prevActions.some((a) => a.userId === user.id)) return; // already signed
+
+    const now = new Date().toISOString();
+    const newActions = [
+      ...prevActions,
+      { userId: user.id, name: user.name, decision, notes, actedAt: now },
+    ];
+
+    // Any rejection fails the whole step immediately
+    if (decision === "REJECTED") {
+      const updatedSteps = sub.workflowSteps.map((s, i) =>
+        i === stepIdx
+          ? { ...s, status: "REJECTED" as const, committeeActions: newActions, actedAt: now, actedByName: user.name, notes }
+          : s
+      );
+      setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps, status: "REJECTED" } : s)));
+      pushNotifs([makeNotif(sub.studentId, "กรรมการสอบไม่อนุมัติ — กรุณาตรวจสอบและแก้ไข", sub.title, submissionId, "rejected")]);
+      return;
+    }
+
+    // Approved: advance only when ALL assigned members have approved
+    const allApproved = step.committeeMembers.every(
+      (mid) => newActions.find((a) => a.userId === mid)?.decision === "APPROVED"
+    );
+
+    if (!allApproved) {
+      // Record this member's sign-off, stay pending
+      const updatedSteps = sub.workflowSteps.map((s, i) =>
+        i === stepIdx ? { ...s, committeeActions: newActions } : s
+      );
+      setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps } : s)));
+      return;
+    }
+
+    // All approved → advance workflow
+    const updatedSteps = sub.workflowSteps.map((s, i) =>
+      i === stepIdx
+        ? { ...s, status: "APPROVED" as const, committeeActions: newActions, actedAt: now, actedByName: "กรรมการสอบครบทุกท่าน" }
+        : s
+    );
+    const hasMore = updatedSteps.some((s) => s.status === "PENDING");
+    const status: SubmissionStatus = hasMore ? "IN_PROGRESS" : "COMPLETED";
+    setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps, status } : s)));
+
+    const notifs: (MockNotification | null)[] = [];
+    const nextStep = updatedSteps.find((s) => s.status === "PENDING");
+    if (nextStep) {
+      notifs.push(notifyRole(nextStep.role, `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`, sub.title, submissionId, "pending"));
+    }
+    if (status === "COMPLETED") {
+      notifs.push(makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved"));
+    }
+    pushNotifs(notifs);
   }
 
   function studentResubmit(submissionId: string) {
@@ -459,6 +559,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user, users: MOCK_USERS, submissions, notifications, unreadCount,
       login, logout, createSubmission, approveCurrentStep, rejectCurrentStep,
       addUpload, getPendingCount, studentResubmit,
+      committeeSign, needsMyAction,
       markNotificationRead, markAllNotificationsRead,
       adminSetNote, adminUpdateSubmission, adminDeleteSubmission,
       adminResetSubmission, adminOverrideStep,

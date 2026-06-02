@@ -65,6 +65,18 @@ export function WorkflowTimeline({ steps }: { steps: MockWorkflowStep[] }) {
                   {step.actedAt && <span className="text-gray-400"> · {formatDate(step.actedAt)}</span>}
                 </p>
               )}
+
+              {/* Committee signing progress */}
+              {step.committeeMembers && step.committeeMembers.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  กรรมการลงนาม{" "}
+                  <span className="font-semibold text-gray-700">
+                    {(step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length}
+                    /{step.committeeMembers.length}
+                  </span>
+                  {" "}ท่าน
+                </p>
+              )}
               {step.notes && (
                 <p className="mt-1.5 text-sm text-gray-600 bg-white border border-gray-100 rounded-lg px-3 py-2">
                   "{step.notes}"
