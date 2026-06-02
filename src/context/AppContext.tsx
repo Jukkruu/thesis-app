@@ -161,6 +161,7 @@ interface AppContextType {
   needsMyAction: (sub: MockSubmission) => boolean;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  resetDemo: () => void;
   // Admin
   adminSetNote: (submissionId: string, note: string) => void;
   adminUpdateSubmission: (id: string, updates: { title?: string; advisorId?: string }) => void;
@@ -507,6 +508,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // Reset all demo data back to the seed (handy before a live demo)
+  function resetDemo() {
+    if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
+    setSubmissions(makeInitial());
+    setNotifications(makeInitialNotifications());
+  }
+
   // ─── Admin actions ─────────────────────────────────────────────────────────
 
   function adminSetNote(submissionId: string, note: string) {
@@ -590,7 +598,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       login, logout, createSubmission, approveCurrentStep, rejectCurrentStep,
       addUpload, getPendingCount, studentResubmit,
       committeeSign, needsMyAction,
-      markNotificationRead, markAllNotificationsRead,
+      markNotificationRead, markAllNotificationsRead, resetDemo,
       adminSetNote, adminUpdateSubmission, adminDeleteSubmission,
       adminResetSubmission, adminOverrideStep,
     }}>

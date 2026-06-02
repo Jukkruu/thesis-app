@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ระบบจัดการวิทยานิพนธ์ (Thesis Management System)
 
-## Getting Started
+ระบบยื่น ติดตาม และลงนามเอกสารวิทยานิพนธ์ออนไลน์ สำหรับคณะวิศวกรรมศาสตร์ — รองรับการทำงานแบบหลายบทบาท (role-based) ตามขั้นตอนการอนุมัติจริง 8 ขั้นตอน / 5 ระยะ
 
-First, run the development server:
+> **สถานะปัจจุบัน: Mockup / Demo** — ข้อมูลทั้งหมดเก็บใน `localStorage` ของเบราว์เซอร์ ยังไม่มีฐานข้อมูลจริง ดูหัวข้อ *Going Live* ด้านล่างสำหรับการต่อ backend จริง
+
+---
+
+## บทบาทในระบบ (Roles)
+
+| บทบาท | หน้าที่ |
+|---|---|
+| 🎓 นักศึกษา (Student) | ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ |
+| 👨‍🏫 อาจารย์ที่ปรึกษา (Advisor) | ตรวจสอบ/อนุมัติหัวข้อ ลงนาม บ.3 |
+| 🏛️ ประธานหลักสูตร (Program Chair) | อนุมัติหัวข้อระดับหลักสูตร |
+| 🗂️ เจ้าหน้าที่ภาควิชา (Dept Staff) | ออกหนังสือเชิญกรรมการ (บ.2) |
+| 📋 กรรมการสอบ (Exam Committee) | ประเมินก่อนสอบ — **มี 3 ท่าน ต้องลงนามครบทุกท่าน** |
+| 🏫 คณบดี (Faculty Dean) | อนุมัติวิทยานิพนธ์ระดับคณะ (บ.4) |
+| 🎯 บัณฑิตวิทยาลัย (Graduate School) | รับวิทยานิพนธ์ฉบับสมบูรณ์ |
+| 🛡️ ผู้ดูแลระบบ (Admin) | ดูภาพรวม จัดการ/แก้ไขทุกคำร้อง รีเซ็ตข้อมูลสาธิต |
+
+## ขั้นตอนการทำงาน (Workflow)
+
+```
+1 นักศึกษายื่น บ.วศ.1ก → 2 อาจารย์ที่ปรึกษาตรวจสอบ → 3 ประธานหลักสูตรอนุมัติ
+→ 4 เจ้าหน้าที่ออกหนังสือเชิญ (บ.2) → 5 กรรมการสอบประเมิน (บ.3, ลงนามครบ 3 ท่าน)
+→ 6 อาจารย์ที่ปรึกษาลงนาม บ.3 → 7 คณบดีอนุมัติ บ.4 → 8 บัณฑิตวิทยาลัยรับเล่มสมบูรณ์
+```
+เอกสารถูกส่งต่อให้บทบาทถัดไปโดยอัตโนมัติเมื่อลงนาม หากปฏิเสธ คำร้องจะถูกตีกลับให้นักศึกษาแก้ไขและยื่นใหม่ได้
+
+## ฟีเจอร์หลัก
+
+- เข้าสู่ระบบตามบทบาท + ปุ่มทดสอบเข้าใช้แต่ละบทบาท (ลบออกก่อน live)
+- อัปโหลดเอกสาร (บ.วศ.1ก/1ข, บ.2/3/4, เล่มวิทยานิพนธ์) — *จำลอง*
+- ลงนาม/อนุมัติ/ปฏิเสธ พร้อมแนบไฟล์ลงนาม
+- คณะกรรมการสอบหลายท่าน (ผ่านเมื่อครบทุกท่าน)
+- ติดตามสถานะแบบ timeline + แถบความคืบหน้า
+- การแจ้งเตือน (bell) ส่งถึงผู้รับผิดชอบถัดไปอัตโนมัติ
+- แดชบอร์ดผู้ดูแล: ค้นหา/กรอง, กราฟการกระจายตามขั้นตอน, badge "ค้างนาน", โปรไฟล์ผู้ใช้, แก้ไข/override ทุกขั้นตอน
+- รองรับมือถือ + ฟอนต์ Sarabun
+
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4**
+- State แบบ mock: React Context + `localStorage` (`src/context/AppContext.tsx`)
+- เตรียมไว้สำหรับ: **Prisma + PostgreSQL**, **NextAuth**, **Supabase Storage** (โครง schema อยู่ใน `prisma/schema.prisma`)
+
+## รันในเครื่อง
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## โครงสร้างหลัก
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  app/                     หน้าเว็บ (App Router)
+    login/                 หน้าเข้าสู่ระบบ + workflow
+    dashboard/             แดชบอร์ดแยกตามบทบาท + admin
+  components/              UI: Header, Timeline, FileUploader, SignatureButton, NotificationBell ...
+  context/AppContext.tsx   ข้อมูล mock + logic เวิร์กโฟลว์ทั้งหมด
+  context/ToastContext.tsx ระบบ toast
+  lib/utils.ts             labels, ธีมสี, ฟอร์แมต
+  types/index.ts           ชนิดข้อมูล
+prisma/schema.prisma       schema ฐานข้อมูลจริง (ยังไม่เปิดใช้)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Going Live — สิ่งที่ต้องทำก่อนใช้งานจริง
 
-To learn more about Next.js, take a look at the following resources:
+ระบบนี้ออกแบบให้ย้ายจาก mock ไป backend จริงได้ โดยตรรกะเวิร์กโฟลว์รวมศูนย์อยู่ใน `AppContext`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Checklist:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **ฐานข้อมูล** — สร้าง PostgreSQL (เช่น [Neon](https://neon.tech) หรือ Supabase) แล้วตั้ง `DATABASE_URL`, รัน `prisma migrate`
+2. **Auth** — เปิดใช้ NextAuth (โครงไฟล์มีอยู่แล้วใน `src/lib/auth.ts`); ลบปุ่ม "ทดสอบเข้าใช้ตามบทบาท" ในหน้า login และ seed users ออก
+3. **ไฟล์อัปโหลด** — ต่อ Supabase Storage จริงใน `src/lib/supabase.ts` แทนการเก็บแค่ชื่อไฟล์
+4. **แทนที่ AppContext** — เปลี่ยน mock functions ให้เรียก API/Server Actions ที่อ่าน-เขียนฐานข้อมูล (โครงสร้างฟังก์ชันเดิมใช้ซ้ำได้)
+5. **การแจ้งเตือนจริง** — ต่ออีเมล/LINE สำหรับ notification ที่ปัจจุบันเก็บใน state
+6. **ENV** — ตั้งค่าใน Vercel: `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, คีย์ Supabase
+7. **ตรวจสิทธิ์ฝั่งเซิร์ฟเวอร์** — บังคับ role-based access ใน API ไม่ใช่แค่ฝั่ง UI
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🤖 พัฒนาด้วยความช่วยเหลือจาก [Claude Code](https://claude.com/claude-code)

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useToast } from "@/context/ToastContext";
 import { ROLE_LABELS, ROLE_DESC } from "@/lib/utils";
 import { Role } from "@/types";
 import {
   Users, GraduationCap, BookOpen, Building2, ClipboardList,
-  Briefcase, School, ShieldCheck, ChevronRight,
+  Briefcase, School, ShieldCheck, ChevronRight, RotateCcw,
 } from "lucide-react";
 
 const ROLE_ICON: Record<Role, React.ReactNode> = {
@@ -32,7 +34,9 @@ const ROLE_COLOR: Record<Role, string> = {
 };
 
 export default function AdminUsersPage() {
-  const { submissions } = useApp();
+  const { submissions, resetDemo } = useApp();
+  const { showToast } = useToast();
+  const [confirmReset, setConfirmReset] = useState(false);
 
   function getStats(userId: string, role: Role) {
     if (role === "STUDENT") {
@@ -111,6 +115,44 @@ export default function AdminUsersPage() {
             <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
           </Link>
         ))}
+      </div>
+
+      {/* Demo tools */}
+      <div className="bg-white rounded-2xl border border-amber-200 p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <RotateCcw className="w-5 h-5 text-amber-600" />
+          <h2 className="font-semibold text-amber-700">เครื่องมือสำหรับสาธิต</h2>
+        </div>
+        <p className="text-sm text-gray-500">
+          รีเซ็ตข้อมูลทั้งหมดกลับสู่ค่าเริ่มต้น — ใช้ก่อนเริ่มสาธิตระบบ (ลบคำร้องและการแจ้งเตือนที่สร้างระหว่างทดสอบ)
+        </p>
+        {!confirmReset ? (
+          <button
+            onClick={() => setConfirmReset(true)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-amber-200 text-amber-700 font-medium rounded-xl hover:bg-amber-50 transition"
+          >
+            <RotateCcw className="w-4 h-4" />
+            รีเซ็ตข้อมูลทดสอบ
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-amber-700 font-medium text-center">ยืนยันการรีเซ็ต? ข้อมูลที่สร้างไว้จะหายทั้งหมด</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { resetDemo(); setConfirmReset(false); showToast("รีเซ็ตข้อมูลทดสอบเรียบร้อยแล้ว", "info"); }}
+                className="flex-1 py-2.5 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 transition"
+              >
+                ยืนยันรีเซ็ต
+              </button>
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
