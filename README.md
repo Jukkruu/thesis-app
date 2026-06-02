@@ -46,6 +46,12 @@
 - State แบบ mock: React Context + `localStorage` (`src/context/AppContext.tsx`)
 - เตรียมไว้สำหรับ: **Prisma + PostgreSQL**, **NextAuth**, **Supabase Storage** (โครง schema อยู่ใน `prisma/schema.prisma`)
 
+## เอกสารสำหรับนักพัฒนา (Developer docs)
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — โครงสร้างโค้ด, การไหลของข้อมูล, แนวคิดหลัก
+- [`docs/RECIPES.md`](docs/RECIPES.md) — วิธีเพิ่ม role / ขั้นตอน / แบบฟอร์ม / การแจ้งเตือน แบบทีละขั้น
+- [`AGENTS.md`](AGENTS.md) — บริบทโปรเจกต์สำหรับ AI/ผู้ช่วยเขียนโค้ด
+
 ## รันในเครื่อง
 
 ```bash
