@@ -19,7 +19,7 @@ import {
 // ─── Mock users (one per role) ────────────────────────────────────────────────
 
 export const MOCK_USERS: MockUser[] = [
-  { id: "u-admin", name: "P บู (ผู้ดูแลระบบ)", email: "admin@thesis.ac.th", role: "ADMIN" },
+  { id: "u-admin", name: "P โบ้ (ผู้ดูแลระบบ)", email: "admin@thesis.ac.th", role: "ADMIN" },
   { id: "u-student", name: "นายอานนท์ ใจดี", email: "student@thesis.ac.th", role: "STUDENT", studentId: "64010042" },
   { id: "u-advisor", name: "รศ.ดร.วิชัย พงษ์สวัสดิ์", email: "advisor@thesis.ac.th", role: "ADVISOR" },
   { id: "u-chair", name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์", email: "chair@thesis.ac.th", role: "PROGRAM_CHAIR" },
@@ -140,6 +140,11 @@ interface AppContextType {
   approveCurrentStep: (submissionId: string, notes?: string) => void;
   rejectCurrentStep: (submissionId: string, notes: string) => void;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
+  // Admin actions
+  adminUpdateSubmission: (id: string, updates: { title?: string; advisorId?: string }) => void;
+  adminDeleteSubmission: (id: string) => void;
+  adminResetSubmission: (id: string) => void;
+  adminOverrideStep: (submissionId: string, stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -272,6 +277,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  function adminUpdateSubmission(id: string, updates: { title?: string; advisorId?: string }) {
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
+  }
+
+  function adminDeleteSubmission(id: string) {
+    setSubmissions((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  function adminResetSubmission(id: string) {
+    setSubmissions((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        return {
+          ...s,
+          status: "IN_PROGRESS",
+          workflowSteps: s.workflowSteps.map((step) => ({
+            ...step,
+            status: "PENDING" as const,
+            actedAt: undefined,
+            actedByName: undefined,
+            notes: undefined,
+          })),
+        };
+      })
+    );
+  }
+
+  function adminOverrideStep(
+    submissionId: string,
+    stepOrder: number,
+    action: "APPROVED" | "REJECTED",
+    notes?: string
+  ) {
+    setSubmissions((prev) =>
+      prev.map((s) => {
+        if (s.id !== submissionId) return s;
+        const updatedSteps = s.workflowSteps.map((step) =>
+          step.stepOrder === stepOrder
+            ? { ...step, status: action, actedAt: new Date().toISOString(), actedByName: user?.name, notes }
+            : step
+        );
+        const hasMorePending = updatedSteps.some((st) => st.status === "PENDING");
+        const status: SubmissionStatus =
+          action === "REJECTED" ? "REJECTED" : hasMorePending ? "IN_PROGRESS" : "COMPLETED";
+        return { ...s, workflowSteps: updatedSteps, status };
+      })
+    );
+  }
+
   if (!hydrated) return null;
 
   return (
@@ -286,6 +342,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         approveCurrentStep,
         rejectCurrentStep,
         addUpload,
+        adminUpdateSubmission,
+        adminDeleteSubmission,
+        adminResetSubmission,
+        adminOverrideStep,
       }}
     >
       {children}
