@@ -11,38 +11,38 @@ import { Role } from "@/types";
 // ─── Workflow as 5 phases (matches the official process diagram) ───────────────
 
 interface Step { emoji: string; label: string; role: string; }
-interface Phase { no: number; title: string; steps: Step[]; }
+interface Phase { no: number; title: string; docs: string[]; steps: Step[]; }
 
 const PHASES: Phase[] = [
   {
-    no: 1, title: "เสนอหัวข้อโครงร่างวิทยานิพนธ์",
+    no: 1, title: "เสนอหัวข้อโครงร่างวิทยานิพนธ์", docs: ["บ.วศ.1ก", "บ.วศ.1ข"],
     steps: [
-      { emoji: "🎓", label: "ยื่น บ.วศ.1ก", role: "นักศึกษา" },
-      { emoji: "👨‍🏫", label: "ตรวจสอบหัวข้อ", role: "อาจารย์ที่ปรึกษา" },
+      { emoji: "🎓", label: "ยื่นหัวข้อ", role: "นักศึกษา" },
+      { emoji: "👨‍🏫", label: "ตรวจสอบ", role: "อาจารย์ที่ปรึกษา" },
       { emoji: "🏛️", label: "อนุมัติหัวข้อ", role: "ประธานหลักสูตร" },
     ],
   },
   {
-    no: 2, title: "แต่งตั้งคณะกรรมการสอบ",
+    no: 2, title: "แต่งตั้งคณะกรรมการสอบ", docs: ["บ.2"],
     steps: [
-      { emoji: "🗂️", label: "ออกหนังสือเชิญ บ.2", role: "เจ้าหน้าที่ภาควิชา" },
+      { emoji: "🗂️", label: "ออกหนังสือเชิญกรรมการ", role: "เจ้าหน้าที่ภาควิชา" },
     ],
   },
   {
-    no: 3, title: "ประเมินวิทยานิพนธ์ก่อนสอบ",
+    no: 3, title: "ประเมินวิทยานิพนธ์ก่อนสอบ", docs: ["บ.3"],
     steps: [
-      { emoji: "📋", label: "ประเมิน บ.3", role: "กรรมการสอบ" },
+      { emoji: "📋", label: "ประเมินผลงาน", role: "คณะกรรมการสอบ" },
     ],
   },
   {
-    no: 4, title: "สอบป้องกันและลงนามวิทยานิพนธ์",
+    no: 4, title: "สอบป้องกันและลงนามวิทยานิพนธ์", docs: ["บ.4"],
     steps: [
-      { emoji: "👨‍🏫", label: "ลงนาม บ.3", role: "อาจารย์ที่ปรึกษา" },
-      { emoji: "🏫", label: "อนุมัติ บ.4", role: "คณบดี" },
+      { emoji: "👨‍🏫", label: "ลงนามรับรอง", role: "อาจารย์ที่ปรึกษา" },
+      { emoji: "🏫", label: "อนุมัติวิทยานิพนธ์", role: "คณบดี" },
     ],
   },
   {
-    no: 5, title: "อนุมัติสำเร็จการศึกษา",
+    no: 5, title: "อนุมัติสำเร็จการศึกษา", docs: ["เล่มสมบูรณ์"],
     steps: [
       { emoji: "🎯", label: "รับวิทยานิพนธ์ฉบับสมบูรณ์", role: "บัณฑิตวิทยาลัย" },
     ],
@@ -51,11 +51,11 @@ const PHASES: Phase[] = [
 
 // Static color classes per phase (Tailwind-safe)
 const PHASE_THEME = [
-  { bar: "bg-blue-500",   tint: "bg-blue-50",   badge: "bg-blue-500",   ring: "ring-blue-100" },
-  { bar: "bg-teal-500",   tint: "bg-teal-50",   badge: "bg-teal-500",   ring: "ring-teal-100" },
-  { bar: "bg-amber-500",  tint: "bg-amber-50",  badge: "bg-amber-500",  ring: "ring-amber-100" },
-  { bar: "bg-purple-500", tint: "bg-purple-50", badge: "bg-purple-500", ring: "ring-purple-100" },
-  { bar: "bg-rose-500",   tint: "bg-rose-50",   badge: "bg-rose-500",   ring: "ring-rose-100" },
+  { grad: "from-blue-500 to-indigo-600",   text: "text-blue-600",   line: "bg-blue-200",   chip: "bg-blue-50 text-blue-700" },
+  { grad: "from-teal-500 to-emerald-600",  text: "text-teal-600",   line: "bg-teal-200",   chip: "bg-teal-50 text-teal-700" },
+  { grad: "from-amber-500 to-orange-600",  text: "text-amber-600",  line: "bg-amber-200",  chip: "bg-amber-50 text-amber-700" },
+  { grad: "from-purple-500 to-fuchsia-600",text: "text-purple-600", line: "bg-purple-200", chip: "bg-purple-50 text-purple-700" },
+  { grad: "from-rose-500 to-red-600",      text: "text-rose-600",   line: "bg-rose-200",   chip: "bg-rose-50 text-rose-700" },
 ];
 
 export default function LoginPage() {
@@ -179,41 +179,53 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* WORKFLOW — 5 phases */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-          <div className="text-center mb-7">
-            <h2 className="font-bold text-gray-900 text-xl sm:text-2xl">ขั้นตอนการทำวิทยานิพนธ์</h2>
-            <p className="text-sm text-gray-500 mt-1">5 ระยะ · เอกสารส่งต่ออัตโนมัติเมื่อแต่ละฝ่ายลงนาม</p>
+        {/* WORKFLOW — premium 5-phase timeline */}
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-10">
+          <div className="text-center mb-9">
+            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-50 px-3 py-1 rounded-full mb-3">
+              ขั้นตอนการทำงาน
+            </span>
+            <h2 className="font-bold text-gray-900 text-2xl sm:text-3xl">เส้นทางสู่การอนุมัติวิทยานิพนธ์</h2>
+            <p className="text-gray-500 mt-2">5 ระยะ · เอกสารส่งต่อให้ผู้รับผิดชอบถัดไปโดยอัตโนมัติ</p>
           </div>
 
-          <div className="space-y-3">
+          <ol className="relative max-w-2xl mx-auto">
             {PHASES.map((phase, pi) => {
               const t = PHASE_THEME[pi];
               return (
-                <div key={phase.no}>
-                  {/* Phase lane */}
-                  <div className={`relative ${t.tint} rounded-2xl p-4 sm:p-5 overflow-hidden`}>
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${t.bar}`} />
+                <li key={phase.no} className="relative flex gap-4 sm:gap-6">
+                  {/* Left rail: node + connector */}
+                  <div className="flex flex-col items-center">
+                    <div className={`relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${t.grad} flex items-center justify-center shadow-lg text-white font-bold text-xl shrink-0`}>
+                      {phase.no}
+                    </div>
+                    <div className={`w-1 flex-1 my-2 rounded-full ${t.line}`} />
+                  </div>
 
-                    {/* Phase title */}
-                    <div className="flex items-center gap-3 mb-3 pl-2">
-                      <div className={`w-8 h-8 rounded-full ${t.badge} flex items-center justify-center shrink-0 shadow-sm ring-4 ${t.ring}`}>
-                        <span className="text-sm font-bold text-white">{phase.no}</span>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium leading-none">ระยะที่ {phase.no}</p>
-                        <p className="font-semibold text-gray-800 leading-tight mt-0.5">{phase.title}</p>
-                      </div>
+                  {/* Content */}
+                  <div className="flex-1 pb-8 min-w-0">
+                    {/* Eyebrow + doc badges */}
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <span className={`text-xs font-bold uppercase tracking-wide ${t.text}`}>ระยะที่ {phase.no}</span>
+                      {phase.docs.map((d) => (
+                        <span key={d} className={`text-xs font-medium px-2 py-0.5 rounded-md ${t.chip}`}>
+                          {d}
+                        </span>
+                      ))}
                     </div>
 
-                    {/* Steps flow */}
-                    <div className="flex flex-wrap items-center gap-2 pl-2">
+                    <h3 className="font-bold text-gray-800 text-lg leading-snug mb-3">{phase.title}</h3>
+
+                    {/* Step pills */}
+                    <div className="flex flex-wrap items-center gap-2">
                       {phase.steps.map((step, si) => (
                         <div key={si} className="flex items-center gap-2">
-                          <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-3 py-2 shadow-sm">
-                            <span className="text-lg shrink-0">{step.emoji}</span>
+                          <div className="flex items-center gap-2.5 bg-gray-50 hover:bg-white hover:shadow-sm border border-gray-200 rounded-xl pl-2 pr-3.5 py-2 transition">
+                            <span className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-base shrink-0">
+                              {step.emoji}
+                            </span>
                             <div className="leading-tight">
-                              <p className="text-sm font-medium text-gray-800">{step.label}</p>
+                              <p className="text-sm font-semibold text-gray-800">{step.label}</p>
                               <p className="text-xs text-gray-400">{step.role}</p>
                             </div>
                           </div>
@@ -224,23 +236,23 @@ export default function LoginPage() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Connector between phases */}
-                  {pi < PHASES.length - 1 && (
-                    <div className="flex justify-center py-1">
-                      <div className="w-0.5 h-4 bg-gray-200" />
-                    </div>
-                  )}
-                </div>
+                </li>
               );
             })}
-          </div>
 
-          {/* Completion */}
-          <div className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl px-4 py-3">
-            <CheckCircle2 className="w-5 h-5" />
-            ครบทั้ง 5 ระยะ = วิทยานิพนธ์ได้รับการอนุมัติสมบูรณ์ 🎉
-          </div>
+            {/* Finish milestone */}
+            <li className="relative flex gap-4 sm:gap-6">
+              <div className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shrink-0">
+                <CheckCircle2 className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1 flex items-center">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl px-5 py-4 w-full">
+                  <p className="font-bold text-green-800">สำเร็จการศึกษา 🎉</p>
+                  <p className="text-sm text-green-600 mt-0.5">วิทยานิพนธ์ได้รับการอนุมัติครบทุกขั้นตอน</p>
+                </div>
+              </div>
+            </li>
+          </ol>
         </div>
 
         <p className="text-xs text-gray-400 text-center">
