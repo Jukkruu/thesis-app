@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { ROLE_LABELS, ROLE_EMOJI, ROLE_GRADIENT } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
+import { DEMO_MODE } from "@/lib/config";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn, GraduationCap, Sparkles, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Role } from "@/types";
@@ -100,7 +101,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login + demo */}
-        <div className="grid lg:grid-cols-2 gap-6 items-start">
+        <div className={`grid gap-6 items-start ${DEMO_MODE ? "lg:grid-cols-2" : "max-w-md mx-auto"}`}>
           {/* Login form */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
             <h2 className="font-semibold text-gray-800 text-lg">เข้าสู่ระบบ</h2>
@@ -152,31 +153,33 @@ export default function LoginPage() {
             </form>
           </div>
 
-          {/* Demo shortcuts */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-            <div className="flex items-center gap-2 text-gray-500">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <p className="text-sm font-semibold uppercase tracking-wide">ทดสอบระบบ — คลิกเข้าใช้ตามบทบาท</p>
+          {/* Demo shortcuts — hidden when NEXT_PUBLIC_DEMO_MODE="false" */}
+          {DEMO_MODE && (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+              <div className="flex items-center gap-2 text-gray-500">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <p className="text-sm font-semibold uppercase tracking-wide">ทดสอบระบบ — คลิกเข้าใช้ตามบทบาท</p>
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {MOCK_USERS.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => quickLogin(u.id, u.role)}
+                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left"
+                  >
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${ROLE_GRADIENT[u.role]} flex items-center justify-center shrink-0 text-lg`}>
+                      {ROLE_EMOJI[u.role]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-800 truncate">{u.name}</p>
+                      <p className="text-sm text-gray-500 truncate">{ROLE_LABELS[u.role]}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-              {MOCK_USERS.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => quickLogin(u.id, u.role)}
-                  className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left"
-                >
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${ROLE_GRADIENT[u.role]} flex items-center justify-center shrink-0 text-lg`}>
-                    {ROLE_EMOJI[u.role]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-800 truncate">{u.name}</p>
-                    <p className="text-sm text-gray-500 truncate">{ROLE_LABELS[u.role]}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* WORKFLOW — premium 5-phase timeline */}

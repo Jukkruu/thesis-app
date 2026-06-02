@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { ROLE_LABELS, ROLE_DESC } from "@/lib/utils";
+import { DEMO_MODE } from "@/lib/config";
 import { Role } from "@/types";
 import {
   Users, GraduationCap, BookOpen, Building2, ClipboardList,
@@ -117,7 +118,8 @@ export default function AdminUsersPage() {
         ))}
       </div>
 
-      {/* Demo tools */}
+      {/* Demo tools — hidden when NEXT_PUBLIC_DEMO_MODE="false" */}
+      {DEMO_MODE && (
       <div className="bg-white rounded-2xl border border-amber-200 p-5 space-y-3">
         <div className="flex items-center gap-2">
           <RotateCcw className="w-5 h-5 text-amber-600" />
@@ -154,6 +156,7 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
