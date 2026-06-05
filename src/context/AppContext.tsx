@@ -438,27 +438,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     pushNotifs(notifs);
 
-    // Phase 1: step 2 (ADMIN) approved → email Finance per AGENTS.md
-    const completedStep = sub.workflowSteps[pendingIdx];
-    if (completedStep.stepOrder === 2 && completedStep.role === "ADMIN") {
-      const student = users.find((u) => u.id === sub.studentId);
-      const programLabels: Record<string, string> = {
-        PHD: "ป.เอก สาขาวิศวกรรมเครื่องกล",
-        ME_MECH: "ป.โท สาขาเครื่องกล",
-        ME_CPS: "ป.โท สาขา CPS",
-      };
-      fetch("/api/email/finance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName:  sub.studentFullName ?? student?.name ?? "ไม่ระบุ",
-          studentCode:  sub.studentCode ?? student?.studentId ?? "ไม่ระบุ",
-          program:      programLabels[sub.program ?? ""] ?? sub.program ?? "ไม่ระบุ",
-          thesisTitle:  sub.title,
-          submissionId: sub.id,
-        }),
-      }).catch((err) => console.error("Finance email failed:", err));
-    }
   }
 
   function rejectCurrentStep(submissionId: string, notes: string) {
