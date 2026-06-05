@@ -9,33 +9,39 @@ import { DEMO_MODE } from "@/lib/config";
 import { Role } from "@/types";
 import {
   Users, GraduationCap, BookOpen, Building2, ClipboardList,
-  Briefcase, School, ShieldCheck, ChevronRight, RotateCcw,
+  Briefcase, School, ShieldCheck, ChevronRight, RotateCcw, Crown,
 } from "lucide-react";
 
 const ROLE_ICON: Record<Role, React.ReactNode> = {
-  ADMIN:           <ShieldCheck  className="w-5 h-5 text-orange-500" />,
-  STUDENT:         <GraduationCap className="w-5 h-5 text-blue-500" />,
-  ADVISOR:         <BookOpen     className="w-5 h-5 text-purple-500" />,
-  PROGRAM_CHAIR:   <Building2    className="w-5 h-5 text-indigo-500" />,
-  EXAM_COMMITTEE:  <ClipboardList className="w-5 h-5 text-orange-500" />,
-  DEPT_STAFF:      <Briefcase    className="w-5 h-5 text-teal-500" />,
-  FACULTY_DEAN:    <School       className="w-5 h-5 text-red-500" />,
-  GRADUATE_SCHOOL: <GraduationCap className="w-5 h-5 text-green-500" />,
+  SUPER_ADMIN:            <Crown         className="w-5 h-5 text-amber-500" />,
+  ADMIN:                  <ShieldCheck   className="w-5 h-5 text-orange-500" />,
+  STUDENT:                <GraduationCap className="w-5 h-5 text-blue-500" />,
+  ADVISOR:                <BookOpen      className="w-5 h-5 text-purple-500" />,
+  PROGRAM_CHAIR:          <Building2     className="w-5 h-5 text-indigo-500" />,
+  HEAD_EXAM_COMMITTEE:    <ClipboardList className="w-5 h-5 text-orange-600" />,
+  EXAM_COMMITTEE:         <ClipboardList className="w-5 h-5 text-amber-500" />,
+  INVITED_EXAM_COMMITTEE: <ClipboardList className="w-5 h-5 text-pink-500" />,
+  DEPT_STAFF:             <Briefcase     className="w-5 h-5 text-teal-500" />,
+  FACULTY_DEAN:           <School        className="w-5 h-5 text-red-500" />,
+  GRADUATE_SCHOOL:        <GraduationCap className="w-5 h-5 text-green-500" />,
 };
 
 const ROLE_COLOR: Record<Role, string> = {
-  ADMIN:           "bg-orange-50 border-orange-100 hover:border-orange-300",
-  STUDENT:         "bg-blue-50 border-blue-100 hover:border-blue-300",
-  ADVISOR:         "bg-purple-50 border-purple-100 hover:border-purple-300",
-  PROGRAM_CHAIR:   "bg-indigo-50 border-indigo-100 hover:border-indigo-300",
-  EXAM_COMMITTEE:  "bg-orange-50 border-orange-100 hover:border-orange-300",
-  DEPT_STAFF:      "bg-teal-50 border-teal-100 hover:border-teal-300",
-  FACULTY_DEAN:    "bg-red-50 border-red-100 hover:border-red-300",
-  GRADUATE_SCHOOL: "bg-green-50 border-green-100 hover:border-green-300",
+  SUPER_ADMIN:            "bg-amber-50 border-amber-100 hover:border-amber-300",
+  ADMIN:                  "bg-orange-50 border-orange-100 hover:border-orange-300",
+  STUDENT:                "bg-blue-50 border-blue-100 hover:border-blue-300",
+  ADVISOR:                "bg-purple-50 border-purple-100 hover:border-purple-300",
+  PROGRAM_CHAIR:          "bg-indigo-50 border-indigo-100 hover:border-indigo-300",
+  HEAD_EXAM_COMMITTEE:    "bg-orange-50 border-orange-100 hover:border-orange-300",
+  EXAM_COMMITTEE:         "bg-amber-50 border-amber-100 hover:border-amber-300",
+  INVITED_EXAM_COMMITTEE: "bg-pink-50 border-pink-100 hover:border-pink-300",
+  DEPT_STAFF:             "bg-teal-50 border-teal-100 hover:border-teal-300",
+  FACULTY_DEAN:           "bg-red-50 border-red-100 hover:border-red-300",
+  GRADUATE_SCHOOL:        "bg-green-50 border-green-100 hover:border-green-300",
 };
 
 export default function AdminUsersPage() {
-  const { submissions, resetDemo } = useApp();
+  const { submissions, users: allUsers, resetDemo } = useApp();
   const { showToast } = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -74,7 +80,7 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="space-y-3">
-        {MOCK_USERS.map((u) => (
+        {allUsers.map((u) => (
           <Link
             key={u.id}
             href={`/dashboard/admin/users/${u.id}`}

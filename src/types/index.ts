@@ -2,13 +2,17 @@ export type Role =
   | "STUDENT"
   | "ADVISOR"
   | "PROGRAM_CHAIR"
+  | "HEAD_EXAM_COMMITTEE"
   | "EXAM_COMMITTEE"
+  | "INVITED_EXAM_COMMITTEE"
   | "DEPT_STAFF"
   | "FACULTY_DEAN"
   | "GRADUATE_SCHOOL"
-  | "ADMIN";
+  | "ADMIN"
+  | "SUPER_ADMIN";
 
-export type FormType = "BW1A" | "BW1B" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED";
+export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED";
+export type ProgramType = "PHD" | "ME_MECH" | "ME_CPS";
 export type StepStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
 export type SubmissionStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
 
@@ -72,4 +76,20 @@ export interface MockSubmission {
   uploads: MockUpload[];
   workflowSteps: MockWorkflowStep[];
   adminNote?: string;
+  // Student info
+  studentFullName?: string;
+  studentCode?: string;
+  program?: ProgramType;
+  studentEmail?: string;
+  studentPhone?: string;
+  // Committee assignment
+  headCommitteeId?: string;
+  committeeIds?: string[];
+  invitedCommitteeId?: string;
+  // Exam logistics
+  examDate?: string;
+  examTime?: string;
+  roomNeeded?: boolean;
+  parkingNeeded?: boolean;
+  carPlate?: string;
 }

@@ -7,8 +7,9 @@ import { SignatureButton } from "./SignatureButton";
 import { CommitteeSignPanel } from "./CommitteeSignPanel";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
-import { Download, FileText, ArrowLeft, Clock, AlertCircle, StickyNote } from "lucide-react";
+import { Download, FileText, ArrowLeft, Clock, AlertCircle, StickyNote, CalendarDays } from "lucide-react";
 import Link from "next/link";
+import { PROGRAM_LABELS } from "@/lib/utils";
 
 interface Props {
   submissionId: string;
@@ -29,8 +30,10 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
-  const student     = MOCK_USERS.find((u) => u.id === sub.studentId);
-  const advisor     = MOCK_USERS.find((u) => u.id === sub.advisorId);
+  const { users } = useApp();
+  const allUsers    = users.length ? users : MOCK_USERS;
+  const student     = allUsers.find((u) => u.id === sub.studentId);
+  const advisor     = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn    = currentStep?.role === user?.role;
   const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
@@ -61,6 +64,25 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         </div>
         <SubmissionStatusBadge status={sub.status} />
       </div>
+
+      {/* Exam / committee info */}
+      {(sub.examDate || sub.program || sub.studentPhone) && (
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-3">
+          <h2 className="font-semibold text-gray-700 text-sm">ข้อมูลการสอบ</h2>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            {sub.program && <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
+            {sub.studentPhone && <InfoRow label="เบอร์โทร" value={sub.studentPhone} />}
+            {sub.studentEmail && <InfoRow label="อีเมลนิสิต" value={sub.studentEmail} />}
+            {sub.examDate && (
+              <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
+            )}
+            {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
+            {sub.parkingNeeded && sub.carPlate && <InfoRow label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />}
+            {sub.headCommitteeId && <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />}
+            {sub.invitedCommitteeId && <InfoRow label="กรรมการภายนอก" value={sub.invitedCommitteeId} />}
+          </div>
+        </div>
+      )}
 
       {/* Admin note */}
       {sub.adminNote && (
@@ -176,6 +198,18 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      {icon ?? <span className="w-4 h-4 shrink-0" />}
+      <div>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="font-medium text-gray-800">{value}</p>
       </div>
     </div>
   );

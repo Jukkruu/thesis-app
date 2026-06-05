@@ -10,8 +10,9 @@ import { FormType } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Send,
-  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car,
 } from "lucide-react";
+import { PROGRAM_LABELS } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 
 // Which forms are relevant to upload at which step
@@ -171,6 +172,31 @@ export default function StudentSubmissionDetail() {
         </div>
       )}
 
+      {/* Exam / committee info */}
+      {(sub.examDate || sub.program || sub.headCommitteeId) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+          <h2 className="font-semibold text-gray-800 text-sm">ข้อมูลการสอบ</h2>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            {sub.program && (
+              <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
+            )}
+            {sub.examDate && (
+              <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
+            )}
+            {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
+            {sub.parkingNeeded && sub.carPlate && (
+              <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
+            )}
+            {sub.headCommitteeId && (
+              <InfoRow label="ประธานกรรมการสอบ" value={MOCK_USERS.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+            )}
+            {sub.invitedCommitteeId && (
+              <InfoRow label="กรรมการภายนอก" value={sub.invitedCommitteeId} />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Progress bar */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
@@ -273,6 +299,18 @@ export default function StudentSubmissionDetail() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      {icon ?? <span className="w-4 h-4 shrink-0" />}
+      <div>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="font-medium text-gray-800">{value}</p>
       </div>
     </div>
   );

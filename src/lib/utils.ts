@@ -7,59 +7,79 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const FORM_LABELS: Record<FormType, string> = {
-  BW1A: "บ.วศ.1ก — เสนอหัวข้อวิทยานิพนธ์",
-  BW1B: "บ.วศ.1ข — อนุมัติหัวข้อวิทยานิพนธ์",
-  B2: "บ.2 — ออกหนังสือเชิญกรรมการ",
-  B3: "บ.3 — ประเมินวิทยานิพนธ์ก่อนสอบ",
-  B4: "บ.4 — ลงนามอนุมัติวิทยานิพนธ์",
-  THESIS: "วิทยานิพนธ์ฉบับสมบูรณ์",
-  SIGNED: "เอกสารลงนาม",
+  BW1A:  "บ.วศ.1ก — เสนอหัวข้อวิทยานิพนธ์",
+  BW1B:  "บ.วศ.1ข — อนุมัติหัวข้อวิทยานิพนธ์",
+  B1C:   "บ.วศ.1ค — รายงานความก้าวหน้า",
+  B1D:   "บ.วศ.1ง — รายงานความก้าวหน้า (2)",
+  B2:    "บ.2 — ออกหนังสือเชิญกรรมการ",
+  B3:    "บ.3 — ประเมินวิทยานิพนธ์ก่อนสอบ",
+  B4:    "บ.4 — ลงนามอนุมัติวิทยานิพนธ์",
+  THESIS:"วิทยานิพนธ์ฉบับสมบูรณ์",
+  SIGNED:"เอกสารลงนาม",
+};
+
+export const PROGRAM_LABELS: Record<string, string> = {
+  PHD:     "ป.เอก สาขาวิศวกรรมเครื่องกล",
+  ME_MECH: "ป.โท สาขาเครื่องกล",
+  ME_CPS:  "ป.โท สาขา CPS",
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
-  STUDENT: "นักศึกษา",
-  ADVISOR: "อาจารย์ที่ปรึกษา",
-  PROGRAM_CHAIR: "ประธานหลักสูตร",
-  EXAM_COMMITTEE: "กรรมการสอบ",
-  DEPT_STAFF: "เจ้าหน้าที่ภาควิชา",
-  FACULTY_DEAN: "คณบดี",
-  GRADUATE_SCHOOL: "บัณฑิตวิทยาลัย",
-  ADMIN: "ผู้ดูแลระบบ",
+  STUDENT:               "นักศึกษา",
+  ADVISOR:               "อาจารย์ที่ปรึกษา",
+  PROGRAM_CHAIR:         "ประธานหลักสูตร",
+  HEAD_EXAM_COMMITTEE:   "ประธานกรรมการสอบ",
+  EXAM_COMMITTEE:        "กรรมการสอบ",
+  INVITED_EXAM_COMMITTEE:"กรรมการภายนอก",
+  DEPT_STAFF:            "เจ้าหน้าที่ภาควิชา",
+  FACULTY_DEAN:          "คณบดี",
+  GRADUATE_SCHOOL:       "บัณฑิตวิทยาลัย",
+  ADMIN:                 "ผู้ดูแลระบบ",
+  SUPER_ADMIN:           "ผู้ดูแลระบบสูงสุด",
 };
 
 // Emoji per role — kept as full static values so Tailwind never purges anything
 export const ROLE_EMOJI: Record<Role, string> = {
-  STUDENT:         "🎓",
-  ADVISOR:         "👨‍🏫",
-  PROGRAM_CHAIR:   "🏛️",
-  EXAM_COMMITTEE:  "📋",
-  DEPT_STAFF:      "🗂️",
-  FACULTY_DEAN:    "🏫",
-  GRADUATE_SCHOOL: "🎯",
-  ADMIN:           "🛡️",
+  STUDENT:               "🎓",
+  ADVISOR:               "👨‍🏫",
+  PROGRAM_CHAIR:         "🏛️",
+  HEAD_EXAM_COMMITTEE:   "⭐",
+  EXAM_COMMITTEE:        "📋",
+  INVITED_EXAM_COMMITTEE:"🔏",
+  DEPT_STAFF:            "🗂️",
+  FACULTY_DEAN:          "🏫",
+  GRADUATE_SCHOOL:       "🎯",
+  ADMIN:                 "🛡️",
+  SUPER_ADMIN:           "👑",
 };
 
 // Gradient (for headers / banners) per role — static strings for Tailwind
 export const ROLE_GRADIENT: Record<Role, string> = {
-  STUDENT:         "from-blue-500 to-indigo-600",
-  ADVISOR:         "from-violet-500 to-purple-600",
-  PROGRAM_CHAIR:   "from-indigo-500 to-blue-600",
-  EXAM_COMMITTEE:  "from-amber-500 to-orange-600",
-  DEPT_STAFF:      "from-teal-500 to-emerald-600",
-  FACULTY_DEAN:    "from-rose-500 to-red-600",
-  GRADUATE_SCHOOL: "from-emerald-500 to-green-600",
-  ADMIN:           "from-slate-700 to-gray-900",
+  STUDENT:               "from-blue-500 to-indigo-600",
+  ADVISOR:               "from-violet-500 to-purple-600",
+  PROGRAM_CHAIR:         "from-indigo-500 to-blue-600",
+  HEAD_EXAM_COMMITTEE:   "from-orange-500 to-amber-600",
+  EXAM_COMMITTEE:        "from-amber-400 to-orange-500",
+  INVITED_EXAM_COMMITTEE:"from-pink-500 to-rose-600",
+  DEPT_STAFF:            "from-teal-500 to-emerald-600",
+  FACULTY_DEAN:          "from-rose-500 to-red-600",
+  GRADUATE_SCHOOL:       "from-emerald-500 to-green-600",
+  ADMIN:                 "from-slate-700 to-gray-900",
+  SUPER_ADMIN:           "from-yellow-400 to-amber-600",
 };
 
 export const ROLE_DESC: Record<Role, string> = {
-  STUDENT: "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
-  ADVISOR: "ตรวจสอบและอนุมัติหัวข้อ ลงนามเอกสาร",
-  PROGRAM_CHAIR: "อนุมัติหัวข้อในระดับหลักสูตร",
-  EXAM_COMMITTEE: "ประเมินวิทยานิพนธ์ก่อนสอบ",
-  DEPT_STAFF: "ออกหนังสือเชิญกรรมการสอบ (บ.2)",
-  FACULTY_DEAN: "อนุมัติวิทยานิพนธ์ระดับคณะ (บ.4)",
-  GRADUATE_SCHOOL: "รับวิทยานิพนธ์ฉบับสมบูรณ์",
-  ADMIN: "ดูภาพรวมและจัดการคำร้องทั้งหมด",
+  STUDENT:               "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
+  ADVISOR:               "ตรวจสอบและอนุมัติหัวข้อ ลงนามเอกสาร",
+  PROGRAM_CHAIR:         "ลงนามในระยะที่ 1 2 3 และ 5",
+  HEAD_EXAM_COMMITTEE:   "ลงนามก่อนกรรมการสอบ — ระยะที่ 2 3 และ 5",
+  EXAM_COMMITTEE:        "ลงนามประเมินวิทยานิพนธ์ตามลำดับ",
+  INVITED_EXAM_COMMITTEE:"กรรมการภายนอก ลงนามเฉพาะระยะที่ 5",
+  DEPT_STAFF:            "ออกหนังสือเชิญกรรมการสอบ (บ.2)",
+  FACULTY_DEAN:          "อนุมัติวิทยานิพนธ์ระดับคณะ (บ.4)",
+  GRADUATE_SCHOOL:       "รับวิทยานิพนธ์ฉบับสมบูรณ์",
+  ADMIN:                 "ดูภาพรวมและจัดการคำร้องทั้งหมด",
+  SUPER_ADMIN:           "ควบคุมระบบทั้งหมด รวมถึงการจัดการผู้ใช้และสิทธิ์",
 };
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
@@ -78,13 +98,13 @@ export const STEP_LABELS: Record<StepStatus, string> = {
 
 export const STEP_NAMES: Record<number, string> = {
   1: "นักศึกษายื่นเอกสาร",
-  2: "อาจารย์ที่ปรึกษาตรวจสอบ",
-  3: "ประธานหลักสูตรอนุมัติ",
-  4: "เจ้าหน้าที่ออกหนังสือเชิญ",
+  2: "อาจารย์ที่ปรึกษาลงนาม",
+  3: "ประธานหลักสูตรลงนาม (ระยะ 1)",
+  4: "ประธานกรรมการสอบลงนาม",
   5: "กรรมการสอบประเมิน",
   6: "อาจารย์ที่ปรึกษาลงนาม บ.3",
-  7: "คณบดีอนุมัติ บ.4",
-  8: "บัณฑิตวิทยาลัยรับวิทยานิพนธ์",
+  7: "กรรมการภายนอกลงนาม",
+  8: "ประธานหลักสูตรลงนาม (ระยะ 5)",
 };
 
 export function formatBytes(bytes: number): string {

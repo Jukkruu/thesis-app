@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import {
   LogOut, LayoutDashboard, PlusCircle, ShieldCheck,
-  Users, Menu, X,
+  Users, Menu, X, Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -30,9 +30,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   const homeRoute   = ROLE_ROUTES[user.role];
-  const pendingCount = user.role !== "STUDENT" && user.role !== "ADMIN"
-    ? getPendingCount(user.role)
-    : 0;
+  const isManagementRole = user.role === "STUDENT" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+  const pendingCount = isManagementRole ? 0 : getPendingCount(user.role);
 
   const sidebar = (
     <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
@@ -78,6 +77,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/dashboard/admin"
               icon={<ShieldCheck className="w-5 h-5" />}
               label="ภาพรวมคำร้อง"
+              active={
+                pathname === "/dashboard/admin" ||
+                (pathname.startsWith("/dashboard/admin/") &&
+                  !pathname.startsWith("/dashboard/admin/users"))
+              }
+            />
+            <NavLink
+              href="/dashboard/admin/users"
+              icon={<Users className="w-5 h-5" />}
+              label="ผู้ใช้งานในระบบ"
+              active={pathname === "/dashboard/admin/users"}
+            />
+          </>
+        )}
+
+        {user.role === "SUPER_ADMIN" && (
+          <>
+            <NavLink
+              href="/dashboard/super-admin"
+              icon={<Crown className="w-5 h-5" />}
+              label="ระบบภาพรวม"
+              active={pathname === "/dashboard/super-admin"}
+            />
+            <NavLink
+              href="/dashboard/admin"
+              icon={<ShieldCheck className="w-5 h-5" />}
+              label="จัดการคำร้อง"
               active={
                 pathname === "/dashboard/admin" ||
                 (pathname.startsWith("/dashboard/admin/") &&

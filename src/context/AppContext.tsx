@@ -3,31 +3,60 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
   MockUser, MockSubmission, MockWorkflowStep,
-  MockNotification, Role, FormType, SubmissionStatus,
+  MockNotification, Role, FormType, SubmissionStatus, ProgramType,
 } from "@/types";
 import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
 
-// ─── Mock users ───────────────────────────────────────────────────────────────
+// ─── Submission form data ─────────────────────────────────────────────────────
+
+export interface SubmissionFormData {
+  title: string;
+  advisorId?: string;
+  studentFullName?: string;
+  studentCode?: string;
+  program?: ProgramType;
+  studentEmail?: string;
+  studentPhone?: string;
+  headCommitteeId?: string;
+  committeeIds?: string[];
+  invitedCommitteeId?: string;
+  examDate?: string;
+  examTime?: string;
+  roomNeeded?: boolean;
+  parkingNeeded?: boolean;
+  carPlate?: string;
+}
+
+// ─── Mock users (seed data) ───────────────────────────────────────────────────
 
 export const MOCK_USERS: MockUser[] = [
-  { id: "u-admin",      name: "P โบ้ (ผู้ดูแลระบบ)",       email: "admin@thesis.ac.th",      role: "ADMIN" },
-  { id: "u-student",    name: "นายอานนท์ ใจดี",             email: "student@thesis.ac.th",    role: "STUDENT", studentId: "64010042" },
-  { id: "u-advisor",    name: "รศ.ดร.วิชัย พงษ์สวัสดิ์",   email: "advisor@thesis.ac.th",    role: "ADVISOR" },
-  { id: "u-chair",      name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์",  email: "chair@thesis.ac.th",      role: "PROGRAM_CHAIR" },
-  { id: "u-committee",  name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", email: "committee@thesis.ac.th",  role: "EXAM_COMMITTEE" },
-  { id: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",         email: "committee2@thesis.ac.th", role: "EXAM_COMMITTEE" },
-  { id: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",      email: "committee3@thesis.ac.th", role: "EXAM_COMMITTEE" },
-  { id: "u-staff",      name: "น.ส.สุภาพร มั่นคง",         email: "staff@thesis.ac.th",      role: "DEPT_STAFF" },
-  { id: "u-dean",       name: "ศ.ดร.ประเสริฐ กิจสุวรรณ",   email: "dean@thesis.ac.th",       role: "FACULTY_DEAN" },
-  { id: "u-grad",       name: "น.ส.มนัสนันท์ อยู่สุข",     email: "grad@thesis.ac.th",       role: "GRADUATE_SCHOOL" },
+  { id: "u-superadmin", name: "ผู้ดูแลระบบสูงสุด",           email: "superadmin@thesis.ac.th", role: "SUPER_ADMIN" },
+  { id: "u-admin",      name: "P โบ้ (ผู้ดูแลระบบ)",          email: "admin@thesis.ac.th",      role: "ADMIN" },
+  { id: "u-student",    name: "นายอานนท์ ใจดี",              email: "student@thesis.ac.th",    role: "STUDENT", studentId: "64010042" },
+  { id: "u-advisor",    name: "รศ.ดร.วิชัย พงษ์สวัสดิ์",    email: "advisor@thesis.ac.th",    role: "ADVISOR" },
+  { id: "u-chair",      name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์",   email: "chair@thesis.ac.th",      role: "PROGRAM_CHAIR" },
+  { id: "u-committee",  name: "ดร.นภา รัตนวงศ์",             email: "committee@thesis.ac.th",  role: "HEAD_EXAM_COMMITTEE" },
+  { id: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",          email: "committee2@thesis.ac.th", role: "EXAM_COMMITTEE" },
+  { id: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",       email: "committee3@thesis.ac.th", role: "EXAM_COMMITTEE" },
+  { id: "u-invited",    name: "รศ.ดร.สมศักดิ์ ชาญชัย (กรรมการภายนอก)", email: "invited@thesis.ac.th", role: "INVITED_EXAM_COMMITTEE" },
+  { id: "u-staff",      name: "น.ส.สุภาพร มั่นคง",          email: "staff@thesis.ac.th",      role: "DEPT_STAFF" },
+  { id: "u-dean",       name: "ศ.ดร.ประเสริฐ กิจสุวรรณ",    email: "dean@thesis.ac.th",       role: "FACULTY_DEAN" },
+  { id: "u-grad",       name: "น.ส.มนัสนันท์ อยู่สุข",      email: "grad@thesis.ac.th",       role: "GRADUATE_SCHOOL" },
 ];
 
-// All committee members assigned to a defense by default
-const COMMITTEE_IDS = ["u-committee", "u-committee2", "u-committee3"];
+// Regular exam committee members (excludes head committee)
+const COMMITTEE_IDS = ["u-committee2", "u-committee3"];
 
+// Workflow: 8 ordered steps aligned with the 5-phase real process
 const WORKFLOW_ROLES: Role[] = [
-  "STUDENT", "ADVISOR", "PROGRAM_CHAIR", "DEPT_STAFF",
-  "EXAM_COMMITTEE", "ADVISOR", "FACULTY_DEAN", "GRADUATE_SCHOOL",
+  "STUDENT",              // Phase 1: submit
+  "ADVISOR",              // Phase 1-2: sign
+  "PROGRAM_CHAIR",        // Phase 1: sign
+  "HEAD_EXAM_COMMITTEE",  // Phase 2-3: sign first
+  "EXAM_COMMITTEE",       // Phase 2-3: sign in order
+  "ADVISOR",              // Phase 3: sign บ.3
+  "INVITED_EXAM_COMMITTEE", // Phase 5: external committee signs
+  "PROGRAM_CHAIR",        // Phase 5: final sign
 ];
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
@@ -37,68 +66,67 @@ function makeInitial(): MockSubmission[] {
     {
       id: "sub-1", title: "การพัฒนาระบบตรวจสอบคุณภาพน้ำอัตโนมัติด้วย IoT",
       studentId: "u-student", advisorId: "u-advisor", status: "IN_PROGRESS",
+      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2025-01-10T08:00:00Z",
       uploads: [{ id: "up-1a", formType: "BW1A", fileName: "บ.วศ.1ก_อานนท์.pdf", fileSize: 512000, uploadedAt: "2025-01-10T09:00:00Z" }],
       workflowSteps: [
-        { id: "sub-1-s1", stepOrder: 1, role: "STUDENT",        status: "APPROVED", actedAt: "2025-01-10T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-1-s2", stepOrder: 2, role: "ADVISOR",        status: "PENDING" },
-        { id: "sub-1-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "PENDING" },
-        { id: "sub-1-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "PENDING" },
-        { id: "sub-1-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING", committeeMembers: COMMITTEE_IDS },
-        { id: "sub-1-s6", stepOrder: 6, role: "ADVISOR",        status: "PENDING" },
-        { id: "sub-1-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "PENDING" },
-        { id: "sub-1-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "PENDING" },
+        { id: "sub-1-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2025-01-10T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
+        { id: "sub-1-s2", stepOrder: 2, role: "ADVISOR",               status: "PENDING" },
+        { id: "sub-1-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "PENDING" },
+        { id: "sub-1-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "PENDING" },
+        { id: "sub-1-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING", committeeMembers: COMMITTEE_IDS },
+        { id: "sub-1-s6", stepOrder: 6, role: "ADVISOR",               status: "PENDING" },
+        { id: "sub-1-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "PENDING" },
+        { id: "sub-1-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "PENDING" },
       ],
     },
     {
       id: "sub-2", title: "ระบบแนะนำการเรียนส่วนบุคคลด้วยปัญญาประดิษฐ์",
       studentId: "u-student", advisorId: "u-advisor", status: "IN_PROGRESS",
+      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2024-11-15T08:00:00Z",
       uploads: [
         { id: "up-2a", formType: "BW1A", fileName: "บ.วศ.1ก_AI.pdf",  fileSize: 480000, uploadedAt: "2024-11-15T09:00:00Z" },
         { id: "up-2b", formType: "BW1B", fileName: "บ.วศ.1ข_AI.pdf",  fileSize: 320000, uploadedAt: "2024-11-20T09:00:00Z" },
-        { id: "up-2c", formType: "B2",   fileName: "บ.2_AI.pdf",       fileSize: 256000, uploadedAt: "2024-12-01T09:00:00Z" },
+        { id: "up-2c", formType: "B1C",  fileName: "บ.วศ.1ค_AI.pdf",  fileSize: 256000, uploadedAt: "2024-12-01T09:00:00Z" },
       ],
       workflowSteps: [
-        { id: "sub-2-s1", stepOrder: 1, role: "STUDENT",        status: "APPROVED", actedAt: "2024-11-15T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
-        { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
-        { id: "sub-2-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "น.ส.สุภาพร มั่นคง", notes: "ออกหนังสือเชิญกรรมการเรียบร้อย" },
-        { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "PENDING", committeeMembers: COMMITTEE_IDS,
-          committeeActions: [
-            { userId: "u-committee", name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", decision: "APPROVED", notes: "เนื้อหาครบถ้วน", actedAt: "2024-12-04T10:00:00Z" },
-          ] },
-        { id: "sub-2-s6", stepOrder: 6, role: "ADVISOR",        status: "PENDING" },
-        { id: "sub-2-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "PENDING" },
-        { id: "sub-2-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "PENDING" },
+        { id: "sub-2-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-11-15T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
+        { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
+        { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
+        { id: "sub-2-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "ดร.นภา รัตนวงศ์", notes: "ตรวจสอบแล้ว อนุมัติดำเนินการ" },
+        { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING", committeeMembers: COMMITTEE_IDS },
+        { id: "sub-2-s6", stepOrder: 6, role: "ADVISOR",               status: "PENDING" },
+        { id: "sub-2-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "PENDING" },
+        { id: "sub-2-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "PENDING" },
       ],
     },
     {
       id: "sub-3", title: "การวิเคราะห์ความเสี่ยงในตลาดหลักทรัพย์ด้วย Machine Learning",
       studentId: "u-student", advisorId: "u-advisor", status: "COMPLETED",
+      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2024-07-01T08:00:00Z",
       uploads: [
         { id: "up-3a", formType: "BW1A",  fileName: "บ.วศ.1ก_ML.pdf",          fileSize: 520000,  uploadedAt: "2024-07-01T09:00:00Z" },
         { id: "up-3b", formType: "BW1B",  fileName: "บ.วศ.1ข_ML.pdf",          fileSize: 380000,  uploadedAt: "2024-07-05T09:00:00Z" },
-        { id: "up-3c", formType: "B2",    fileName: "บ.2_ML.pdf",               fileSize: 290000,  uploadedAt: "2024-07-15T09:00:00Z" },
+        { id: "up-3c", formType: "B1C",   fileName: "บ.วศ.1ค_ML.pdf",          fileSize: 290000,  uploadedAt: "2024-07-15T09:00:00Z" },
         { id: "up-3d", formType: "B3",    fileName: "บ.3_ML.pdf",               fileSize: 450000,  uploadedAt: "2024-08-01T09:00:00Z" },
         { id: "up-3e", formType: "B4",    fileName: "บ.4_ML.pdf",               fileSize: 350000,  uploadedAt: "2024-09-01T09:00:00Z" },
         { id: "up-3f", formType: "THESIS",fileName: "วิทยานิพนธ์_ฉบับสมบูรณ์.pdf", fileSize: 5120000, uploadedAt: "2024-09-15T09:00:00Z" },
       ],
       workflowSteps: [
-        { id: "sub-3-s1", stepOrder: 1, role: "STUDENT",        status: "APPROVED", actedAt: "2024-07-01T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
-        { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",  status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
-        { id: "sub-3-s4", stepOrder: 4, role: "DEPT_STAFF",     status: "APPROVED", actedAt: "2024-07-20T09:00:00Z", actedByName: "น.ส.สุภาพร มั่นคง" },
-        { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE", status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "กรรมการสอบ 3 ท่าน", notes: "ผลงานดีเยี่ยม ผ่านการประเมิน", committeeMembers: COMMITTEE_IDS,
+        { id: "sub-3-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-07-01T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
+        { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
+        { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
+        { id: "sub-3-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-07-22T09:00:00Z", actedByName: "ดร.นภา รัตนวงศ์", notes: "ผลงานดีเยี่ยม" },
+        { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "กรรมการสอบ 2 ท่าน", notes: "ผ่านการประเมิน", committeeMembers: COMMITTEE_IDS,
           committeeActions: [
-            { userId: "u-committee",  name: "ดร.นภา รัตนวงศ์ (ประธานสอบ)", decision: "APPROVED", notes: "ผลงานดีเยี่ยม", actedAt: "2024-08-03T10:00:00Z" },
-            { userId: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",         decision: "APPROVED", actedAt: "2024-08-04T11:00:00Z" },
-            { userId: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",      decision: "APPROVED", actedAt: "2024-08-05T10:00:00Z" },
+            { userId: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",   decision: "APPROVED", actedAt: "2024-08-04T11:00:00Z" },
+            { userId: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา", decision: "APPROVED", actedAt: "2024-08-05T10:00:00Z" },
           ] },
-        { id: "sub-3-s6", stepOrder: 6, role: "ADVISOR",        status: "APPROVED", actedAt: "2024-08-10T14:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
-        { id: "sub-3-s7", stepOrder: 7, role: "FACULTY_DEAN",   status: "APPROVED", actedAt: "2024-09-05T10:00:00Z", actedByName: "ศ.ดร.ประเสริฐ กิจสุวรรณ" },
-        { id: "sub-3-s8", stepOrder: 8, role: "GRADUATE_SCHOOL",status: "APPROVED", actedAt: "2024-09-20T10:00:00Z", actedByName: "น.ส.มนัสนันท์ อยู่สุข", notes: "รับวิทยานิพนธ์เรียบร้อย ขอแสดงความยินดี" },
+        { id: "sub-3-s6", stepOrder: 6, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-08-10T14:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
+        { id: "sub-3-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "APPROVED", actedAt: "2024-09-03T10:00:00Z", actedByName: "รศ.ดร.สมศักดิ์ ชาญชัย" },
+        { id: "sub-3-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-09-10T10:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์", notes: "อนุมัติครบถ้วน ขอแสดงความยินดี" },
       ],
     },
   ];
@@ -115,7 +143,7 @@ function makeInitialNotifications(): MockNotification[] {
       submissionId: "sub-1", isRead: false, createdAt: "2025-01-10T09:05:00Z",
     },
     {
-      id: "n-2", recipientId: "u-committee", type: "pending",
+      id: "n-2", recipientId: "u-committee2", type: "pending",
       message: "รอการพิจารณาจากท่าน",
       detail: "ระบบแนะนำการเรียนส่วนบุคคลด้วยปัญญาประดิษฐ์",
       submissionId: "sub-2", isRead: false, createdAt: "2024-12-02T09:05:00Z",
@@ -151,7 +179,7 @@ interface AppContextType {
   unreadCount: number;
   login: (userId: string) => void;
   logout: () => void;
-  createSubmission: (title: string, advisorId?: string) => MockSubmission;
+  createSubmission: (data: SubmissionFormData) => MockSubmission;
   approveCurrentStep: (submissionId: string, notes?: string) => void;
   rejectCurrentStep: (submissionId: string, notes: string) => void;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
@@ -168,23 +196,28 @@ interface AppContextType {
   adminDeleteSubmission: (id: string) => void;
   adminResetSubmission: (id: string) => void;
   adminOverrideStep: (submissionId: string, stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => void;
+  // Super Admin
+  superAdminUpdateUserRole: (userId: string, newRole: Role) => void;
+  superAdminDeleteUser: (userId: string) => void;
+  superAdminAddUser: (userData: Omit<MockUser, "id">) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v4";
+const STORAGE_KEY = "thesis_mock_state_v7";
 
 interface StoredState {
   userId: string | null;
   submissions: MockSubmission[];
   notifications: MockNotification[];
+  users: MockUser[];
 }
 
 function loadState(): StoredState {
   if (typeof window === "undefined") {
-    return { userId: null, submissions: makeInitial(), notifications: makeInitialNotifications() };
+    return { userId: null, submissions: makeInitial(), notifications: makeInitialNotifications(), users: MOCK_USERS };
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -193,10 +226,11 @@ function loadState(): StoredState {
       return {
         ...parsed,
         notifications: parsed.notifications ?? makeInitialNotifications(),
+        users: parsed.users ?? MOCK_USERS,
       };
     }
   } catch { /* ignore */ }
-  return { userId: null, submissions: makeInitial(), notifications: makeInitialNotifications() };
+  return { userId: null, submissions: makeInitial(), notifications: makeInitialNotifications(), users: MOCK_USERS };
 }
 
 function saveState(state: StoredState) {
@@ -243,6 +277,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userId,        setUserId]        = useState<string | null>(null);
   const [submissions,   setSubmissions]   = useState<MockSubmission[]>([]);
   const [notifications, setNotifications] = useState<MockNotification[]>([]);
+  const [users,         setUsers]         = useState<MockUser[]>([]);
   const [hydrated,      setHydrated]      = useState(false);
 
   useEffect(() => {
@@ -250,16 +285,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserId(state.userId);
     setSubmissions(state.submissions);
     setNotifications(state.notifications);
+    setUsers(state.users);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    saveState({ userId, submissions, notifications });
-  }, [userId, submissions, notifications, hydrated]);
+    saveState({ userId, submissions, notifications, users });
+  }, [userId, submissions, notifications, users, hydrated]);
 
-  const user = MOCK_USERS.find((u) => u.id === userId) ?? null;
+  const user = users.find((u) => u.id === userId) ?? null;
   const unreadCount = notifications.filter((n) => !n.isRead && n.recipientId === userId).length;
+
+  // Notify helpers that close over current users state
+  function notifyRoleInner(role: Role, message: string, detail: string, submissionId: string, type: MockNotification["type"]): MockNotification | null {
+    const recipient = users.find((u) => u.role === role);
+    if (!recipient) return null;
+    return makeNotif(recipient.id, message, detail, submissionId, type);
+  }
+  function notifyAdminInner(message: string, detail: string, submissionId: string, type: MockNotification["type"]): MockNotification | null {
+    const admin = users.find((u) => u.role === "ADMIN" || u.role === "SUPER_ADMIN");
+    if (!admin) return null;
+    return makeNotif(admin.id, message, detail, submissionId, type);
+  }
 
   function pushNotifs(notifs: (MockNotification | null)[]) {
     const valid = notifs.filter(Boolean) as MockNotification[];
@@ -273,30 +321,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Submission actions ────────────────────────────────────────────────────
 
-  function createSubmission(title: string, advisorId?: string): MockSubmission {
+  function createSubmission(data: SubmissionFormData): MockSubmission {
     const id  = `sub-${Date.now()}`;
     const now = new Date().toISOString();
+    const committeeMembers = data.committeeIds?.length ? data.committeeIds : COMMITTEE_IDS;
     const sub: MockSubmission = {
-      id, title,
+      id,
+      title: data.title,
       studentId: userId!,
-      advisorId,
+      advisorId: data.advisorId,
       status: "IN_PROGRESS",
       createdAt: now,
       uploads: [],
       workflowSteps: WORKFLOW_ROLES.map((role, i) => ({
         id: `${id}-s${i + 1}`, stepOrder: i + 1, role, status: "PENDING" as const,
-        ...(role === "EXAM_COMMITTEE" ? { committeeMembers: COMMITTEE_IDS } : {}),
+        ...(role === "EXAM_COMMITTEE" ? { committeeMembers } : {}),
       })),
+      studentFullName: data.studentFullName,
+      studentCode: data.studentCode,
+      program: data.program,
+      studentEmail: data.studentEmail,
+      studentPhone: data.studentPhone,
+      headCommitteeId: data.headCommitteeId,
+      committeeIds: committeeMembers,
+      invitedCommitteeId: data.invitedCommitteeId,
+      examDate: data.examDate,
+      examTime: data.examTime,
+      roomNeeded: data.roomNeeded,
+      parkingNeeded: data.parkingNeeded,
+      carPlate: data.carPlate,
     };
     setSubmissions((prev) => [sub, ...prev]);
 
     // Notify advisor if assigned + admin oversight
     const notifs: (MockNotification | null)[] = [];
-    if (advisorId) {
-      const adv = MOCK_USERS.find((u) => u.id === advisorId);
-      if (adv) notifs.push(makeNotif(adv.id, "มีคำร้องใหม่รอการตรวจสอบ", title, id, "pending"));
+    if (data.advisorId) {
+      const adv = users.find((u) => u.id === data.advisorId);
+      if (adv) notifs.push(makeNotif(adv.id, "มีคำร้องใหม่รอการตรวจสอบ", data.title, id, "pending"));
     }
-    notifs.push(notifyAdmin("มีคำร้องวิทยานิพนธ์ใหม่", title, id, "info"));
+    notifs.push(notifyAdminInner("มีคำร้องวิทยานิพนธ์ใหม่", data.title, id, "info"));
     pushNotifs(notifs);
     return sub;
   }
@@ -325,7 +388,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const notifs: (MockNotification | null)[] = [];
     const nextStep = updatedSteps.find((s) => s.status === "PENDING");
     if (nextStep) {
-      notifs.push(notifyRole(
+      notifs.push(notifyRoleInner(
         nextStep.role,
         `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`,
         sub.title, submissionId, "pending"
@@ -333,7 +396,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (status === "COMPLETED") {
       notifs.push(makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved"));
-      notifs.push(notifyAdmin("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
+      notifs.push(notifyAdminInner("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
     }
     pushNotifs(notifs);
   }
@@ -358,7 +421,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Notify student + admin oversight
     pushNotifs([
       makeNotif(sub.studentId, `คำร้องถูกปฏิเสธ — กรุณาตรวจสอบและแก้ไข`, sub.title, submissionId, "rejected"),
-      notifyAdmin("มีคำร้องถูกปฏิเสธ", sub.title, submissionId, "rejected"),
+      notifyAdminInner("มีคำร้องถูกปฏิเสธ", sub.title, submissionId, "rejected"),
     ]);
   }
 
@@ -431,7 +494,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, workflowSteps: updatedSteps, status: "REJECTED" } : s)));
       pushNotifs([
         makeNotif(sub.studentId, "กรรมการสอบไม่อนุมัติ — กรุณาตรวจสอบและแก้ไข", sub.title, submissionId, "rejected"),
-        notifyAdmin("กรรมการสอบไม่อนุมัติคำร้อง", sub.title, submissionId, "rejected"),
+        notifyAdminInner("กรรมการสอบไม่อนุมัติคำร้อง", sub.title, submissionId, "rejected"),
       ]);
       return;
     }
@@ -463,11 +526,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const notifs: (MockNotification | null)[] = [];
     const nextStep = updatedSteps.find((s) => s.status === "PENDING");
     if (nextStep) {
-      notifs.push(notifyRole(nextStep.role, `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`, sub.title, submissionId, "pending"));
+      notifs.push(notifyRoleInner(nextStep.role, `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`, sub.title, submissionId, "pending"));
     }
     if (status === "COMPLETED") {
       notifs.push(makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved"));
-      notifs.push(notifyAdmin("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
+      notifs.push(notifyAdminInner("คำร้องดำเนินการเสร็จสมบูรณ์", sub.title, submissionId, "approved"));
     }
     pushNotifs(notifs);
   }
@@ -493,7 +556,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
 
     // Notify the role that had rejected (they need to re-review)
-    pushNotifs([notifyRole(rejectedStep.role, "นักศึกษาแก้ไขและยื่นคำร้องใหม่แล้ว", sub.title, submissionId, "info")]);
+    pushNotifs([notifyRoleInner(rejectedStep.role, "นักศึกษาแก้ไขและยื่นคำร้องใหม่แล้ว", sub.title, submissionId, "info")]);
   }
 
   // ─── Notification actions ──────────────────────────────────────────────────
@@ -513,6 +576,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
     setSubmissions(makeInitial());
     setNotifications(makeInitialNotifications());
+    setUsers(MOCK_USERS);
+  }
+
+  // ─── Super Admin actions ───────────────────────────────────────────────────
+
+  function superAdminUpdateUserRole(userId: string, newRole: Role) {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+  }
+
+  function superAdminDeleteUser(userId: string) {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  }
+
+  function superAdminAddUser(userData: Omit<MockUser, "id">) {
+    const newUser: MockUser = { ...userData, id: `u-${Date.now()}` };
+    setUsers((prev) => [...prev, newUser]);
   }
 
   // ─── Admin actions ─────────────────────────────────────────────────────────
@@ -571,7 +650,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (action === "APPROVED") {
       const nextStep = updatedSteps.find((s) => s.status === "PENDING");
       if (nextStep) {
-        pushNotifs([notifyRole(nextStep.role, `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`, sub.title, submissionId, "pending")]);
+        pushNotifs([notifyRoleInner(nextStep.role, `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role]}`, sub.title, submissionId, "pending")]);
       }
       if (status === "COMPLETED") {
         pushNotifs([makeNotif(sub.studentId, "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", sub.title, submissionId, "approved")]);
@@ -594,13 +673,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      user, users: MOCK_USERS, submissions, notifications, unreadCount,
+      user, users, submissions, notifications, unreadCount,
       login, logout, createSubmission, approveCurrentStep, rejectCurrentStep,
       addUpload, getPendingCount, studentResubmit,
       committeeSign, needsMyAction,
       markNotificationRead, markAllNotificationsRead, resetDemo,
       adminSetNote, adminUpdateSubmission, adminDeleteSubmission,
       adminResetSubmission, adminOverrideStep,
+      superAdminUpdateUserRole, superAdminDeleteUser, superAdminAddUser,
     }}>
       {children}
     </AppContext.Provider>
