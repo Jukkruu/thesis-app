@@ -10,7 +10,7 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle,
+  Trash2, Search, AlertCircle, Bell,
 } from "lucide-react";
 
 function daysSince(dateStr: string): number {
@@ -25,7 +25,13 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
 ];
 
 export default function AdminDashboard() {
-  const { submissions, adminDeleteSubmission, user } = useApp();
+  const { submissions, adminDeleteSubmission, user, users } = useApp();
+
+  // Submissions waiting for Admin's own approval (workflow step role === ADMIN)
+  const myPending = submissions.filter((s) => {
+    const step = s.workflowSteps.find((w) => w.status === "PENDING");
+    return step?.role === "ADMIN";
+  });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
   const [search,        setSearch]        = useState("");
@@ -79,6 +85,43 @@ export default function AdminDashboard() {
         <SummaryCard icon={<CheckCircle2 className="w-6 h-6 text-green-500" />}   label="เสร็จสิ้น"       value={counts.COMPLETED}   color="bg-green-50 border-green-200" />
         <SummaryCard icon={<XCircle className="w-6 h-6 text-red-400" />}          label="ถูกปฏิเสธ"       value={counts.REJECTED}    color="bg-red-50 border-red-200" />
       </div>
+
+      {/* My pending approvals */}
+      {myPending.length > 0 && (
+        <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-orange-500" />
+            <h2 className="font-semibold text-orange-800 text-lg">
+              รออนุมัติจากท่าน ({myPending.length} รายการ)
+            </h2>
+          </div>
+          <div className="space-y-2">
+            {myPending.map((sub) => {
+              const student = users.find((u) => u.id === sub.studentId);
+              return (
+                <Link
+                  key={sub.id}
+                  href={`/dashboard/admin/${sub.id}`}
+                  className="flex items-center justify-between gap-3 bg-white rounded-xl px-4 py-3 border border-orange-200 hover:border-orange-400 hover:shadow-sm transition"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{sub.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {student?.name}
+                      {student?.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
+                      <span className="ml-2 text-orange-600 font-medium">· รอการตรวจรับเอกสาร</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-bold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">อนุมัติ</span>
+                    <ChevronRight className="w-4 h-4 text-orange-400" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Stage distribution chart */}
       {counts.IN_PROGRESS > 0 && (

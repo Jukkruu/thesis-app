@@ -88,8 +88,8 @@ const COMMITTEE_IDS = ["u-prof-SCW", "u-prof-WSN"];
 // Workflow: 8 ordered steps aligned with the 5-phase real process
 const WORKFLOW_ROLES: Role[] = [
   "STUDENT",              // Phase 1: submit
-  "ADVISOR",              // Phase 1-2: sign
-  "PROGRAM_CHAIR",        // Phase 1: sign
+  "ADMIN",                // Phase 1: admin approves (พี่โบ้ ตรวจรับเอกสาร)
+  "PROGRAM_CHAIR",        // Phase 1: sign บ.วศ.1ก
   "HEAD_EXAM_COMMITTEE",  // Phase 2-3: sign first
   "EXAM_COMMITTEE",       // Phase 2-3: sign in order
   "ADVISOR",              // Phase 3: sign บ.3
@@ -109,7 +109,7 @@ function makeInitial(): MockSubmission[] {
       uploads: [{ id: "up-1a", formType: "BW1A", fileName: "บ.วศ.1ก_อานนท์.pdf", fileSize: 512000, uploadedAt: "2025-01-10T09:00:00Z" }],
       workflowSteps: [
         { id: "sub-1-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2025-01-10T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-1-s2", stepOrder: 2, role: "ADVISOR",               status: "PENDING" },
+        { id: "sub-1-s2", stepOrder: 2, role: "ADMIN",                 status: "PENDING" },
         { id: "sub-1-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "PENDING" },
         { id: "sub-1-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "PENDING" },
         { id: "sub-1-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING", committeeMembers: COMMITTEE_IDS },
@@ -130,7 +130,7 @@ function makeInitial(): MockSubmission[] {
       ],
       workflowSteps: [
         { id: "sub-2-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-11-15T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.รัชทิน จันทร์เจริญ", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
+        { id: "sub-2-s2", stepOrder: 2, role: "ADMIN",                 status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", notes: "ตรวจรับเอกสารเรียบร้อย" },
         { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์" },
         { id: "sub-2-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "รศ.ดร.ชนัตต์ รัตนสุมาวงศ์", notes: "ตรวจสอบแล้ว อนุมัติดำเนินการ" },
         { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING", committeeMembers: COMMITTEE_IDS },
@@ -154,7 +154,7 @@ function makeInitial(): MockSubmission[] {
       ],
       workflowSteps: [
         { id: "sub-3-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-07-01T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.บุญชัย เลิศนุวัฒน์" },
+        { id: "sub-3-s2", stepOrder: 2, role: "ADMIN",                 status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)" },
         { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์" },
         { id: "sub-3-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-07-22T09:00:00Z", actedByName: "รศ.ดร.จิรพงศ์ กสิวิทย์อำนวย", notes: "ผลงานดีเยี่ยม" },
         { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "กรรมการสอบ 2 ท่าน", notes: "ผ่านการประเมิน", committeeMembers: COMMITTEE_IDS,
@@ -244,7 +244,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v8";
+const STORAGE_KEY = "thesis_mock_state_v9";
 
 interface StoredState {
   userId: string | null;
@@ -438,9 +438,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     pushNotifs(notifs);
 
-    // Phase 1 complete: step 3 (PROGRAM_CHAIR) approved → email Finance
+    // Phase 1: step 2 (ADMIN) approved → email Finance per AGENTS.md
     const completedStep = sub.workflowSteps[pendingIdx];
-    if (completedStep.stepOrder === 3 && completedStep.role === "PROGRAM_CHAIR") {
+    if (completedStep.stepOrder === 2 && completedStep.role === "ADMIN") {
       const student = users.find((u) => u.id === sub.studentId);
       const programLabels: Record<string, string> = {
         PHD: "ป.เอก สาขาวิศวกรรมเครื่องกล",

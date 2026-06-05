@@ -140,9 +140,14 @@ function StepCard({
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { submissions, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote } = useApp();
+  const { submissions, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote, approveCurrentStep, rejectCurrentStep } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
+
+  const isMyTurn = sub?.workflowSteps.find((s) => s.status === "PENDING")?.role === "ADMIN";
+  const [approveNotes, setApproveNotes] = useState("");
+  const [rejectNotes,  setRejectNotes]  = useState("");
+  const [showReject,   setShowReject]   = useState(false);
 
   const [editMode,    setEditMode]    = useState(false);
   const [editTitle,   setEditTitle]   = useState(sub?.title ?? "");
@@ -195,6 +200,71 @@ export default function AdminSubmissionDetail() {
           โหมด Admin — สามารถจัดการและแก้ไขทุกขั้นตอนได้
         </span>
       </div>
+
+      {/* ─── Admin's own approval panel ─────────────────────────────────── */}
+      {isMyTurn && (
+        <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-500" />
+            <h2 className="font-semibold text-blue-800 text-lg">ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร</h2>
+          </div>
+          <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
+
+          {!showReject ? (
+            <div className="space-y-3">
+              <textarea
+                value={approveNotes}
+                onChange={(e) => setApproveNotes(e.target.value)}
+                placeholder="หมายเหตุ (ไม่บังคับ)..."
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  อนุมัติและส่งต่อ
+                </button>
+                <button
+                  onClick={() => setShowReject(true)}
+                  className="px-5 py-3 border-2 border-red-300 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition"
+                >
+                  ปฏิเสธ
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <textarea
+                value={rejectNotes}
+                onChange={(e) => setRejectNotes(e.target.value)}
+                placeholder="เหตุผลการปฏิเสธ (จำเป็น)..."
+                className="w-full border border-red-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (!rejectNotes.trim()) return;
+                    rejectCurrentStep(sub.id, rejectNotes);
+                    setRejectNotes("");
+                    setShowReject(false);
+                  }}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition"
+                >
+                  ยืนยันปฏิเสธ
+                </button>
+                <button
+                  onClick={() => setShowReject(false)}
+                  className="px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Header + edit */}
       <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">

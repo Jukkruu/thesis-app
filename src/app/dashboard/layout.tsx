@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   const homeRoute   = ROLE_ROUTES[user.role];
-  const isManagementRole = user.role === "STUDENT" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+  const isManagementRole = user.role === "STUDENT" || user.role === "SUPER_ADMIN";
   const pendingCount = isManagementRole ? 0 : getPendingCount(user.role);
 
   const sidebar = (
