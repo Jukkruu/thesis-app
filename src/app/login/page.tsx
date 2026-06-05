@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp, MOCK_USERS, DEMO_USER_IDS } from "@/context/AppContext";
 import { ROLE_LABELS, ROLE_EMOJI, ROLE_GRADIENT } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { DEMO_MODE } from "@/lib/config";
@@ -174,7 +174,7 @@ export default function LoginPage() {
                 <p className="text-sm font-semibold uppercase tracking-wide">ทดสอบระบบ — คลิกเข้าใช้ตามบทบาท</p>
               </div>
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                {MOCK_USERS.map((u) => (
+                {MOCK_USERS.filter((u) => DEMO_USER_IDS.includes(u.id)).map((u) => (
                   <button
                     key={u.id}
                     onClick={() => quickLogin(u.id, u.role)}

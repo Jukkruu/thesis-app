@@ -27,25 +27,63 @@ export interface SubmissionFormData {
   carPlate?: string;
 }
 
-// ─── Mock users (seed data) ───────────────────────────────────────────────────
+// ─── Mock users — real ME dept professors (Chulalongkorn University) ─────────
 
 export const MOCK_USERS: MockUser[] = [
-  { id: "u-superadmin", name: "ผู้ดูแลระบบสูงสุด",           email: "superadmin@thesis.ac.th", role: "SUPER_ADMIN" },
-  { id: "u-admin",      name: "P โบ้ (ผู้ดูแลระบบ)",          email: "admin@thesis.ac.th",      role: "ADMIN" },
-  { id: "u-student",    name: "นายอานนท์ ใจดี",              email: "student@thesis.ac.th",    role: "STUDENT", studentId: "64010042" },
-  { id: "u-advisor",    name: "รศ.ดร.วิชัย พงษ์สวัสดิ์",    email: "advisor@thesis.ac.th",    role: "ADVISOR" },
-  { id: "u-chair",      name: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์",   email: "chair@thesis.ac.th",      role: "PROGRAM_CHAIR" },
-  { id: "u-committee",  name: "ดร.นภา รัตนวงศ์",             email: "committee@thesis.ac.th",  role: "HEAD_EXAM_COMMITTEE" },
-  { id: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",          email: "committee2@thesis.ac.th", role: "EXAM_COMMITTEE" },
-  { id: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา",       email: "committee3@thesis.ac.th", role: "EXAM_COMMITTEE" },
-  { id: "u-invited",    name: "รศ.ดร.สมศักดิ์ ชาญชัย (กรรมการภายนอก)", email: "invited@thesis.ac.th", role: "INVITED_EXAM_COMMITTEE" },
-  { id: "u-staff",      name: "น.ส.สุภาพร มั่นคง",          email: "staff@thesis.ac.th",      role: "DEPT_STAFF" },
-  { id: "u-dean",       name: "ศ.ดร.ประเสริฐ กิจสุวรรณ",    email: "dean@thesis.ac.th",       role: "FACULTY_DEAN" },
-  { id: "u-grad",       name: "น.ส.มนัสนันท์ อยู่สุข",      email: "grad@thesis.ac.th",       role: "GRADUATE_SCHOOL" },
+  // System accounts
+  { id: "u-superadmin", name: "ผู้ดูแลระบบสูงสุด",         email: "superadmin@eng.chula.ac.th", role: "SUPER_ADMIN" },
+  { id: "u-admin",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", email: "admin@eng.chula.ac.th",      role: "ADMIN" },
+  { id: "u-student",    name: "นายอานนท์ ใจดี",             email: "student@eng.chula.ac.th",    role: "STUDENT", studentId: "64100042" },
+  { id: "u-chair",      name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์",  email: "niphon.w@eng.chula.ac.th",   role: "PROGRAM_CHAIR" },
+  { id: "u-invited",    name: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ", email: "viboon.s@eng.chula.ac.th", role: "INVITED_EXAM_COMMITTEE" },
+  // Advisors (อาจารย์ที่ปรึกษา) — senior professors
+  { id: "u-prof-PSG", name: "ศ.ดร.ไพโรจน์ สิงหถนัดกิจ",         email: "pairod.s@eng.chula.ac.th",    role: "ADVISOR" },
+  { id: "u-prof-ASJ", name: "รศ.ดร.อศิ บุญจิตราดุลย์",           email: "asi.b@eng.chula.ac.th",       role: "ADVISOR" },
+  { id: "u-prof-TJW", name: "รศ.ดร.ฐิติมา จินตนาวัน",           email: "thitima.j@eng.chula.ac.th",   role: "ADVISOR" },
+  { id: "u-prof-KMN", name: "รศ.ดร.กุณฑินี มณีรัตน์",           email: "kuntinee.m@eng.chula.ac.th",  role: "ADVISOR" },
+  { id: "u-prof-RCR", name: "รศ.ดร.รัชทิน จันทร์เจริญ",         email: "ratchatin.c@eng.chula.ac.th", role: "ADVISOR" },
+  { id: "u-prof-CTT", name: "รศ.ดร.จิตติน แตงเที่ยง",           email: "chittin.t@eng.chula.ac.th",   role: "ADVISOR" },
+  { id: "u-prof-ASK", name: "รศ.ดร.อังคีร์ ศรีภคากร",           email: "angkee.s@eng.chula.ac.th",    role: "ADVISOR" },
+  { id: "u-prof-BLN", name: "รศ.ดร.บุญชัย เลิศนุวัฒน์",         email: "boonchai.l@eng.chula.ac.th",  role: "ADVISOR" },
+  { id: "u-prof-PTP", name: "รศ.ดร.พงศ์แสน พิทักษ์วัชระ",      email: "phongsaen.p@eng.chula.ac.th", role: "ADVISOR" },
+  { id: "u-prof-TSN", name: "รศ.ดร.ธัญญารัตน์ สิงหนาท",         email: "thanyarat.s@eng.chula.ac.th", role: "ADVISOR" },
+  { id: "u-prof-NAV", name: "รศ.ดร.นภดนัย อาชวาคม",             email: "nopdanai.a@eng.chula.ac.th",  role: "ADVISOR" },
+  { id: "u-prof-GPN", name: "รศ.ดร.กฤษฎา พนมเชิง",              email: "gridsada.p@eng.chula.ac.th",  role: "ADVISOR" },
+  // Head Exam Committee (ประธานกรรมการสอบ)
+  { id: "u-prof-APP", name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ",          email: "alongkorn.p@eng.chula.ac.th", role: "HEAD_EXAM_COMMITTEE" },
+  { id: "u-prof-CRW", name: "รศ.ดร.ชนัตต์ รัตนสุมาวงศ์",        email: "chanat.r@eng.chula.ac.th",    role: "HEAD_EXAM_COMMITTEE" },
+  { id: "u-prof-JKA", name: "รศ.ดร.จิรพงศ์ กสิวิทย์อำนวย",      email: "jirapong.k@eng.chula.ac.th",  role: "HEAD_EXAM_COMMITTEE" },
+  { id: "u-prof-WWS", name: "รศ.ดร.วิทยา วัณณสุโภประสิทธิ์",    email: "witaya.w@eng.chula.ac.th",    role: "HEAD_EXAM_COMMITTEE" },
+  { id: "u-prof-SPT", name: "รศ.ดร.สมพงษ์ พุทธิวิสุทธิศักดิ์",  email: "sompong.p@eng.chula.ac.th",   role: "HEAD_EXAM_COMMITTEE" },
+  // Exam Committee (กรรมการสอบ)
+  { id: "u-prof-SCW", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์",       email: "sunhapos.c@eng.chula.ac.th",  role: "EXAM_COMMITTEE" },
+  { id: "u-prof-WSN", name: "ผศ.ดร.วีระยุทธ ศรีธุระวานิช",       email: "werayut.s@eng.chula.ac.th",   role: "EXAM_COMMITTEE" },
+  { id: "u-prof-NNW", name: "ผศ.ดร.นักสิทธ์ นุ่มวงษ์",           email: "nuksit.n@eng.chula.ac.th",    role: "EXAM_COMMITTEE" },
+  { id: "u-prof-PTT", name: "ผศ.ดร.ไพรัช ตั้งพรประเสริฐ",        email: "pairat.t@eng.chula.ac.th",    role: "EXAM_COMMITTEE" },
+  { id: "u-prof-CVS", name: "ผศ.ดร.ชัญญาพันธ์ วิรุฬห์ศรี",       email: "chanyaphan.v@eng.chula.ac.th",role: "EXAM_COMMITTEE" },
+  { id: "u-prof-TPP", name: "ผศ.ตะวัน ปภาพจน์",                  email: "tawan.p@eng.chula.ac.th",     role: "EXAM_COMMITTEE" },
+  { id: "u-prof-SSL", name: "ผศ.ดร.สรัล ศาลากิจ",                email: "saran.s@eng.chula.ac.th",     role: "EXAM_COMMITTEE" },
+  { id: "u-prof-SKM", name: "อ.ดร.สุรัฐ ขวัญเมือง",              email: "surat.k@eng.chula.ac.th",     role: "EXAM_COMMITTEE" },
+  { id: "u-prof-NDS", name: "อ.ดร.ณัฐพล ดำรงค์พลาสิทธิ์",        email: "nattapol.d@eng.chula.ac.th",  role: "EXAM_COMMITTEE" },
+  { id: "u-prof-RNC", name: "อ.ดร.รีนา เซย์",                    email: "rina.t@eng.chula.ac.th",      role: "EXAM_COMMITTEE" },
+  { id: "u-prof-NVS", name: "อ.ดร.นภัสร วงษ์เสาวศุภ",            email: "naphatsorn.v@eng.chula.ac.th",role: "EXAM_COMMITTEE" },
+  { id: "u-prof-SMK", name: "อ.ดร.สริตา โมรากุล",                email: "sarita.m@eng.chula.ac.th",    role: "EXAM_COMMITTEE" },
+  { id: "u-prof-ASL", name: "อ.ดร.อัศวิน สาลี",                  email: "atsawin.s@eng.chula.ac.th",   role: "EXAM_COMMITTEE" },
+  { id: "u-prof-PRR", name: "อ.ดร.ปริญเอก ร่มไตรรัตน์",          email: "parinayek.r@eng.chula.ac.th", role: "EXAM_COMMITTEE" },
+  { id: "u-prof-ROY", name: "อ.ดร.รอยต่อ เจริญสินโอฬาร",         email: "roitor.c@eng.chula.ac.th",    role: "EXAM_COMMITTEE" },
 ];
 
-// Regular exam committee members (excludes head committee)
-const COMMITTEE_IDS = ["u-committee2", "u-committee3"];
+// User IDs shown in the demo quick-login panel on the login page
+export const DEMO_USER_IDS = [
+  "u-superadmin", "u-admin", "u-student", "u-chair",
+  "u-prof-ASK",   // ADVISOR demo
+  "u-prof-APP",   // HEAD_EXAM_COMMITTEE demo
+  "u-prof-SCW",   // EXAM_COMMITTEE demo
+  "u-invited",    // INVITED_EXAM_COMMITTEE demo
+];
+
+// Regular exam committee members used in seed submissions
+const COMMITTEE_IDS = ["u-prof-SCW", "u-prof-WSN"];
 
 // Workflow: 8 ordered steps aligned with the 5-phase real process
 const WORKFLOW_ROLES: Role[] = [
@@ -65,8 +103,8 @@ function makeInitial(): MockSubmission[] {
   return [
     {
       id: "sub-1", title: "การพัฒนาระบบตรวจสอบคุณภาพน้ำอัตโนมัติด้วย IoT",
-      studentId: "u-student", advisorId: "u-advisor", status: "IN_PROGRESS",
-      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
+      studentId: "u-student", advisorId: "u-prof-ASK", status: "IN_PROGRESS",
+      headCommitteeId: "u-prof-APP", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2025-01-10T08:00:00Z",
       uploads: [{ id: "up-1a", formType: "BW1A", fileName: "บ.วศ.1ก_อานนท์.pdf", fileSize: 512000, uploadedAt: "2025-01-10T09:00:00Z" }],
       workflowSteps: [
@@ -82,8 +120,8 @@ function makeInitial(): MockSubmission[] {
     },
     {
       id: "sub-2", title: "ระบบแนะนำการเรียนส่วนบุคคลด้วยปัญญาประดิษฐ์",
-      studentId: "u-student", advisorId: "u-advisor", status: "IN_PROGRESS",
-      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
+      studentId: "u-student", advisorId: "u-prof-RCR", status: "IN_PROGRESS",
+      headCommitteeId: "u-prof-CRW", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2024-11-15T08:00:00Z",
       uploads: [
         { id: "up-2a", formType: "BW1A", fileName: "บ.วศ.1ก_AI.pdf",  fileSize: 480000, uploadedAt: "2024-11-15T09:00:00Z" },
@@ -92,9 +130,9 @@ function makeInitial(): MockSubmission[] {
       ],
       workflowSteps: [
         { id: "sub-2-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-11-15T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
-        { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
-        { id: "sub-2-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "ดร.นภา รัตนวงศ์", notes: "ตรวจสอบแล้ว อนุมัติดำเนินการ" },
+        { id: "sub-2-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-11-22T10:00:00Z", actedByName: "รศ.ดร.รัชทิน จันทร์เจริญ", notes: "หัวข้อน่าสนใจ อนุมัติดำเนินการต่อ" },
+        { id: "sub-2-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-11-28T14:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์" },
+        { id: "sub-2-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-12-02T09:00:00Z", actedByName: "รศ.ดร.ชนัตต์ รัตนสุมาวงศ์", notes: "ตรวจสอบแล้ว อนุมัติดำเนินการ" },
         { id: "sub-2-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING", committeeMembers: COMMITTEE_IDS },
         { id: "sub-2-s6", stepOrder: 6, role: "ADVISOR",               status: "PENDING" },
         { id: "sub-2-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "PENDING" },
@@ -103,8 +141,8 @@ function makeInitial(): MockSubmission[] {
     },
     {
       id: "sub-3", title: "การวิเคราะห์ความเสี่ยงในตลาดหลักทรัพย์ด้วย Machine Learning",
-      studentId: "u-student", advisorId: "u-advisor", status: "COMPLETED",
-      headCommitteeId: "u-committee", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
+      studentId: "u-student", advisorId: "u-prof-BLN", status: "COMPLETED",
+      headCommitteeId: "u-prof-JKA", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2024-07-01T08:00:00Z",
       uploads: [
         { id: "up-3a", formType: "BW1A",  fileName: "บ.วศ.1ก_ML.pdf",          fileSize: 520000,  uploadedAt: "2024-07-01T09:00:00Z" },
@@ -116,17 +154,17 @@ function makeInitial(): MockSubmission[] {
       ],
       workflowSteps: [
         { id: "sub-3-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED", actedAt: "2024-07-01T09:00:00Z", actedByName: "นายอานนท์ ใจดี" },
-        { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
-        { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์" },
-        { id: "sub-3-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-07-22T09:00:00Z", actedByName: "ดร.นภา รัตนวงศ์", notes: "ผลงานดีเยี่ยม" },
+        { id: "sub-3-s2", stepOrder: 2, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-07-08T10:00:00Z", actedByName: "รศ.ดร.บุญชัย เลิศนุวัฒน์" },
+        { id: "sub-3-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-07-15T14:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์" },
+        { id: "sub-3-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "APPROVED", actedAt: "2024-07-22T09:00:00Z", actedByName: "รศ.ดร.จิรพงศ์ กสิวิทย์อำนวย", notes: "ผลงานดีเยี่ยม" },
         { id: "sub-3-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "APPROVED", actedAt: "2024-08-05T10:00:00Z", actedByName: "กรรมการสอบ 2 ท่าน", notes: "ผ่านการประเมิน", committeeMembers: COMMITTEE_IDS,
           committeeActions: [
-            { userId: "u-committee2", name: "รศ.ดร.ก้องภพ สุนทร",   decision: "APPROVED", actedAt: "2024-08-04T11:00:00Z" },
-            { userId: "u-committee3", name: "ดร.พิมพ์ชนก เลิศวัฒนา", decision: "APPROVED", actedAt: "2024-08-05T10:00:00Z" },
+            { userId: "u-prof-SCW", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์", decision: "APPROVED", actedAt: "2024-08-04T11:00:00Z" },
+            { userId: "u-prof-WSN", name: "ผศ.ดร.วีระยุทธ ศรีธุระวานิช", decision: "APPROVED", actedAt: "2024-08-05T10:00:00Z" },
           ] },
         { id: "sub-3-s6", stepOrder: 6, role: "ADVISOR",               status: "APPROVED", actedAt: "2024-08-10T14:00:00Z", actedByName: "รศ.ดร.วิชัย พงษ์สวัสดิ์" },
-        { id: "sub-3-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "APPROVED", actedAt: "2024-09-03T10:00:00Z", actedByName: "รศ.ดร.สมศักดิ์ ชาญชัย" },
-        { id: "sub-3-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-09-10T10:00:00Z", actedByName: "ผศ.ดร.สมชาย วงษ์ประดิษฐ์", notes: "อนุมัติครบถ้วน ขอแสดงความยินดี" },
+        { id: "sub-3-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "APPROVED", actedAt: "2024-09-03T10:00:00Z", actedByName: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ" },
+        { id: "sub-3-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-09-10T10:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์", notes: "อนุมัติครบถ้วน ขอแสดงความยินดี" },
       ],
     },
   ];
@@ -137,7 +175,7 @@ function makeInitial(): MockSubmission[] {
 function makeInitialNotifications(): MockNotification[] {
   return [
     {
-      id: "n-1", recipientId: "u-advisor", type: "pending",
+      id: "n-1", recipientId: "u-prof-ASK", type: "pending",
       message: "รอการพิจารณาจากท่าน",
       detail: "การพัฒนาระบบตรวจสอบคุณภาพน้ำอัตโนมัติด้วย IoT",
       submissionId: "sub-1", isRead: false, createdAt: "2025-01-10T09:05:00Z",
@@ -206,7 +244,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v7";
+const STORAGE_KEY = "thesis_mock_state_v8";
 
 interface StoredState {
   userId: string | null;
