@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
 
   const { studentName, studentCode, program, thesisTitle, submissionId } = body;
 
+  console.log("[email/finance] Sending to:", FINANCE_EMAIL);
+
   const { data, error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
     to: [FINANCE_EMAIL],
@@ -66,9 +68,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    console.error("Resend error:", error);
+    console.error("[email/finance] Resend error:", JSON.stringify(error));
     return NextResponse.json({ error }, { status: 500 });
   }
 
+  console.log("[email/finance] Sent OK, id:", data?.id);
   return NextResponse.json({ id: data?.id });
 }

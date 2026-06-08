@@ -5,7 +5,7 @@ import {
   MockUser, MockSubmission, MockWorkflowStep,
   MockNotification, Role, FormType, SubmissionStatus, ProgramType,
 } from "@/types";
-import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
+import { STEP_NAMES, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
 
 // ─── Submission form data ─────────────────────────────────────────────────────
 
@@ -104,6 +104,8 @@ function makeInitial(): MockSubmission[] {
     {
       id: "sub-1", title: "การพัฒนาระบบตรวจสอบคุณภาพน้ำอัตโนมัติด้วย IoT",
       studentId: "u-student", advisorId: "u-prof-ASK", status: "IN_PROGRESS",
+      studentFullName: "นายอานนท์ ใจดี", studentCode: "6470001234", program: "ME_MECH" as const,
+      studentEmail: "aanon@student.chula.ac.th", studentPhone: "0812345678",
       headCommitteeId: "u-prof-APP", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
       createdAt: "2025-01-10T08:00:00Z",
       uploads: [{ id: "up-1a", formType: "BW1A", fileName: "บ.วศ.1ก_อานนท์.pdf", fileSize: 512000, uploadedAt: "2025-01-10T09:00:00Z" }],
@@ -244,7 +246,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v9";
+const STORAGE_KEY = "thesis_mock_state_v10";
 
 interface StoredState {
   userId: string | null;
@@ -438,6 +440,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     pushNotifs(notifs);
 
+    // Send Finance email when Admin approves Phase 1 (stepOrder 2)
+    const approvedStep = sub.workflowSteps[pendingIdx];
+    if (approvedStep.stepOrder === 2 && approvedStep.role === "ADMIN") {
+      fetch("/api/email/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: sub.studentFullName ?? sub.studentId,
+          studentCode: sub.studentCode ?? "-",
+          program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
+          thesisTitle: sub.title,
+          submissionId,
+        }),
+      }).catch((err) => console.error("Finance email failed:", err));
+    }
   }
 
   function rejectCurrentStep(submissionId: string, notes: string) {
