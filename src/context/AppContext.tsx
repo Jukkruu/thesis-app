@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
   MockUser, MockSubmission, MockWorkflowStep,
-  MockNotification, Role, FormType, SubmissionStatus, ProgramType,
+  MockNotification, Role, FormType, SubmissionStatus, ProgramType, SubmissionType,
 } from "@/types";
 import { STEP_NAMES, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ import { STEP_NAMES, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
 
 export interface SubmissionFormData {
   title: string;
+  submissionType?: SubmissionType;
   advisorId?: string;
   studentFullName?: string;
   studentCode?: string;
@@ -246,7 +247,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v10";
+const STORAGE_KEY = "thesis_mock_state_v11";
 
 interface StoredState {
   userId: string | null;
@@ -368,6 +369,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const sub: MockSubmission = {
       id,
       title: data.title,
+      submissionType: data.submissionType,
       studentId: userId!,
       advisorId: data.advisorId,
       status: "IN_PROGRESS",

@@ -5,7 +5,7 @@ import { ROLE_LABELS, formatDate } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Link from "next/link";
-import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers } from "lucide-react";
+import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers, BookOpen, GraduationCap } from "lucide-react";
 
 export default function StudentDashboard() {
   const { user, submissions } = useApp();
@@ -24,14 +24,37 @@ export default function StudentDashboard() {
         highlight={{ label: "กำลังดำเนินการ", value: inProgress }}
       />
 
-      {/* New submission button */}
-      <Link
-        href="/dashboard/student/submit"
-        className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-sm"
-      >
-        <PlusCircle className="w-5 h-5" />
-        ยื่นคำร้องวิทยานิพนธ์ใหม่
-      </Link>
+      {/* New submission — two separate form types */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">ยื่นคำร้องใหม่</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Link
+            href="/dashboard/student/submit?type=proposal"
+            className="flex items-start gap-3 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100 transition group"
+          >
+            <div className="mt-0.5 w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-700 transition">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900 text-sm leading-snug">ขอสอบโครงร่างวิทยานิพนธ์</p>
+              <p className="text-xs text-blue-600 mt-0.5">สำหรับการสอบ Proposal (บ.วศ.1ก/ข/ค/ง)</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/student/submit?type=defense"
+            className="flex items-start gap-3 p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:bg-indigo-100 transition group"
+          >
+            <div className="mt-0.5 w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-700 transition">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-indigo-900 text-sm leading-snug">ขอสอบวิทยานิพนธ์</p>
+              <p className="text-xs text-indigo-600 mt-0.5">สำหรับการสอบวิทยานิพนธ์ (บ.2/3/4)</p>
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* Quick stats */}
       {mine.length > 0 && (
@@ -68,13 +91,22 @@ export default function StudentDashboard() {
             <p className="text-lg font-medium text-gray-600">ยังไม่มีคำร้องวิทยานิพนธ์</p>
             <p className="text-gray-400 text-sm mt-1">เริ่มต้นโดยการยื่นคำร้องแรกของท่าน</p>
           </div>
-          <Link
-            href="/dashboard/student/submit"
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
-          >
-            <PlusCircle className="w-5 h-5" />
-            ยื่นคำร้องใหม่
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/dashboard/student/submit?type=proposal"
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition text-sm"
+            >
+              <BookOpen className="w-4 h-4" />
+              ขอสอบโครงร่าง
+            </Link>
+            <Link
+              href="/dashboard/student/submit?type=defense"
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition text-sm"
+            >
+              <GraduationCap className="w-4 h-4" />
+              ขอสอบวิทยานิพนธ์
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -110,7 +142,19 @@ export default function StudentDashboard() {
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1.5">
-                  <p className="font-semibold text-gray-900 truncate text-lg leading-snug">{sub.title}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {sub.submissionType === "PROPOSAL" && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        <BookOpen className="w-3 h-3" />โครงร่าง
+                      </span>
+                    )}
+                    {sub.submissionType === "THESIS_DEFENSE" && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                        <GraduationCap className="w-3 h-3" />สอบวิทยานิพนธ์
+                      </span>
+                    )}
+                    <p className="font-semibold text-gray-900 truncate text-lg leading-snug">{sub.title}</p>
+                  </div>
 
                   {advisor && (
                     <p className="text-sm text-gray-500">

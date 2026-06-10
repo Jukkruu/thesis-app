@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
 import { PROGRAM_LABELS } from "@/lib/utils";
-import { MockUser, ProgramType } from "@/types";
-import { ArrowLeft, User, Users, CalendarDays, Info, Search, X, Check, ChevronDown } from "lucide-react";
+import { MockUser, ProgramType, SubmissionType } from "@/types";
+import { ArrowLeft, User, Users, CalendarDays, Info, Search, X, Check, ChevronDown, BookOpen, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 // ─── Searchable single-select ─────────────────────────────────────────────────
@@ -212,6 +212,17 @@ function MultiPicker({
 
 export default function NewSubmissionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawType = searchParams.get("type");
+  const submissionType: SubmissionType =
+    rawType === "defense" ? "THESIS_DEFENSE" : "PROPOSAL";
+
+  const isProposal = submissionType === "PROPOSAL";
+  const formTitle  = isProposal ? "ขอสอบโครงร่างวิทยานิพนธ์" : "ขอสอบวิทยานิพนธ์";
+  const formDesc   = isProposal
+    ? "คำร้องขอสอบโครงร่างวิทยานิพนธ์ (บ.วศ.1ก / บ.วศ.1ข / บ.วศ.1ค / บ.วศ.1ง)"
+    : "คำร้องขอสอบวิทยานิพนธ์ (บ.2 / บ.3 / บ.4)";
+
   const { createSubmission, users } = useApp();
 
   const advisors          = users.filter((u) => u.role === "ADVISOR");
@@ -247,6 +258,7 @@ export default function NewSubmissionPage() {
 
     const data: SubmissionFormData = {
       title: title.trim(),
+      submissionType,
       advisorId,
       studentFullName: studentFullName.trim(),
       studentCode: studentCode.trim(),
@@ -274,7 +286,19 @@ export default function NewSubmissionPage() {
         ย้อนกลับ
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">ยื่นคำร้องวิทยานิพนธ์</h1>
+      {/* Form type header */}
+      <div className={`rounded-2xl p-5 flex items-start gap-4 ${isProposal ? "bg-blue-50 border border-blue-200" : "bg-indigo-50 border border-indigo-200"}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isProposal ? "bg-blue-600" : "bg-indigo-600"}`}>
+          {isProposal
+            ? <BookOpen className="w-5 h-5 text-white" />
+            : <GraduationCap className="w-5 h-5 text-white" />
+          }
+        </div>
+        <div>
+          <h1 className={`text-xl font-bold ${isProposal ? "text-blue-900" : "text-indigo-900"}`}>{formTitle}</h1>
+          <p className={`text-sm mt-0.5 ${isProposal ? "text-blue-600" : "text-indigo-600"}`}>{formDesc}</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -391,9 +415,13 @@ export default function NewSubmissionPage() {
 
         <button
           type="submit"
-          className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition shadow-sm text-base"
+          className={`w-full py-3.5 text-white font-semibold rounded-xl transition shadow-sm text-base ${
+            isProposal
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
         >
-          ยืนยันยื่นคำร้อง
+          ยืนยันยื่นคำร้อง — {formTitle}
         </button>
       </form>
     </div>
