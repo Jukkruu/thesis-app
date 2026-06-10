@@ -122,3 +122,22 @@ export function formatDate(date: Date | string): string {
     minute: "2-digit",
   });
 }
+
+export function downloadMockFile(fileName: string, formLabel: string, submissionTitle: string) {
+  const content = [
+    `=== เอกสารสาธิต ===`,
+    `แบบฟอร์ม: ${formLabel}`,
+    `ชื่อวิทยานิพนธ์: ${submissionTitle}`,
+    `ไฟล์: ${fileName}`,
+    ``,
+    `[ในระบบจริง ไฟล์ต้นฉบับจะถูกดาวน์โหลดจาก Storage]`,
+  ].join("\n");
+
+  const blob = new Blob(["﻿" + content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName.replace(/\.pdf$/i, ".txt");
+  a.click();
+  URL.revokeObjectURL(url);
+}

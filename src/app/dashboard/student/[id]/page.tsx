@@ -5,7 +5,7 @@ import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate, downloadMockFile } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
 import {
@@ -27,7 +27,7 @@ const ALL_STUDENT_FORMS: FormType[] = ["BW1A", "BW1B", "B3", "B4", "THESIS"];
 
 export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user, submissions, approveCurrentStep, studentResubmit } = useApp();
+  const { user, submissions, users, approveCurrentStep, studentResubmit } = useApp();
   const { showToast } = useToast();
 
   const sub = submissions.find((s) => s.id === id);
@@ -41,7 +41,8 @@ export default function StudentSubmissionDetail() {
     );
   }
 
-  const advisor      = MOCK_USERS.find((u) => u.id === sub.advisorId);
+  const allUsers     = users.length ? users : MOCK_USERS;
+  const advisor      = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep  = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn     = currentStep?.role === "STUDENT";
   const doneCount    = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
@@ -212,7 +213,7 @@ export default function StudentSubmissionDetail() {
         {/* Timeline — second on mobile so upload/action is reachable first */}
         <div className="order-2 md:order-none md:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
-          <WorkflowTimeline steps={sub.workflowSteps} />
+          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} />
         </div>
 
         {/* Right: files + upload — first on mobile */}
@@ -232,7 +233,7 @@ export default function StudentSubmissionDetail() {
                       <p className="text-xs text-gray-400">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => alert(`[Demo] ดาวน์โหลด: ${u.fileName}`)}
+                      onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
                       className="shrink-0 text-blue-400 hover:text-blue-600"
                     >
                       <Download className="w-4 h-4" />

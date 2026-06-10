@@ -457,6 +457,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }),
       }).catch((err) => console.error("Finance email failed:", err));
     }
+
+    // Send Advisor email when workflow advances to the ADVISOR step
+    if (nextStep?.role === "ADVISOR" && sub.advisorId) {
+      const advisorUser = users.find((u) => u.id === sub.advisorId);
+      if (advisorUser) {
+        fetch("/api/email/advisor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            advisorName: advisorUser.name,
+            advisorEmail: advisorUser.email,
+            studentName: sub.studentFullName ?? sub.studentId,
+            studentCode: sub.studentCode ?? "-",
+            program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
+            thesisTitle: sub.title,
+            submissionId,
+          }),
+        }).catch((err) => console.error("Advisor email failed:", err));
+      }
+    }
   }
 
   function rejectCurrentStep(submissionId: string, notes: string) {

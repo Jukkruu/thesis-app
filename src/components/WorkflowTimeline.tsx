@@ -1,12 +1,18 @@
 "use client";
 
-import { MockWorkflowStep } from "@/types";
+import { MockUser, MockWorkflowStep } from "@/types";
 import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
 import { StepStatusBadge } from "./StatusBadge";
 import { CheckCircle2, Clock, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function WorkflowTimeline({ steps }: { steps: MockWorkflowStep[] }) {
+export function WorkflowTimeline({
+  steps,
+  users = [],
+}: {
+  steps: MockWorkflowStep[];
+  users?: MockUser[];
+}) {
   const currentOrder = steps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
 
   return (
@@ -66,17 +72,50 @@ export function WorkflowTimeline({ steps }: { steps: MockWorkflowStep[] }) {
                 </p>
               )}
 
-              {/* Committee signing progress */}
+              {/* Committee signing progress — show each member's status */}
               {step.committeeMembers && step.committeeMembers.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  กรรมการลงนาม{" "}
-                  <span className="font-semibold text-gray-700">
-                    {(step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length}
-                    /{step.committeeMembers.length}
-                  </span>
-                  {" "}ท่าน
-                </p>
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs font-medium text-gray-500">
+                    ลงนามแล้ว{" "}
+                    <span className="font-bold text-gray-700">
+                      {(step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length}
+                      /{step.committeeMembers.length}
+                    </span>
+                    {" "}ท่าน
+                  </p>
+                  {step.committeeMembers.map((memberId) => {
+                    const member = users.find((u) => u.id === memberId);
+                    const action = (step.committeeActions ?? []).find((a) => a.userId === memberId);
+                    const signed   = action?.decision === "APPROVED";
+                    const rejected = action?.decision === "REJECTED";
+                    return (
+                      <div key={memberId} className="flex items-center gap-2 text-xs">
+                        {signed ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                        ) : rejected ? (
+                          <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        ) : (
+                          <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                        )}
+                        <span className={cn(
+                          signed ? "text-green-700 font-medium" :
+                          rejected ? "text-red-700 font-medium" :
+                          "text-gray-400"
+                        )}>
+                          {member?.name ?? memberId}
+                        </span>
+                        {action?.actedAt && (
+                          <span className="text-gray-400">· {formatDate(action.actedAt)}</span>
+                        )}
+                        {!action && (
+                          <span className="text-gray-300 italic">ยังไม่ได้ลงนาม</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
+
               {step.notes && (
                 <p className="mt-1.5 text-sm text-gray-600 bg-white border border-gray-100 rounded-lg px-3 py-2">
                   "{step.notes}"

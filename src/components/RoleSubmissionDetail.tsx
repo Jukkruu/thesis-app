@@ -6,10 +6,9 @@ import { WorkflowTimeline } from "./WorkflowTimeline";
 import { SignatureButton } from "./SignatureButton";
 import { CommitteeSignPanel } from "./CommitteeSignPanel";
 import { SubmissionStatusBadge } from "./StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate, PROGRAM_LABELS, downloadMockFile } from "@/lib/utils";
 import { Download, FileText, ArrowLeft, Clock, AlertCircle, StickyNote, CalendarDays } from "lucide-react";
 import Link from "next/link";
-import { PROGRAM_LABELS } from "@/lib/utils";
 
 interface Props {
   submissionId: string;
@@ -17,7 +16,7 @@ interface Props {
 }
 
 export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
-  const { user, submissions } = useApp();
+  const { user, submissions, users } = useApp();
   const router = useRouter();
   const sub = submissions.find((s) => s.id === submissionId);
 
@@ -30,7 +29,6 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
-  const { users } = useApp();
   const allUsers    = users.length ? users : MOCK_USERS;
   const student     = allUsers.find((u) => u.id === sub.studentId);
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
@@ -125,7 +123,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         {/* Timeline — second on mobile so the action panel is reachable first */}
         <div className="order-2 lg:order-none lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
-          <WorkflowTimeline steps={sub.workflowSteps} />
+          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} />
         </div>
 
         {/* Sidebar — first on mobile */}
@@ -143,7 +141,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
                       <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => alert(`[Demo] ดาวน์โหลด: ${u.fileName}`)}
+                      onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
                       className="shrink-0 p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition"
                       title="ดาวน์โหลด"
                     >

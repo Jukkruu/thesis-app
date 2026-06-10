@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, formatBytes, formatDate } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, formatBytes, formatDate, downloadMockFile } from "@/lib/utils";
 import { MockWorkflowStep } from "@/types";
 import Link from "next/link";
 import {
@@ -140,7 +140,7 @@ function StepCard({
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { submissions, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote, approveCurrentStep, rejectCurrentStep } = useApp();
+  const { submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote, approveCurrentStep, rejectCurrentStep } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -166,9 +166,10 @@ export default function AdminSubmissionDetail() {
     );
   }
 
-  const student    = MOCK_USERS.find((u) => u.id === sub.studentId);
-  const advisor    = MOCK_USERS.find((u) => u.id === sub.advisorId);
-  const advisors   = MOCK_USERS.filter((u) => u.role === "ADVISOR");
+  const allUsers   = users.length ? users : MOCK_USERS;
+  const student    = allUsers.find((u) => u.id === sub.studentId);
+  const advisor    = allUsers.find((u) => u.id === sub.advisorId);
+  const advisors   = allUsers.filter((u) => u.role === "ADVISOR");
   const currentOrd = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const doneCount  = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
   const totalSteps = sub.workflowSteps.length;
@@ -388,7 +389,7 @@ export default function AdminSubmissionDetail() {
             </div>
           ) : (
             <div className="bg-white rounded-b-2xl border border-gray-200 border-t-0 p-6">
-              <WorkflowTimeline steps={sub.workflowSteps} />
+              <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} />
             </div>
           )}
         </div>
@@ -435,7 +436,7 @@ export default function AdminSubmissionDetail() {
                       <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => alert(`[Demo] ดาวน์โหลด: ${u.fileName}`)}
+                      onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
                       className="shrink-0 p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition"
                     >
                       <Download className="w-4 h-4" />

@@ -134,13 +134,13 @@ export default function AdminDashboard() {
             {stageData.map((d) => (
               <div key={d.stepOrder} className="flex items-center gap-3">
                 <span className="w-44 shrink-0 text-sm text-gray-600 text-right truncate">{d.name}</span>
-                <div className="flex-1 h-6 bg-gray-50 rounded-lg overflow-hidden relative">
+                <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-lg transition-all ${d.count > 0 ? "bg-blue-500" : ""}`}
-                    style={{ width: `${(d.count / maxStage) * 100}%` }}
+                    className={`h-full rounded-full transition-all duration-500 ${d.count > 0 ? "bg-blue-500" : "bg-transparent"}`}
+                    style={{ width: d.count > 0 ? `${Math.max((d.count / maxStage) * 100, 8)}%` : "0%" }}
                   />
                 </div>
-                <span className={`w-8 shrink-0 text-sm font-semibold ${d.count > 0 ? "text-blue-600" : "text-gray-300"}`}>
+                <span className={`w-8 shrink-0 text-sm font-bold text-center ${d.count > 0 ? "text-blue-600" : "text-gray-300"}`}>
                   {d.count}
                 </span>
               </div>
@@ -282,13 +282,16 @@ export default function AdminDashboard() {
 
                 {/* Progress bar */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-500 rounded-full transition-all"
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        sub.status === "COMPLETED" ? "bg-green-500" :
+                        sub.status === "REJECTED"  ? "bg-red-400"   : "bg-blue-500"
+                      }`}
                       style={{ width: `${(doneCount / totalSteps) * 100}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-400 shrink-0">{doneCount}/{totalSteps} ขั้น</span>
+                  <span className="text-xs text-gray-500 font-medium shrink-0">{doneCount}/{totalSteps} ขั้น</span>
                 </div>
 
                 <p className="text-sm text-gray-400">{formatDate(sub.createdAt)}</p>
