@@ -3,33 +3,35 @@
 import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
-import { CheckCircle2, XCircle, Upload, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download } from "lucide-react";
+import { FORM_LABELS, downloadMockFile } from "@/lib/utils";
 
 interface Props {
   submissionId: string;
   label?: string;
-  onSuccess?: () => void;   // called after approve or reject — use to navigate away
+  onSuccess?: () => void;
 }
 
-export function SignatureButton({ submissionId, label = "อนุมัติ / ลงนาม", onSuccess }: Props) {
-  const { approveCurrentStep, rejectCurrentStep, addUpload } = useApp();
+export function SignatureButton({ submissionId, label = "อัปโหลดเอกสารลงนาม", onSuccess }: Props) {
+  const { approveCurrentStep, rejectCurrentStep, addUpload, submissions } = useApp();
   const { showToast } = useToast();
-  const [notes,       setNotes]       = useState("");
-  const [showReject,  setShowReject]  = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
-  const [signedFile,  setSignedFile]  = useState<File | null>(null);
+  const [notes,      setNotes]      = useState("");
+  const [showReject, setShowReject] = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
+  const [signedFile, setSignedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const sub = submissions.find((s) => s.id === submissionId);
+
   async function handleApprove() {
-    if (!signedFile) { setError("กรุณาแนบเอกสารที่ลงนามแล้วก่อนอนุมัติ"); return; }
+    if (!signedFile) { setError("กรุณาแนบเอกสารที่ลงนามแล้วก่อนอัปโหลด"); return; }
     setLoading(true);
-    // small delay so user sees the loading state
     await new Promise((r) => setTimeout(r, 600));
     addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size);
     approveCurrentStep(submissionId, notes || undefined);
     setLoading(false);
-    showToast("ลงนามและอนุมัติเรียบร้อยแล้ว ✓");
+    showToast("อัปโหลดและอนุมัติเรียบร้อยแล้ว ✓");
     onSuccess?.();
   }
 
@@ -47,12 +49,39 @@ export function SignatureButton({ submissionId, label = "อนุมัติ /
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
       <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ</h3>
 
-      {/* Signed file upload */}
+      {/* Step 1: Download forms to sign */}
+      {!showReject && sub?.uploads && sub.uploads.length > 0 && (
+        <div>
+          <p className="text-sm font-semibold text-gray-700 mb-2">
+            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">1</span>
+            ดาวน์โหลดเอกสารเพื่อลงนาม
+          </p>
+          <div className="space-y-2">
+            {sub.uploads.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
+              >
+                <Download className="w-4 h-4 text-blue-500 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-700 truncate">{FORM_LABELS[u.formType]}</p>
+                  <p className="text-xs text-gray-400 truncate">{u.fileName}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Upload signed file */}
       {!showReject && (
         <div>
-          <label className="block font-medium text-gray-700 mb-2">
-            แนบเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
-          </label>
+          <p className="text-sm font-semibold text-gray-700 mb-2">
+            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
+            อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
+          </p>
           <div
             onClick={() => fileRef.current?.click()}
             className={cn(

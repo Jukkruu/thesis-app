@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, formatBytes, formatDate, downloadMockFile } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadMockFile } from "@/lib/utils";
 import { MockWorkflowStep } from "@/types";
 import Link from "next/link";
 import {
@@ -333,6 +333,39 @@ export default function AdminSubmissionDetail() {
           </div>
         </div>
 
+        {/* Exam appointment info */}
+        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length) && (
+          <div className="border-t border-gray-100 pt-4 space-y-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลการสอบ</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              {sub.program && (
+                <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
+              )}
+              {sub.examDate && (
+                <AdminInfoItem label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />
+              )}
+              {sub.studentEmail && (
+                <AdminInfoItem label="อีเมลนิสิต" value={sub.studentEmail} />
+              )}
+              {sub.studentPhone && (
+                <AdminInfoItem label="เบอร์โทรนิสิต" value={sub.studentPhone} />
+              )}
+              {sub.roomNeeded && (
+                <AdminInfoItem label="ห้องประชุม" value="ต้องการ" />
+              )}
+              {sub.parkingNeeded && sub.carPlate && (
+                <AdminInfoItem label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />
+              )}
+              {sub.headCommitteeId && (
+                <AdminInfoItem label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+              )}
+              {sub.committeeIds?.map((id, i) => (
+                <AdminInfoItem key={id} label={`กรรมการสอบ ${i + 1}`} value={allUsers.find((u) => u.id === id)?.name ?? id} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* External professor info */}
         {(sub.invitedProfName || sub.invitedCommitteeId) && (
           <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
@@ -552,6 +585,15 @@ export default function AdminSubmissionDetail() {
 
         </div>
       </div>
+    </div>
+  );
+}
+
+function AdminInfoItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="font-medium text-gray-800 text-sm">{value}</p>
     </div>
   );
 }

@@ -256,7 +256,11 @@ export default function NewSubmissionPage() {
     if (!studentCode.trim())     { setError("กรุณาระบุรหัสนิสิต");        return; }
     if (!program)                { setError("กรุณาเลือกหลักสูตร");         return; }
     if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");            return; }
-    if (!advisorId)              { setError("กรุณาเลือกอาจารย์ที่ปรึกษา"); return; }
+    if (!advisorId)              { setError("กรุณาเลือกอาจารย์ที่ปรึกษา");             return; }
+    if (!invitedProfName.trim()) { setError("กรุณาระบุชื่อ-นามสกุลกรรมการภายนอก");    return; }
+    if (!invitedProfAffil.trim()){ setError("กรุณาระบุสังกัดกรรมการภายนอก");           return; }
+    if (!invitedProfEmail.trim()){ setError("กรุณาระบุอีเมลกรรมการภายนอก");            return; }
+    if (!invitedProfPhone.trim()){ setError("กรุณาระบุเบอร์โทรศัพท์กรรมการภายนอก");   return; }
 
     const data: SubmissionFormData = {
       title: title.trim(),
@@ -380,35 +384,35 @@ export default function NewSubmissionPage() {
               <p className="text-sm font-semibold text-gray-700">กรรมการภายนอก (External Committee)</p>
               <p className="text-xs text-gray-400 -mt-1">กรรมการภายนอกต้องติดต่อและยืนยันล่วงหน้าก่อนกรอกข้อมูล</p>
               <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="ชื่อ-นามสกุล (พร้อมตำแหน่ง)">
+                <Field label="ชื่อ-นามสกุล (พร้อมตำแหน่ง)" required>
                   <input
                     value={invitedProfName}
-                    onChange={(e) => setInvitedProfName(e.target.value)}
+                    onChange={(e) => { setInvitedProfName(e.target.value); setError(null); }}
                     className={INPUT}
                     placeholder="เช่น ศ.ดร.สมชาย ใจดี"
                   />
                 </Field>
-                <Field label="สังกัด / มหาวิทยาลัย">
+                <Field label="สังกัด / มหาวิทยาลัย" required>
                   <input
                     value={invitedProfAffil}
-                    onChange={(e) => setInvitedProfAffil(e.target.value)}
+                    onChange={(e) => { setInvitedProfAffil(e.target.value); setError(null); }}
                     className={INPUT}
                     placeholder="เช่น มหาวิทยาลัยเกษตรศาสตร์"
                   />
                 </Field>
-                <Field label="อีเมล">
+                <Field label="อีเมล" required>
                   <input
                     type="email"
                     value={invitedProfEmail}
-                    onChange={(e) => setInvitedProfEmail(e.target.value)}
+                    onChange={(e) => { setInvitedProfEmail(e.target.value); setError(null); }}
                     className={INPUT}
                     placeholder="email@university.ac.th"
                   />
                 </Field>
-                <Field label="เบอร์โทรศัพท์">
+                <Field label="เบอร์โทรศัพท์" required>
                   <input
                     value={invitedProfPhone}
-                    onChange={(e) => setInvitedProfPhone(e.target.value)}
+                    onChange={(e) => { setInvitedProfPhone(e.target.value); setError(null); }}
                     className={INPUT}
                     placeholder="0812345678"
                   />
