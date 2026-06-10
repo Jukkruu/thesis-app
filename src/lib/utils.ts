@@ -141,3 +141,22 @@ export function downloadMockFile(fileName: string, formLabel: string, submission
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// Downloads the real uploaded file if available in the file store,
+// falls back to a placeholder text file for seed-data entries.
+export function downloadFile(uploadId: string, fileName: string, formLabel: string, submissionTitle: string) {
+  // dynamic import avoids bundling fileStore into server components
+  import("./fileStore").then(({ getFile }) => {
+    const stored = getFile(uploadId);
+    if (stored) {
+      const a = document.createElement("a");
+      a.href = stored;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      downloadMockFile(fileName, formLabel, submissionTitle);
+    }
+  });
+}

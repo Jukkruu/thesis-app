@@ -5,7 +5,8 @@ import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
-import { FORM_LABELS, downloadMockFile } from "@/lib/utils";
+import { FORM_LABELS, downloadFile } from "@/lib/utils";
+import { readAsDataUrl } from "@/lib/fileStore";
 
 interface Props {
   submissionId: string;
@@ -40,10 +41,11 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
     if (decision === "APPROVED" && signedFile) {
-      addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size);
+      const dataUrl = await readAsDataUrl(signedFile);
+      addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size, dataUrl);
     }
+    await new Promise((r) => setTimeout(r, 500));
     committeeSign(submissionId, decision, notes || undefined);
     setLoading(false);
     showToast(
@@ -127,7 +129,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
                   <button
                     key={u.id}
                     type="button"
-                    onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
+                    onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
                     className="w-full flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
                   >
                     <Download className="w-4 h-4 text-blue-500 shrink-0" />

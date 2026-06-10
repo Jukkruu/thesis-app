@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useApp, MOCK_USERS } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadMockFile } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
 import { MockWorkflowStep } from "@/types";
 import Link from "next/link";
 import {
@@ -501,17 +501,18 @@ export default function AdminSubmissionDetail() {
               <h2 className="font-semibold text-gray-800 mb-4">เอกสารแนบ ({sub.uploads.length})</h2>
               <ul className="space-y-3">
                 {sub.uploads.map((u) => (
-                  <li key={u.id} className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+                  <li key={u.id} className="flex items-center gap-3 py-1.5 border-b border-gray-100 last:border-0">
+                    <FileText className="w-4 h-4 text-blue-400 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-700 leading-snug">{FORM_LABELS[u.formType]}</p>
                       <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => downloadMockFile(u.fileName, FORM_LABELS[u.formType], sub.title)}
-                      className="shrink-0 p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3.5 h-3.5" />
+                      ดาวน์โหลด
                     </button>
                   </li>
                 ))}

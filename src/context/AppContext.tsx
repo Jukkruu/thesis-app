@@ -6,6 +6,7 @@ import {
   MockNotification, Role, FormType, SubmissionStatus, ProgramType, SubmissionType,
 } from "@/types";
 import { STEP_NAMES, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
+import { storeFile } from "@/lib/fileStore";
 
 // ─── Submission form data ─────────────────────────────────────────────────────
 
@@ -174,6 +175,28 @@ function makeInitial(): MockSubmission[] {
         { id: "sub-3-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "APPROVED", actedAt: "2024-09-10T10:00:00Z", actedByName: "รศ.ดร.นิพนธ์ วรรณโสภาคย์", notes: "อนุมัติครบถ้วน ขอแสดงความยินดี" },
       ],
     },
+    {
+      id: "sub-4", title: "การออกแบบระบบเก็บเกี่ยวพลังงานจากการสั่นสะเทือน",
+      studentId: "u-student", advisorId: "u-prof-CTT", status: "IN_PROGRESS",
+      studentFullName: "น.ส.สุพรรษา มั่งคั่ง", studentCode: "6470009999", program: "ME_MECH" as const,
+      studentEmail: "supansa@student.chula.ac.th", studentPhone: "0898765432",
+      headCommitteeId: "u-prof-CRW", committeeIds: COMMITTEE_IDS, invitedCommitteeId: "u-invited",
+      createdAt: "2025-03-01T08:00:00Z",
+      uploads: [
+        { id: "up-4a", formType: "BW1A" as const, fileName: "บ.วศ.1ก_สุพรรษา.pdf", fileSize: 480000, uploadedAt: "2025-03-01T09:00:00Z" },
+        { id: "up-4b", formType: "BW1B" as const, fileName: "บ.วศ.1ข_สุพรรษา.pdf", fileSize: 310000, uploadedAt: "2025-03-01T09:15:00Z" },
+      ],
+      workflowSteps: [
+        { id: "sub-4-s1", stepOrder: 1, role: "STUDENT",               status: "APPROVED" as const, actedAt: "2025-03-01T09:00:00Z", actedByName: "น.ส.สุพรรษา มั่งคั่ง" },
+        { id: "sub-4-s2", stepOrder: 2, role: "ADMIN",                 status: "APPROVED" as const, actedAt: "2025-03-03T10:00:00Z", actedByName: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", notes: "ตรวจรับเอกสารครบถ้วน" },
+        { id: "sub-4-s3", stepOrder: 3, role: "PROGRAM_CHAIR",         status: "PENDING"  as const },
+        { id: "sub-4-s4", stepOrder: 4, role: "HEAD_EXAM_COMMITTEE",   status: "PENDING"  as const },
+        { id: "sub-4-s5", stepOrder: 5, role: "EXAM_COMMITTEE",        status: "PENDING"  as const, committeeMembers: COMMITTEE_IDS },
+        { id: "sub-4-s6", stepOrder: 6, role: "ADVISOR",               status: "PENDING"  as const },
+        { id: "sub-4-s7", stepOrder: 7, role: "INVITED_EXAM_COMMITTEE",status: "PENDING"  as const },
+        { id: "sub-4-s8", stepOrder: 8, role: "PROGRAM_CHAIR",         status: "PENDING"  as const },
+      ],
+    },
   ];
 }
 
@@ -227,7 +250,7 @@ interface AppContextType {
   createSubmission: (data: SubmissionFormData) => MockSubmission;
   approveCurrentStep: (submissionId: string, notes?: string) => void;
   rejectCurrentStep: (submissionId: string, notes: string) => void;
-  addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number) => void;
+  addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number, fileContent?: string) => void;
   getPendingCount: (role: Role) => number;
   studentResubmit: (submissionId: string) => void;
   committeeSign: (submissionId: string, decision: "APPROVED" | "REJECTED", notes?: string) => void;
@@ -251,7 +274,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v12";
+const STORAGE_KEY = "thesis_mock_state_v13";
 
 interface StoredState {
   userId: string | null;
@@ -511,14 +534,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ]);
   }
 
-  function addUpload(submissionId: string, formType: FormType, fileName: string, fileSize: number) {
+  function addUpload(submissionId: string, formType: FormType, fileName: string, fileSize: number, fileContent?: string) {
+    const id = `up-${Date.now()}`;
+    if (fileContent) storeFile(id, fileContent);
     setSubmissions((prev) =>
       prev.map((sub) => {
         if (sub.id !== submissionId) return sub;
         return {
           ...sub,
           uploads: [...sub.uploads, {
-            id: `up-${Date.now()}`, formType, fileName, fileSize,
+            id, formType, fileName, fileSize,
             uploadedAt: new Date().toISOString(),
           }],
         };

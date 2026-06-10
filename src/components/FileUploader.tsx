@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { FormType } from "@/types";
 import { FORM_LABELS, formatBytes, cn } from "@/lib/utils";
+import { readAsDataUrl } from "@/lib/fileStore";
 import { Upload, FileText, CheckCircle2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
@@ -19,17 +20,12 @@ export function FileUploader({ submissionId, formType, onSuccess }: Props) {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleUpload() {
+  async function handleUpload() {
     if (!file) return;
-    if (file.type !== "application/pdf") {
-      setError("รับเฉพาะไฟล์ PDF เท่านั้น");
-      return;
-    }
-    if (file.size > 20 * 1024 * 1024) {
-      setError("ไฟล์ใหญ่เกิน 20 MB");
-      return;
-    }
-    addUpload(submissionId, formType, file.name, file.size);
+    if (file.type !== "application/pdf") { setError("รับเฉพาะไฟล์ PDF เท่านั้น"); return; }
+    if (file.size > 20 * 1024 * 1024) { setError("ไฟล์ใหญ่เกิน 20 MB"); return; }
+    const dataUrl = await readAsDataUrl(file);
+    addUpload(submissionId, formType, file.name, file.size, dataUrl);
     setDone(true);
     setError(null);
     onSuccess?.();
