@@ -77,7 +77,15 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
             {sub.parkingNeeded && sub.carPlate && <InfoRow label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />}
             {sub.headCommitteeId && <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />}
-            {sub.invitedCommitteeId && <InfoRow label="กรรมการภายนอก" value={sub.invitedCommitteeId} />}
+            {(sub.invitedProfName || sub.invitedCommitteeId) && (
+              <InfoRow
+                label="กรรมการภายนอก"
+                value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
+              />
+            )}
+            {sub.invitedProfAffiliation && <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />}
+            {sub.invitedProfEmail && <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />}
+            {sub.invitedProfPhone && <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />}
           </div>
         </div>
       )}

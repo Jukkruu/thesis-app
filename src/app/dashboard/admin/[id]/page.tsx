@@ -333,6 +333,45 @@ export default function AdminSubmissionDetail() {
           </div>
         </div>
 
+        {/* External professor info */}
+        {(sub.invitedProfName || sub.invitedCommitteeId) && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-semibold text-purple-600 uppercase">กรรมการภายนอก (External Committee)</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              {sub.invitedProfName && (
+                <div>
+                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfName}</p>
+                </div>
+              )}
+              {sub.invitedProfAffiliation && (
+                <div>
+                  <p className="text-xs text-purple-400">สังกัด</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfAffiliation}</p>
+                </div>
+              )}
+              {sub.invitedProfEmail && (
+                <div>
+                  <p className="text-xs text-purple-400">อีเมล</p>
+                  <p className="font-medium text-purple-900 break-all">{sub.invitedProfEmail}</p>
+                </div>
+              )}
+              {sub.invitedProfPhone && (
+                <div>
+                  <p className="text-xs text-purple-400">เบอร์โทร</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfPhone}</p>
+                </div>
+              )}
+              {!sub.invitedProfName && sub.invitedCommitteeId && (
+                <div>
+                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
+                  <p className="font-medium text-purple-900">{allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Progress bar */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">

@@ -21,6 +21,10 @@ export interface SubmissionFormData {
   headCommitteeId?: string;
   committeeIds?: string[];
   invitedCommitteeId?: string;
+  invitedProfName?: string;
+  invitedProfAffiliation?: string;
+  invitedProfEmail?: string;
+  invitedProfPhone?: string;
   examDate?: string;
   examTime?: string;
   roomNeeded?: boolean;
@@ -247,7 +251,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "thesis_mock_state_v11";
+const STORAGE_KEY = "thesis_mock_state_v12";
 
 interface StoredState {
   userId: string | null;
@@ -387,6 +391,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       headCommitteeId: data.headCommitteeId,
       committeeIds: committeeMembers,
       invitedCommitteeId: data.invitedCommitteeId,
+      invitedProfName: data.invitedProfName,
+      invitedProfAffiliation: data.invitedProfAffiliation,
+      invitedProfEmail: data.invitedProfEmail,
+      invitedProfPhone: data.invitedProfPhone,
       examDate: data.examDate,
       examTime: data.examTime,
       roomNeeded: data.roomNeeded,

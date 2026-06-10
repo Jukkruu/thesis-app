@@ -225,27 +225,29 @@ export default function NewSubmissionPage() {
 
   const { createSubmission, users } = useApp();
 
-  const advisors          = users.filter((u) => u.role === "ADVISOR");
-  const headCandidates    = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
-  const committees        = users.filter((u) => u.role === "EXAM_COMMITTEE");
-  const invitedCandidates = users.filter((u) => u.role === "INVITED_EXAM_COMMITTEE");
+  const advisors       = users.filter((u) => u.role === "ADVISOR");
+  const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
+  const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
-  const [title,           setTitle]           = useState("");
-  const [advisorId,       setAdvisorId]       = useState("");
-  const [studentFullName, setStudentFullName] = useState("");
-  const [studentCode,     setStudentCode]     = useState("");
-  const [program,         setProgram]         = useState<ProgramType | "">("");
-  const [studentEmail,    setStudentEmail]    = useState("");
-  const [studentPhone,    setStudentPhone]    = useState("");
-  const [headCommitteeId, setHeadCommitteeId] = useState("");
-  const [committeeIds,    setCommitteeIds]    = useState<string[]>([]);
-  const [invitedId,       setInvitedId]       = useState("");
-  const [examDate,        setExamDate]        = useState("");
-  const [examTime,        setExamTime]        = useState("");
-  const [roomNeeded,      setRoomNeeded]      = useState(false);
-  const [parkingNeeded,   setParkingNeeded]   = useState(false);
-  const [carPlate,        setCarPlate]        = useState("");
-  const [error,           setError]           = useState<string | null>(null);
+  const [title,              setTitle]              = useState("");
+  const [advisorId,          setAdvisorId]          = useState("");
+  const [studentFullName,    setStudentFullName]    = useState("");
+  const [studentCode,        setStudentCode]        = useState("");
+  const [program,            setProgram]            = useState<ProgramType | "">("");
+  const [studentEmail,       setStudentEmail]       = useState("");
+  const [studentPhone,       setStudentPhone]       = useState("");
+  const [headCommitteeId,    setHeadCommitteeId]    = useState("");
+  const [committeeIds,       setCommitteeIds]       = useState<string[]>([]);
+  const [invitedProfName,    setInvitedProfName]    = useState("");
+  const [invitedProfAffil,   setInvitedProfAffil]   = useState("");
+  const [invitedProfEmail,   setInvitedProfEmail]   = useState("");
+  const [invitedProfPhone,   setInvitedProfPhone]   = useState("");
+  const [examDate,           setExamDate]           = useState("");
+  const [examTime,           setExamTime]           = useState("");
+  const [roomNeeded,         setRoomNeeded]         = useState(false);
+  const [parkingNeeded,      setParkingNeeded]      = useState(false);
+  const [carPlate,           setCarPlate]           = useState("");
+  const [error,              setError]              = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -265,9 +267,12 @@ export default function NewSubmissionPage() {
       program: program as ProgramType,
       studentEmail: studentEmail.trim(),
       studentPhone: studentPhone.trim(),
-      headCommitteeId:   headCommitteeId || undefined,
-      committeeIds:      committeeIds.length ? committeeIds : undefined,
-      invitedCommitteeId: invitedId || undefined,
+      headCommitteeId:      headCommitteeId || undefined,
+      committeeIds:         committeeIds.length ? committeeIds : undefined,
+      invitedProfName:      invitedProfName.trim() || undefined,
+      invitedProfAffiliation: invitedProfAffil.trim() || undefined,
+      invitedProfEmail:     invitedProfEmail.trim() || undefined,
+      invitedProfPhone:     invitedProfPhone.trim() || undefined,
       examDate:     examDate || undefined,
       examTime:     examTime || undefined,
       roomNeeded,
@@ -370,15 +375,47 @@ export default function NewSubmissionPage() {
             />
           </Field>
 
-          <Field label="กรรมการภายนอก">
-            <SearchableSelect
-              options={invitedCandidates}
-              value={invitedId}
-              onChange={setInvitedId}
-              placeholder="ค้นหากรรมการภายนอก..."
-            />
-            <p className="text-xs text-gray-400 mt-1">กรรมการภายนอกต้องได้รับการยืนยันจากนักศึกษาก่อน</p>
-          </Field>
+          <div className="col-span-full">
+            <div className="border border-dashed border-gray-300 rounded-xl p-4 space-y-3 bg-gray-50">
+              <p className="text-sm font-semibold text-gray-700">กรรมการภายนอก (External Committee)</p>
+              <p className="text-xs text-gray-400 -mt-1">กรรมการภายนอกต้องติดต่อและยืนยันล่วงหน้าก่อนกรอกข้อมูล</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="ชื่อ-นามสกุล (พร้อมตำแหน่ง)">
+                  <input
+                    value={invitedProfName}
+                    onChange={(e) => setInvitedProfName(e.target.value)}
+                    className={INPUT}
+                    placeholder="เช่น ศ.ดร.สมชาย ใจดี"
+                  />
+                </Field>
+                <Field label="สังกัด / มหาวิทยาลัย">
+                  <input
+                    value={invitedProfAffil}
+                    onChange={(e) => setInvitedProfAffil(e.target.value)}
+                    className={INPUT}
+                    placeholder="เช่น มหาวิทยาลัยเกษตรศาสตร์"
+                  />
+                </Field>
+                <Field label="อีเมล">
+                  <input
+                    type="email"
+                    value={invitedProfEmail}
+                    onChange={(e) => setInvitedProfEmail(e.target.value)}
+                    className={INPUT}
+                    placeholder="email@university.ac.th"
+                  />
+                </Field>
+                <Field label="เบอร์โทรศัพท์">
+                  <input
+                    value={invitedProfPhone}
+                    onChange={(e) => setInvitedProfPhone(e.target.value)}
+                    className={INPUT}
+                    placeholder="0812345678"
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
         </Section>
 
         {/* ── ข้อมูลการสอบ ── */}

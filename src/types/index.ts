@@ -88,6 +88,11 @@ export interface MockSubmission {
   headCommitteeId?: string;
   committeeIds?: string[];
   invitedCommitteeId?: string;
+  // External (invited) professor free-text details
+  invitedProfName?: string;
+  invitedProfAffiliation?: string;
+  invitedProfEmail?: string;
+  invitedProfPhone?: string;
   // Exam logistics
   examDate?: string;
   examTime?: string;

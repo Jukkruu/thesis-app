@@ -189,10 +189,22 @@ export default function StudentSubmissionDetail() {
               <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
             )}
             {sub.headCommitteeId && (
-              <InfoRow label="ประธานกรรมการสอบ" value={MOCK_USERS.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+              <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
             )}
-            {sub.invitedCommitteeId && (
-              <InfoRow label="กรรมการภายนอก" value={sub.invitedCommitteeId} />
+            {(sub.invitedProfName || sub.invitedCommitteeId) && (
+              <InfoRow
+                label="กรรมการภายนอก"
+                value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
+              />
+            )}
+            {sub.invitedProfAffiliation && (
+              <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />
+            )}
+            {sub.invitedProfEmail && (
+              <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />
+            )}
+            {sub.invitedProfPhone && (
+              <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />
             )}
           </div>
         </div>
