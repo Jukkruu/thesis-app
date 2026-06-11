@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AppProvider } from "@/context/AppContext";
-import { ToastProvider } from "@/context/ToastContext";
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: {
@@ -27,11 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th">
       <body>
-        <AppProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AppProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

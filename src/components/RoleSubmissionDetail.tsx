@@ -1,6 +1,6 @@
 "use client";
 
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useRouter } from "next/navigation";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { SignatureButton } from "./SignatureButton";
@@ -29,7 +29,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
-  const allUsers    = users.length ? users : MOCK_USERS;
+  const allUsers    = users;
   const student     = allUsers.find((u) => u.id === sub.studentId);
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");

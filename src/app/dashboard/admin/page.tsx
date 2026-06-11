@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { MOCK_USERS } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
@@ -38,7 +37,7 @@ export default function AdminDashboard() {
 
   const filtered = submissions.filter((sub) => {
     const matchStatus = statusFilter === "ALL" || sub.status === statusFilter;
-    const student     = MOCK_USERS.find((u) => u.id === sub.studentId);
+    const student     = users.find((u) => u.id === sub.studentId);
     const query       = search.toLowerCase();
     const matchSearch = !query
       || sub.title.toLowerCase().includes(query)
@@ -66,7 +65,7 @@ export default function AdminDashboard() {
   });
   const maxStage = Math.max(1, ...stageData.map((d) => d.count));
 
-  const getStudent = (id: string) => MOCK_USERS.find((u) => u.id === id);
+  const getStudent = (id: string) => users.find((u) => u.id === id);
 
   return (
     <div className="max-w-4xl space-y-6">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { ROLE_LABELS, ROLE_DESC } from "@/lib/utils";
 import { DEMO_MODE } from "@/lib/config";
@@ -41,7 +41,7 @@ const ROLE_COLOR: Record<Role, string> = {
 };
 
 export default function AdminUsersPage() {
-  const { submissions, users: allUsers, resetDemo } = useApp();
+  const { submissions, users: allUsers } = useApp();
   const { showToast } = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
             <p className="text-sm text-amber-700 font-medium text-center">ยืนยันการรีเซ็ต? ข้อมูลที่สร้างไว้จะหายทั้งหมด</p>
             <div className="flex gap-2">
               <button
-                onClick={() => { resetDemo(); setConfirmReset(false); showToast("รีเซ็ตข้อมูลทดสอบเรียบร้อยแล้ว", "info"); }}
+                onClick={() => { setConfirmReset(false); showToast("ฟีเจอร์นี้ไม่รองรับในโหมดฐานข้อมูลจริง", "error"); }}
                 className="flex-1 py-2.5 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 transition"
               >
                 ยืนยันรีเซ็ต

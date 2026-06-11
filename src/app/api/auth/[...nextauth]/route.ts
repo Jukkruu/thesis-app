@@ -1,3 +1,2 @@
-import { NextResponse } from "next/server";
-export const GET = () => NextResponse.json({ message: "Mock mode" });
-export const POST = () => NextResponse.json({ message: "Mock mode" });
+import { handlers } from "@/lib/auth";
+export const { GET, POST } = handlers;

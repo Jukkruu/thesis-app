@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
-  const { user, submissions, committeeSign, addUpload } = useApp();
+  const { user, users, submissions, committeeSign, addUpload } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
   const [showReject, setReject]     = useState(false);
@@ -78,7 +78,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
       {/* Member roster */}
       <ul className="space-y-2">
         {members.map((mid) => {
-          const m = MOCK_USERS.find((u) => u.id === mid);
+          const m = users.find((u) => u.id === mid);
           const a = actions.find((x) => x.userId === mid);
           return (
             <li key={mid} className="flex items-center gap-2.5 text-sm">

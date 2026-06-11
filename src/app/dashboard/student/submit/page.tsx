@@ -249,7 +249,7 @@ export default function NewSubmissionPage() {
   const [carPlate,           setCarPlate]           = useState("");
   const [error,              setError]              = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim())           { setError("กรุณาระบุชื่อหัวข้อ");       return; }
     if (!studentFullName.trim()) { setError("กรุณาระบุชื่อ-นามสกุล");     return; }
@@ -284,7 +284,7 @@ export default function NewSubmissionPage() {
       carPlate: parkingNeeded ? carPlate.trim() : undefined,
     };
 
-    const sub = createSubmission(data);
+    const sub = await createSubmission(data);
     router.push(`/dashboard/student/${sub.id}`);
   }
 

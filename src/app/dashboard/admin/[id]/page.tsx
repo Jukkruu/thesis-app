@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
@@ -166,7 +166,7 @@ export default function AdminSubmissionDetail() {
     );
   }
 
-  const allUsers   = users.length ? users : MOCK_USERS;
+  const allUsers   = users;
   const student    = allUsers.find((u) => u.id === sub.studentId);
   const advisor    = allUsers.find((u) => u.id === sub.advisorId);
   const advisors   = allUsers.filter((u) => u.role === "ADVISOR");

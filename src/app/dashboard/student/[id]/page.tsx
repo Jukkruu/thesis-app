@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
@@ -10,7 +10,7 @@ import { FormType } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Send,
-  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle,
 } from "lucide-react";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
@@ -27,7 +27,7 @@ const ALL_STUDENT_FORMS: FormType[] = ["BW1A", "BW1B", "B3", "B4", "THESIS"];
 
 export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user, submissions, users, approveCurrentStep, studentResubmit } = useApp();
+  const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission } = useApp();
   const { showToast } = useToast();
 
   const sub = submissions.find((s) => s.id === id);
@@ -41,7 +41,7 @@ export default function StudentSubmissionDetail() {
     );
   }
 
-  const allUsers     = users.length ? users : MOCK_USERS;
+  const allUsers     = users;
   const advisor      = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep  = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn     = currentStep?.role === "STUDENT";
@@ -60,8 +60,26 @@ export default function StudentSubmissionDetail() {
     showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
   }
 
+  function handleCancel() {
+    if (!confirm("ต้องการยกเลิกคำร้องนี้ใช่หรือไม่?\nหลังจากยกเลิกแล้วจะไม่สามารถดำเนินการต่อได้")) return;
+    cancelSubmission(sub!.id);
+    showToast("ยกเลิกคำร้องแล้ว", "info");
+  }
+
   function renderStatusBanner() {
     if (!sub) return null;
+
+    if (subStatus === "CANCELLED") {
+      return (
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 flex items-start gap-4">
+          <XCircle className="w-7 h-7 text-gray-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-gray-700 font-bold text-lg">ยกเลิกคำร้องแล้ว</p>
+            <p className="text-gray-500 text-sm mt-1">คำร้องนี้ถูกยกเลิก — ท่านสามารถยื่นคำร้องใหม่ได้จากหน้าหลัก</p>
+          </div>
+        </div>
+      );
+    }
 
     if (subStatus === "COMPLETED") {
       return (
@@ -122,15 +140,24 @@ export default function StudentSubmissionDetail() {
 
     if (currentStep) {
       return (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 flex items-start gap-4">
-          <Clock className="w-7 h-7 text-orange-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-orange-800 font-bold text-lg">รอการดำเนินการ</p>
-            <p className="text-orange-600 text-sm mt-1">
-              ขณะนี้รอ <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span> (ขั้นที่ {currentStep.stepOrder})
-            </p>
-            <p className="text-orange-500 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
+          <div className="flex items-start gap-4">
+            <Clock className="w-7 h-7 text-orange-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-orange-800 font-bold text-lg">รอการดำเนินการ</p>
+              <p className="text-orange-600 text-sm mt-1">
+                ขณะนี้รอ <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span> (ขั้นที่ {currentStep.stepOrder})
+              </p>
+              <p className="text-orange-500 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
+            </div>
           </div>
+          <button
+            onClick={handleCancel}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-100 transition"
+          >
+            <XCircle className="w-4 h-4" />
+            ยกเลิกคำร้องนี้
+          </button>
         </div>
       );
     }
@@ -310,6 +337,15 @@ export default function StudentSubmissionDetail() {
                   ส่งให้อาจารย์ที่ปรึกษาตรวจสอบ
                 </button>
               )}
+
+              {/* Cancel — always available while in progress */}
+              <button
+                onClick={handleCancel}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
+              >
+                <XCircle className="w-4 h-4" />
+                ยกเลิกคำร้องนี้
+              </button>
             </div>
           )}
         </div>

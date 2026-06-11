@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-sm text-gray-400 truncate">{user.email}</p>
         </div>
         <button
-          onClick={() => { logout(); router.push("/login"); }}
+          onClick={async () => { await logout(); router.push("/login"); }}
           className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-red-600 font-medium hover:bg-red-50 transition"
         >
           <LogOut className="w-5 h-5" />

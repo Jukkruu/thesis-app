@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Role } from "@/types";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { DashboardHeader } from "./DashboardHeader";
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function RolePendingList({ role, title, basePath }: Props) {
-  const { submissions, user } = useApp();
+  const { submissions, user, users } = useApp();
   const [tab, setTab] = useState<"pending" | "history">("pending");
 
   const isCommittee = role === "EXAM_COMMITTEE";
@@ -60,7 +60,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
         sub.workflowSteps.some((s) => s.role === role && s.status === "APPROVED")
       ).length;
 
-  const getStudent = (id: string) => MOCK_USERS.find((u) => u.id === id);
+  const getStudent = (id: string) => users.find((u) => u.id === id);
   const list = tab === "pending" ? pending : history;
 
   return (

@@ -15,7 +15,7 @@ export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "T
 export type ProgramType = "PHD" | "ME_MECH" | "ME_CPS";
 export type SubmissionType = "PROPOSAL" | "THESIS_DEFENSE";
 export type StepStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
-export type SubmissionStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
+export type SubmissionStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "REJECTED" | "CANCELLED";
 
 export interface MockUser {
   id: string;

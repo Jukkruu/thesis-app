@@ -11,19 +11,34 @@ enum Role {
   STUDENT
   ADVISOR
   PROGRAM_CHAIR
+  HEAD_EXAM_COMMITTEE
   EXAM_COMMITTEE
-  DEPT_STAFF
-  FACULTY_DEAN
-  GRADUATE_SCHOOL
+  INVITED_EXAM_COMMITTEE
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum FormType {
   BW1A
   BW1B
+  B1C
+  B1D
   B2
   B3
   B4
   THESIS
+  SIGNED
+}
+
+enum ProgramType {
+  PHD
+  ME_MECH
+  ME_CPS
+}
+
+enum SubmissionType {
+  PROPOSAL
+  THESIS_DEFENSE
 }
 
 enum StepStatus {
@@ -38,33 +53,37 @@ enum SubmissionStatus {
   IN_PROGRESS
   COMPLETED
   REJECTED
+  CANCELLED
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  name          String
-  role          Role
-  studentId     String?  @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  studentId    String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  submissions   Submission[]   @relation("StudentSubmissions")
-  advisees      Submission[]   @relation("AdvisorSubmissions")
-  workflowSteps WorkflowStep[]
-  signatures    Signature[]
-  uploads       FormUpload[]
+  submissions        Submission[]   @relation("StudentSubmissions")
+  advisorSubmissions Submission[]   @relation("AdvisorSubmissions")
+  workflowSteps      WorkflowStep[]
+  signatures         Signature[]
+  uploads            FormUpload[]
+  notifications      Notification[]
 
   @@map("users")
 }
 
 model Submission {
-  id        String           @id @default(cuid())
-  title     String
-  status    SubmissionStatus @default(DRAFT)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  title          String
+  submissionType SubmissionType?
+  status         SubmissionStatus @default(DRAFT)
+  adminNote      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   student   User   @relation("StudentSubmissions", fields: [studentId], references: [id])
   studentId String
@@ -72,8 +91,30 @@ model Submission {
   advisor   User?   @relation("AdvisorSubmissions", fields: [advisorId], references: [id])
   advisorId String?
 
+  studentFullName String?
+  studentCode     String?
+  program         ProgramType?
+  studentEmail    String?
+  studentPhone    String?
+
+  headCommitteeId    String?
+  committeeIds       String[]
+  invitedCommitteeId String?
+
+  invitedProfName        String?
+  invitedProfAffiliation String?
+  invitedProfEmail       String?
+  invitedProfPhone       String?
+
+  examDate      String?
+  examTime      String?
+  roomNeeded    Boolean @default(false)
+  parkingNeeded Boolean @default(false)
+  carPlate      String?
+
   workflowSteps WorkflowStep[]
   uploads       FormUpload[]
+  notifications Notification[]
 
   @@map("submissions")
 }
@@ -85,7 +126,11 @@ model WorkflowStep {
   status      StepStatus @default(PENDING)
   notes       String?
   actedAt     DateTime?
+  actedByName String?
   createdAt   DateTime   @default(now())
+
+  committeeMembers String[]
+  committeeActions Json?
 
   submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   submissionId String
@@ -102,7 +147,7 @@ model WorkflowStep {
 model FormUpload {
   id         String   @id @default(cuid())
   formType   FormType
-  fileUrl    String
+  fileUrl    String?
   fileName   String
   fileSize   Int
   uploadedAt DateTime @default(now())
@@ -117,9 +162,9 @@ model FormUpload {
 }
 
 model Signature {
-  id         String   @id @default(cuid())
-  signedAt   DateTime @default(now())
-  ipAddress  String?
+  id        String   @id @default(cuid())
+  signedAt  DateTime @default(now())
+  ipAddress String?
 
   workflowStep   WorkflowStep @relation(fields: [workflowStepId], references: [id], onDelete: Cascade)
   workflowStepId String
@@ -129,4 +174,21 @@ model Signature {
 
   @@unique([workflowStepId, userId])
   @@map("signatures")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  detail    String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  recipient   User   @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId String
+
+  @@map("notifications")
 }

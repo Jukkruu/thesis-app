@@ -87,6 +87,7 @@ export const STATUS_LABELS: Record<SubmissionStatus, string> = {
   IN_PROGRESS: "กำลังดำเนินการ",
   COMPLETED: "เสร็จสิ้น",
   REJECTED: "ถูกปฏิเสธ",
+  CANCELLED: "ยกเลิก",
 };
 
 export const STEP_LABELS: Record<StepStatus, string> = {

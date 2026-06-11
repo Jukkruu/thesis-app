@@ -1,13 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useApp, MOCK_USERS, DEMO_USER_IDS } from "@/context/AppContext";
+import { signIn } from "next-auth/react";
+import { useApp } from "@/context/AppContext";
 import { ROLE_LABELS, ROLE_EMOJI, ROLE_GRADIENT } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { DEMO_MODE } from "@/lib/config";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn, GraduationCap, Sparkles, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Role } from "@/types";
+
+const DEMO_USERS = [
+  { email: "superadmin@eng.chula.ac.th", name: "ผู้ดูแลระบบสูงสุด",           role: "SUPER_ADMIN" as Role },
+  { email: "admin@eng.chula.ac.th",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", role: "ADMIN" as Role },
+  { email: "student@eng.chula.ac.th",    name: "นายอานนท์ ใจดี",              role: "STUDENT" as Role },
+  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์",   role: "PROGRAM_CHAIR" as Role },
+  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร",      role: "ADVISOR" as Role },
+  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ",     role: "HEAD_EXAM_COMMITTEE" as Role },
+  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์",  role: "EXAM_COMMITTEE" as Role },
+  { email: "viboon.s@eng.chula.ac.th",   name: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ", role: "INVITED_EXAM_COMMITTEE" as Role },
+];
 
 // ─── Workflow as 5 phases (matches the official process diagram) ───────────────
 
@@ -73,29 +85,33 @@ const PHASE_THEME = [
 ];
 
 export default function LoginPage() {
-  const { user, login } = useApp();
+  const { user } = useApp();
   const router = useRouter();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) router.replace(ROLE_ROUTES[user.role]);
   }, [user, router]);
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const found = MOCK_USERS.find((u) => u.email === email.trim().toLowerCase());
-    if (!found) { setError("ไม่พบอีเมลนี้ในระบบ กรุณาตรวจสอบอีกครั้ง"); return; }
-    if (!password.trim()) { setError("กรุณาใส่รหัสผ่าน"); return; }
-    login(found.id);
-    router.push(ROLE_ROUTES[found.role]);
+    if (!email.trim() || !password.trim()) { setError("กรุณาใส่อีเมลและรหัสผ่าน"); return; }
+    setSubmitting(true);
+    setError(null);
+    const result = await signIn("credentials", { email: email.trim().toLowerCase(), password, redirect: false });
+    setSubmitting(false);
+    if (result?.error) { setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); return; }
+    // redirect handled by useEffect above after session updates
   }
 
-  function quickLogin(userId: string, role: Role) {
-    login(userId);
-    router.push(ROLE_ROUTES[role]);
+  async function quickLogin(email: string, role: Role) {
+    setSubmitting(true);
+    await signIn("credentials", { email, password: "password123", redirect: false });
+    setSubmitting(false);
   }
 
   return (
@@ -158,10 +174,11 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60"
               >
                 <LogIn className="w-5 h-5" />
-                เข้าสู่ระบบ
+                {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </button>
             </form>
           </div>
@@ -174,11 +191,12 @@ export default function LoginPage() {
                 <p className="text-sm font-semibold uppercase tracking-wide">ทดสอบระบบ — คลิกเข้าใช้ตามบทบาท</p>
               </div>
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                {MOCK_USERS.filter((u) => DEMO_USER_IDS.includes(u.id)).map((u) => (
+                {DEMO_USERS.map((u) => (
                   <button
-                    key={u.id}
-                    onClick={() => quickLogin(u.id, u.role)}
-                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left"
+                    key={u.email}
+                    onClick={() => quickLogin(u.email, u.role)}
+                    disabled={submitting}
+                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left disabled:opacity-60"
                   >
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${ROLE_GRADIENT[u.role]} flex items-center justify-center shrink-0 text-lg`}>
                       {ROLE_EMOJI[u.role]}

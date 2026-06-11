@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
 import { MockSubmission, Role } from "@/types";
@@ -40,10 +40,10 @@ function getRelatedSubmissions(
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminUserProfilePage() {
-  const { uid }         = useParams<{ uid: string }>();
-  const { submissions } = useApp();
+  const { uid }                  = useParams<{ uid: string }>();
+  const { submissions, users }   = useApp();
 
-  const user = MOCK_USERS.find((u) => u.id === uid);
+  const user = users.find((u) => u.id === uid);
   if (!user) {
     return (
       <div className="text-center py-20 text-gray-400 space-y-2">
@@ -62,7 +62,7 @@ export default function AdminUserProfilePage() {
 
   // Sort: in-progress first, then by date desc
   const sorted = [...related].sort((a, b) => {
-    const order = { IN_PROGRESS: 0, DRAFT: 1, REJECTED: 2, COMPLETED: 3 };
+    const order = { IN_PROGRESS: 0, DRAFT: 1, REJECTED: 2, COMPLETED: 3, CANCELLED: 4 };
     const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
     return diff !== 0 ? diff : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
@@ -125,8 +125,8 @@ export default function AdminUserProfilePage() {
         ) : (
           <div className="space-y-3">
             {sorted.map((sub) => {
-              const student     = MOCK_USERS.find((u) => u.id === sub.studentId);
-              const advisor     = MOCK_USERS.find((u) => u.id === sub.advisorId);
+              const student     = users.find((u) => u.id === sub.studentId);
+              const advisor     = users.find((u) => u.id === sub.advisorId);
               const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
               const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
               const totalSteps  = sub.workflowSteps.length;

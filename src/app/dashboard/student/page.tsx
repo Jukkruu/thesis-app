@@ -1,14 +1,14 @@
 "use client";
 
-import { useApp, MOCK_USERS } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { ROLE_LABELS, formatDate } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Link from "next/link";
-import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers, BookOpen, GraduationCap } from "lucide-react";
+import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers, BookOpen, GraduationCap, XCircle } from "lucide-react";
 
 export default function StudentDashboard() {
-  const { user, submissions } = useApp();
+  const { user, submissions, users } = useApp();
   const mine = submissions.filter((s) => s.studentId === user?.id);
 
   const inProgress = mine.filter((s) => s.status === "IN_PROGRESS").length;
@@ -113,13 +113,14 @@ export default function StudentDashboard() {
           {mine.map((sub) => {
             const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
             const isMyTurn    = currentStep?.role === "STUDENT";
-            const advisor     = MOCK_USERS.find((u) => u.id === sub.advisorId);
+            const advisor     = users.find((u) => u.id === sub.advisorId);
             const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
             const totalSteps  = sub.workflowSteps.length;
 
             const accent =
-              sub.status === "COMPLETED" ? "bg-green-400"
-              : sub.status === "REJECTED" ? "bg-red-400"
+              sub.status === "COMPLETED"  ? "bg-green-400"
+              : sub.status === "REJECTED"  ? "bg-red-400"
+              : sub.status === "CANCELLED" ? "bg-gray-300"
               : isMyTurn ? "bg-blue-400"
               : "bg-orange-400";
 
@@ -137,6 +138,7 @@ export default function StudentDashboard() {
                 <div className="shrink-0">
                   {sub.status === "COMPLETED"  && <CheckCircle2 className="w-8 h-8 text-green-500" />}
                   {sub.status === "REJECTED"   && <AlertCircle  className="w-8 h-8 text-red-500" />}
+                  {sub.status === "CANCELLED"  && <XCircle      className="w-8 h-8 text-gray-400" />}
                   {sub.status === "IN_PROGRESS" && isMyTurn && <AlertCircle className="w-8 h-8 text-blue-500" />}
                   {sub.status === "IN_PROGRESS" && !isMyTurn && <Clock className="w-8 h-8 text-orange-400" />}
                 </div>
