@@ -31,6 +31,7 @@ export interface MockUpload {
   fileName: string;
   fileSize: number;
   uploadedAt: string;
+  fileUrl?: string | null;
 }
 
 export interface CommitteeAction {

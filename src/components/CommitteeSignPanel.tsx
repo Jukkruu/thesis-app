@@ -6,7 +6,6 @@ import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
 import { FORM_LABELS, downloadFile } from "@/lib/utils";
-import { readAsDataUrl } from "@/lib/fileStore";
 
 interface Props {
   submissionId: string;
@@ -15,7 +14,7 @@ interface Props {
 }
 
 export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
-  const { user, users, submissions, committeeSign, addUpload } = useApp();
+  const { user, users, submissions, committeeSign } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
   const [showReject, setReject]     = useState(false);
@@ -42,11 +41,18 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
     }
     setLoading(true);
     if (decision === "APPROVED" && signedFile) {
-      const dataUrl = await readAsDataUrl(signedFile);
-      addUpload(submissionId, "SIGNED", signedFile.name, signedFile.size, dataUrl);
+      const formData = new FormData();
+      formData.append("file", signedFile);
+      formData.append("submissionId", submissionId);
+      formData.append("formType", "SIGNED");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        setError("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
+        setLoading(false);
+        return;
+      }
     }
-    await new Promise((r) => setTimeout(r, 500));
-    committeeSign(submissionId, decision, notes || undefined);
+    await committeeSign(submissionId, decision, notes || undefined);
     setLoading(false);
     showToast(
       decision === "APPROVED" ? "อัปโหลดและลงนามเรียบร้อยแล้ว ✓" : "บันทึกการไม่อนุมัติแล้ว",
@@ -130,7 +136,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
                     <button
                       key={u.id}
                       type="button"
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
                       className="w-full flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
                     >
                       <Download className="w-4 h-4 text-blue-500 shrink-0" />
