@@ -53,15 +53,16 @@ export default function AdminDashboard() {
     REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
   };
 
-  const stageData = Array.from({ length: 8 }, (_, i) => {
-    const step = i + 1;
+  const stageData = Object.entries(STEP_NAMES).map(([order, name]) => {
+    const stepOrder = Number(order);
     const count = submissions.filter((s) => {
-      const pending = s.workflowSteps.find((w) => w.status === "PENDING");
-      return s.status === "IN_PROGRESS" && pending?.stepOrder === step;
+      if (s.status !== "IN_PROGRESS") return false;
+      const cur = s.workflowSteps.find((w) => w.status === "PENDING");
+      return cur?.stepOrder === stepOrder;
     }).length;
-    return { step, name: STEP_NAMES[step] ?? `ขั้นที่ ${step}`, count };
-  }).filter((d) => d.count > 0);
-  const maxStage = Math.max(...stageData.map((d) => d.count), 1);
+    return { stepOrder, name, count };
+  });
+  const maxStage = Math.max(1, ...stageData.map((d) => d.count));
 
   const getStudent = (id: string) => users.find((u) => u.id === id);
 
@@ -121,22 +122,24 @@ export default function AdminDashboard() {
       )}
 
       {/* Stage distribution chart */}
-      {stageData.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
-          {stageData.map((item) => (
-            <div key={item.step}>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-gray-600 text-xs">{item.step}. {item.name}</span>
-                <span className="font-semibold text-gray-900 ml-2 shrink-0 text-xs">{item.count}</span>
+      {counts.IN_PROGRESS > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
+          <div className="space-y-2.5">
+            {stageData.map((d) => (
+              <div key={d.stepOrder} className="flex items-center gap-3">
+                <span className="w-44 shrink-0 text-sm text-gray-600 text-right truncate">{d.name}</span>
+                <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${d.count > 0 ? "bg-blue-500" : "bg-transparent"}`}
+                    style={{ width: d.count > 0 ? `${Math.max((d.count / maxStage) * 100, 8)}%` : "0%" }}
+                  />
+                </div>
+                <span className={`w-8 shrink-0 text-sm font-bold text-center ${d.count > 0 ? "text-blue-600" : "text-gray-300"}`}>
+                  {d.count}
+                </span>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                  style={{ width: `${(item.count / maxStage) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -187,9 +190,10 @@ export default function AdminDashboard() {
         <div className="space-y-3">
           {filtered.map((sub) => {
             const student     = getStudent(sub.studentId);
-            const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
-            const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-            const totalSteps  = sub.workflowSteps.length;
+            const currentStep    = sub.workflowSteps.find((s) => s.status === "PENDING");
+            const doneCount      = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
+            const totalSteps     = sub.workflowSteps.length;
+            const progressStep   = currentStep?.stepOrder ?? totalSteps;
             const lastAction  = sub.workflowSteps
               .filter((s) => s.actedAt)
               .sort((a, b) => new Date(b.actedAt!).getTime() - new Date(a.actedAt!).getTime())[0];
@@ -279,10 +283,10 @@ export default function AdminDashboard() {
                         sub.status === "COMPLETED" ? "bg-green-500" :
                         sub.status === "REJECTED"  ? "bg-red-400"   : "bg-blue-500"
                       }`}
-                      style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+                      style={{ width: `${(progressStep / totalSteps) * 100}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-500 font-medium shrink-0">{doneCount}/{totalSteps} ขั้น</span>
+                  <span className="text-xs text-gray-500 font-medium shrink-0">{progressStep}/{totalSteps} ขั้น</span>
                 </div>
 
                 <p className="text-sm text-gray-400">{formatDate(sub.createdAt)}</p>
