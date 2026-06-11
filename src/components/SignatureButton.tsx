@@ -12,7 +12,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-export function SignatureButton({ submissionId, label = "อัปโหลดเอกสารลงนาม", onSuccess }: Props) {
+export function SignatureButton({ submissionId, label = "อัปโหลด", onSuccess }: Props) {
   const { approveCurrentStep, rejectCurrentStep, submissions } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");

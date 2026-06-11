@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
-import { MockWorkflowStep } from "@/types";
+import { MockWorkflowStep, MockUpload } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
@@ -20,10 +20,12 @@ function StepCard({
   step,
   isCurrentStep,
   onOverride,
+  stepUploads,
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
   onOverride: (stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => void;
+  stepUploads: MockUpload[];
 }) {
   const [open,   setOpen]   = useState(false);
   const [action, setAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
@@ -73,6 +75,25 @@ function StepCard({
           </button>
         </div>
       </div>
+
+      {/* Uploaded files for this step */}
+      {stepUploads.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+          {stepUploads.map((u) => (
+            <div key={u.id} className="flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="text-xs text-gray-600 truncate flex-1">{FORM_LABELS[u.formType]} — {u.fileName} <span className="text-gray-400">({formatBytes(u.fileSize)})</span></span>
+              <button
+                onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], "", u.fileUrl)}
+                className="shrink-0 text-xs text-blue-600 hover:underline flex items-center gap-0.5"
+              >
+                <Download className="w-3 h-3" />
+                ดาวน์โหลด
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Expandable admin controls */}
       {open && (
@@ -448,16 +469,26 @@ export default function AdminSubmissionDetail() {
 
           {activeTab === "steps" ? (
             <div className="space-y-3">
-              {sub.workflowSteps.map((step) => (
-                <StepCard
-                  key={step.id}
-                  step={step}
-                  isCurrentStep={step.stepOrder === currentOrd}
-                  onOverride={(stepOrder, action, notes) =>
-                    adminOverrideStep(sub.id, stepOrder, action, notes)
-                  }
-                />
-              ))}
+              {sub.workflowSteps.map((step, i) => {
+                const prevActedAt = i > 0 ? sub.workflowSteps[i - 1].actedAt : null;
+                const stepUploads = sub.uploads.filter((u) => {
+                  const t = new Date(u.uploadedAt).getTime();
+                  const from = prevActedAt ? new Date(prevActedAt).getTime() : 0;
+                  const to = step.actedAt ? new Date(step.actedAt).getTime() : Infinity;
+                  return t >= from && t <= to;
+                });
+                return (
+                  <StepCard
+                    key={step.id}
+                    step={step}
+                    stepUploads={stepUploads}
+                    isCurrentStep={step.stepOrder === currentOrd}
+                    onOverride={(stepOrder, action, notes) =>
+                      adminOverrideStep(sub.id, stepOrder, action, notes)
+                    }
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-b-2xl border border-gray-200 border-t-0 p-6">
@@ -508,7 +539,7 @@ export default function AdminSubmissionDetail() {
                       <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
                       className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                     >
                       <Download className="w-3.5 h-3.5" />

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, formatDate } from "@/lib/utils";
 import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
@@ -52,18 +52,6 @@ export default function AdminDashboard() {
     COMPLETED:   submissions.filter((s) => s.status === "COMPLETED").length,
     REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
   };
-
-  // Stage distribution: how many in-progress submissions sit at each step right now
-  const stageData = Object.entries(STEP_NAMES).map(([order, name]) => {
-    const stepOrder = Number(order);
-    const count = submissions.filter((s) => {
-      if (s.status !== "IN_PROGRESS") return false;
-      const cur = s.workflowSteps.find((w) => w.status === "PENDING");
-      return cur?.stepOrder === stepOrder;
-    }).length;
-    return { stepOrder, name, count };
-  });
-  const maxStage = Math.max(1, ...stageData.map((d) => d.count));
 
   const getStudent = (id: string) => users.find((u) => u.id === id);
 
@@ -123,31 +111,6 @@ export default function AdminDashboard() {
       )}
 
       {/* Stage distribution chart */}
-      {counts.IN_PROGRESS > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
-          <div>
-            <h2 className="font-semibold text-gray-800">การกระจายตามขั้นตอน</h2>
-            <p className="text-sm text-gray-500 mt-0.5">คำร้องที่กำลังดำเนินการ — ค้างอยู่ที่ขั้นใดบ้าง (ช่วยหาคอขวด)</p>
-          </div>
-          <div className="space-y-2.5">
-            {stageData.map((d) => (
-              <div key={d.stepOrder} className="flex items-center gap-3">
-                <span className="w-44 shrink-0 text-sm text-gray-600 text-right truncate">{d.name}</span>
-                <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${d.count > 0 ? "bg-blue-500" : "bg-transparent"}`}
-                    style={{ width: d.count > 0 ? `${Math.max((d.count / maxStage) * 100, 8)}%` : "0%" }}
-                  />
-                </div>
-                <span className={`w-8 shrink-0 text-sm font-bold text-center ${d.count > 0 ? "text-blue-600" : "text-gray-300"}`}>
-                  {d.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Search + filter */}
       <div className="space-y-3">
         {/* Search bar */}
