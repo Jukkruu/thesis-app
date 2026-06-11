@@ -30,12 +30,13 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: userId, role } = session.user;
+  if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
   let where: any = {};
-  if (role === "STUDENT")                  where = { studentId: userId };
-  else if (role === "ADVISOR")             where = { advisorId: userId };
-  else if (role === "HEAD_EXAM_COMMITTEE") where = { headCommitteeId: userId };
-  else if (role === "EXAM_COMMITTEE")      where = { committeeIds: { has: userId } };
+  if (role === "STUDENT")                     where = { studentId: userId };
+  else if (role === "ADVISOR")                where = { advisorId: userId };
+  else if (role === "HEAD_EXAM_COMMITTEE")    where = { headCommitteeId: userId };
+  else if (role === "EXAM_COMMITTEE")         where = { committeeIds: { hasSome: [userId] } };
   else if (role === "INVITED_EXAM_COMMITTEE") where = { invitedCommitteeId: userId };
   // ADMIN, SUPER_ADMIN, PROGRAM_CHAIR see all
 

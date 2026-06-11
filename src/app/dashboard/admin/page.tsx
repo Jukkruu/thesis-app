@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { ROLE_LABELS, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
 import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
@@ -52,6 +52,16 @@ export default function AdminDashboard() {
     COMPLETED:   submissions.filter((s) => s.status === "COMPLETED").length,
     REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
   };
+
+  const stageData = Array.from({ length: 8 }, (_, i) => {
+    const step = i + 1;
+    const count = submissions.filter((s) => {
+      const pending = s.workflowSteps.find((w) => w.status === "PENDING");
+      return s.status === "IN_PROGRESS" && pending?.stepOrder === step;
+    }).length;
+    return { step, name: STEP_NAMES[step] ?? `ขั้นที่ ${step}`, count };
+  }).filter((d) => d.count > 0);
+  const maxStage = Math.max(...stageData.map((d) => d.count), 1);
 
   const getStudent = (id: string) => users.find((u) => u.id === id);
 
@@ -111,6 +121,25 @@ export default function AdminDashboard() {
       )}
 
       {/* Stage distribution chart */}
+      {stageData.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+          {stageData.map((item) => (
+            <div key={item.step}>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-600 text-xs">{item.step}. {item.name}</span>
+                <span className="font-semibold text-gray-900 ml-2 shrink-0 text-xs">{item.count}</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(item.count / maxStage) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Search + filter */}
       <div className="space-y-3">
         {/* Search bar */}
