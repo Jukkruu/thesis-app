@@ -101,7 +101,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    if (step.stepOrder === 2 && step.role === "ADMIN") {
+    if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR") {
       fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
