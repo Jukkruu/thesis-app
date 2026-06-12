@@ -75,7 +75,11 @@ function SearchableSelect({
           </div>
           <ul className="max-h-48 overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-gray-400 text-center">ไม่พบชื่อที่ค้นหา</li>
+              <li className="px-4 py-3 text-sm text-gray-400 text-center">
+                {options.length === 0
+                  ? "ยังไม่มีข้อมูลในระบบ — กรุณาติดต่อผู้ดูแลระบบ"
+                  : "ไม่พบชื่อที่ค้นหา"}
+              </li>
             ) : (
               filtered.map((o) => (
                 <li key={o.id}>
@@ -294,6 +298,24 @@ export default function NewSubmissionPage() {
         <ArrowLeft className="w-4 h-4" />
         ย้อนกลับ
       </Link>
+
+      {/* Warning: no staff accounts yet */}
+      {(advisors.length === 0 || headCandidates.length === 0 || committees.length === 0) && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
+          <div className="text-sm text-amber-800 space-y-0.5">
+            <p className="font-semibold">บัญชีผู้ใช้ยังไม่ครบ</p>
+            <p className="text-amber-700">
+              {[
+                advisors.length === 0 && "อาจารย์ที่ปรึกษา",
+                headCandidates.length === 0 && "ประธานกรรมการสอบ",
+                committees.length === 0 && "กรรมการสอบ",
+              ].filter(Boolean).join(", ")}
+              {" "}ยังไม่มีในระบบ — กรุณาให้ผู้ดูแลระบบเพิ่มบัญชีผู้ใช้ก่อนยื่นคำร้อง
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Form type header */}
       <div className={`rounded-2xl p-5 flex items-start gap-4 ${isProposal ? "bg-blue-50 border border-blue-200" : "bg-indigo-50 border border-indigo-200"}`}>
