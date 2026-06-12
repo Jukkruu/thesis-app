@@ -144,7 +144,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!rejectedStep) return NextResponse.json({ error: "No rejected step" }, { status: 400 });
     await prisma.workflowStep.update({
       where: { id: rejectedStep.id },
-      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
     await notifyRole(rejectedStep.role, sub, "นักศึกษาแก้ไขและยื่นคำร้องใหม่แล้ว", "info");
@@ -167,7 +167,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.workflowStep.updateMany({
       where: { submissionId: id },
-      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
   }

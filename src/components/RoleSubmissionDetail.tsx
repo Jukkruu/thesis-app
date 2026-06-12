@@ -149,7 +149,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
                       <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
                       className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                     >
                       <Download className="w-3.5 h-3.5" />

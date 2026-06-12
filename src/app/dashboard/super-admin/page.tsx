@@ -15,7 +15,6 @@ import Link from "next/link";
 const ALL_ROLES: Role[] = [
   "SUPER_ADMIN", "ADMIN", "STUDENT", "ADVISOR", "PROGRAM_CHAIR",
   "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE",
-  "DEPT_STAFF", "FACULTY_DEAN", "GRADUATE_SCHOOL",
 ];
 
 export default function SuperAdminPage() {
