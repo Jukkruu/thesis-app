@@ -9,7 +9,7 @@ import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate, downloadFile } from 
 import { FormType } from "@/types";
 import Link from "next/link";
 import {
-  ArrowLeft, Download, FileText, Send,
+  ArrowLeft, Download, FileText, Send, Upload,
   AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle,
 } from "lucide-react";
 import { PROGRAM_LABELS } from "@/lib/utils";
@@ -272,7 +272,7 @@ export default function StudentSubmissionDetail() {
                       <p className="text-xs text-gray-400">{u.fileName} · {formatBytes(u.fileSize)}</p>
                     </div>
                     <button
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title)}
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
                       className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -287,42 +287,39 @@ export default function StudentSubmissionDetail() {
           {/* Upload section — always visible when in progress */}
           {subStatus === "IN_PROGRESS" && (
             <div className="bg-white rounded-2xl border border-blue-100 p-4 space-y-3">
-              <div>
-                <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
-                {suggested && (
-                  <p className="text-xs text-blue-600 mt-0.5">
-                    แนะนำตอนนี้: {suggested.label}
-                  </p>
-                )}
+              {/* Header */}
+              <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+                <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
+                  <p className="text-xs text-gray-400">เลือกไฟล์ PDF แล้วกดปุ่มอัปโหลด</p>
+                </div>
               </div>
 
-              {/* Suggested forms for current step */}
-              {suggested?.forms
-                .filter((f) => !uploadedTypes.has(f))
-                .map((ft) => (
-                  <FileUploader key={ft} submissionId={sub.id} formType={ft} />
-                ))
-              }
+              {/* Suggested forms for current step — shown first with highlight */}
+              {suggested?.forms.filter((f) => !uploadedTypes.has(f)).map((ft) => (
+                <div key={ft} className="space-y-1.5">
+                  <p className="text-xs font-medium text-blue-600 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                    แนะนำสำหรับขั้นตอนนี้
+                  </p>
+                  <FileUploader submissionId={sub.id} formType={ft} />
+                </div>
+              ))}
 
-              {/* Other forms not yet uploaded */}
-              {remaining
-                .filter((f) => !suggested?.forms.includes(f))
-                .length > 0 && (
-                  <details className="group">
-                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none">
-                      + เอกสารอื่น ๆ ที่ยังไม่ได้อัปโหลด
-                    </summary>
-                    <div className="mt-2 space-y-2">
-                      {remaining
-                        .filter((f) => !suggested?.forms.includes(f))
-                        .map((ft) => (
-                          <FileUploader key={ft} submissionId={sub.id} formType={ft} />
-                        ))
-                      }
-                    </div>
-                  </details>
-                )
-              }
+              {/* All remaining forms — always visible, never collapsed */}
+              {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => (
+                <FileUploader key={ft} submissionId={sub.id} formType={ft} />
+              ))}
+
+              {/* All uploaded */}
+              {remaining.length === 0 && (
+                <p className="text-sm text-green-600 bg-green-50 rounded-xl px-3 py-2 text-center">
+                  ✓ อัปโหลดเอกสารครบทุกรายการแล้ว
+                </p>
+              )}
 
               {/* Submit button — only at step 1 */}
               {isMyTurn && (
