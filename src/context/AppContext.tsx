@@ -68,7 +68,7 @@ interface AppContextType {
   adminOverrideStep: (submissionId: string, stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => Promise<void>;
   superAdminUpdateUserRole: (userId: string, newRole: Role) => Promise<void>;
   superAdminDeleteUser: (userId: string) => Promise<void>;
-  superAdminAddUser: (userData: Omit<MockUser, "id">) => Promise<void>;
+  superAdminAddUser: (userData: Omit<MockUser, "id">, password?: string) => Promise<void>;
   superAdminChangePassword: (userId: string, newPassword: string) => Promise<void>;
 }
 
@@ -247,8 +247,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsers((prev) => prev.filter((u) => u.id !== userId));
   }
 
-  async function superAdminAddUser(userData: Omit<MockUser, "id">) {
-    const newUser = await api<MockUser>("/api/users", "POST", userData);
+  async function superAdminAddUser(userData: Omit<MockUser, "id">, password?: string) {
+    const newUser = await api<MockUser>("/api/users", "POST", { ...userData, password });
     setUsers((prev) => [...prev, newUser]);
   }
 

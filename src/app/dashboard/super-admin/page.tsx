@@ -31,6 +31,9 @@ export default function SuperAdminPage() {
   const [newEmail,         setNewEmail]          = useState("");
   const [newRole,          setNewRole]           = useState<Role>("STUDENT");
   const [newStudentId,     setNewStudentId]      = useState("");
+  const [newPassword,      setNewPassword]       = useState("");
+  const [newPwShow,        setNewPwShow]         = useState(false);
+  const [newPwError,       setNewPwError]        = useState<string | null>(null);
   const [pwUserId,         setPwUserId]          = useState<string | null>(null);
   const [pwValue,          setPwValue]           = useState("");
   const [pwConfirm,        setPwConfirm]         = useState("");
@@ -71,14 +74,17 @@ export default function SuperAdminPage() {
   function handleAddUser(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
+    if (newPassword.length < 6) { setNewPwError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+    setNewPwError(null);
     const userData: Omit<MockUser, "id"> = {
       name:  newName.trim(),
       email: newEmail.trim().toLowerCase(),
       role:  newRole,
       ...(newRole === "STUDENT" && newStudentId.trim() ? { studentId: newStudentId.trim() } : {}),
     };
-    superAdminAddUser(userData);
+    superAdminAddUser(userData, newPassword);
     setNewName(""); setNewEmail(""); setNewRole("STUDENT"); setNewStudentId("");
+    setNewPassword(""); setNewPwShow(false); setNewPwError(null);
     setShowAddForm(false);
   }
 
@@ -192,7 +198,26 @@ export default function SuperAdminPage() {
                   />
                 </div>
               )}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน *</label>
+                <input
+                  required
+                  type={newPwShow ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setNewPwError(null); }}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                />
+                <button
+                  type="button"
+                  onClick={() => setNewPwShow((v) => !v)}
+                  className="absolute right-3 bottom-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  {newPwShow ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
+            {newPwError && <p className="text-sm text-red-600">{newPwError}</p>}
             <button
               type="submit"
               className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition"
