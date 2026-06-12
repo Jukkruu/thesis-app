@@ -69,6 +69,7 @@ interface AppContextType {
   superAdminUpdateUserRole: (userId: string, newRole: Role) => Promise<void>;
   superAdminDeleteUser: (userId: string) => Promise<void>;
   superAdminAddUser: (userData: Omit<MockUser, "id">) => Promise<void>;
+  superAdminChangePassword: (userId: string, newPassword: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -251,6 +252,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsers((prev) => [...prev, newUser]);
   }
 
+  async function superAdminChangePassword(userId: string, newPassword: string) {
+    await api(`/api/users/${userId}`, "PATCH", { password: newPassword });
+  }
+
   if (status === "loading" || (status === "authenticated" && loading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -272,7 +277,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markNotificationRead, markAllNotificationsRead,
       adminSetNote, adminUpdateSubmission, adminDeleteSubmission,
       adminResetSubmission, adminOverrideStep,
-      superAdminUpdateUserRole, superAdminDeleteUser, superAdminAddUser,
+      superAdminUpdateUserRole, superAdminDeleteUser, superAdminAddUser, superAdminChangePassword,
     }}>
       {children}
     </AppContext.Provider>
