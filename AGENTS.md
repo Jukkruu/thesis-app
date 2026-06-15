@@ -6,143 +6,181 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Project: ระบบจัดการวิทยานิพนธ์ (Thesis Management System)
 
-A role-based thesis approval workflow app. **Currently a client-side mockup** — all
-state lives in React Context + `localStorage`, no backend yet. UI is in Thai.
+A role-based thesis approval workflow app. **Fully live** — Next.js 16 App Router, Prisma ORM → Supabase PostgreSQL, NextAuth v5 (magic-link email login via Resend), file uploads to Supabase Storage. UI is in Thai.
 
-## Read these first
-- `docs/ARCHITECTURE.md` — the mental model (where everything lives, how the workflow runs).
-- `docs/RECIPES.md` — step-by-step for common changes (add a role/step/form/notification).
-- `README.md` — feature list, roles, and the **Going Live** checklist.
+## Stack & deployment
+- **DB**: Prisma + `@prisma/adapter-pg` → Supabase PostgreSQL. Client in `src/lib/prisma.ts` (singleton always cached on `globalThis` — both dev and Vercel production).
+- **Auth**: NextAuth v5, magic-link only (no passwords). `src/lib/auth.ts`.
+- **Email**: Resend via `src/lib/email.ts` — `sendStepEmail()` on every step advance, finance email at PROPOSAL step 3.
+- **Storage**: Supabase Storage bucket `thesis-files`. Upload API at `POST /api/upload`.
+- **Deploy**: Vercel, auto-deploys on push to `main` (GitHub: Jukkruu/thesis-app).
+
+### Required env vars (Vercel + local `.env.local`)
+```
+DATABASE_URL          # Supabase connection string (pooled)
+NEXTAUTH_SECRET
+NEXTAUTH_URL
+RESEND_API_KEY
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+FINANCE_EMAIL         # recipient for finance notifications
+```
+
+---
 
 ## Key facts
-- **All data + workflow logic is in `src/context/AppContext.tsx`** — start there.
-- Workflow = 8 ordered steps (`WORKFLOW_ROLES`) across 5 display phases.
-  The committee step needs all 3 members to sign before advancing.
-- Workflow is described in 3 places that must stay in sync: `WORKFLOW_ROLES`
-  (AppContext), `STEP_NAMES` (lib/utils.ts), and `PHASES` (login page).
-- After changing seed data shape, **bump `STORAGE_KEY`** in AppContext (`_v4` → `_v5`).
-- Tailwind class names in lookup maps must be **whole static strings** (no interpolation).
-- Demo-only UI is gated by `DEMO_MODE` (`src/lib/config.ts` / `NEXT_PUBLIC_DEMO_MODE`).
+
+- **All API logic is in `src/app/api/`**. State is server-fetched; client state lives in `AppContext` which polls the API.
+- Two submission types: **PROPOSAL** (9 steps) and **THESIS_DEFENSE** (18 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
+- **Step names**: `PROPOSAL_STEP_NAMES` / `THESIS_STEP_NAMES` in `src/lib/utils.ts`. Always call `getStepName(stepOrder, submissionType)` — never access the maps directly.
+- **EXAM_COMMITTEE steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All members must approve before the step advances.
+- **Required uploads gate**: Before a STUDENT step can advance, the student must upload specific form types. Enforced server-side in `PATCH /api/submissions/[id]` (action `"approve"`) and client-side in the student detail page.
+  ```
+  PROPOSAL:       step 1 → [BW1A, BW1B],  step 4 → [B1C, B1D]
+  THESIS_DEFENSE: step 1 → [B2, B3],      step 7 → [SIGNED],   step 13 → [B4, THESIS]
+  ```
+- **Tailwind class names in lookup maps must be whole static strings** (no interpolation).
+- UI text is Thai; use Sarabun font (already global). Keep UI large and calm — target users include older faculty.
+
+---
+
+## Workflow behaviour — critical rules
+
+### Step 1 is NOT auto-approved
+When a submission is created, **step 1 starts as PENDING**. The student must upload the required documents and click submit. Step 2's email notification fires automatically when the student's submit action (approve) completes.
+
+### Rejection auto-resets the phase
+When any step is **rejected**, the API immediately resets the workflow back to the preceding STUDENT upload step — the student does NOT need to click a separate "resubmit" button. The rejection reason is delivered via in-app notification.
+
+Reset logic (in `PATCH /api/submissions/[id]` action `"reject"`):
+1. Find the closest preceding STUDENT step at or before the rejected step → `phaseStart`
+2. Reset all steps from `phaseStart` through the rejected step to `PENDING` (clear notes, actedAt, committeeActions)
+3. Set submission status to `IN_PROGRESS`
+4. Notify student with rejection reason
+
+### Download filtering in SignatureButton
+`SignatureButton` accepts a `formsToShow?: string[]` prop. `RoleSubmissionDetail` computes this from a per-step map (`STEP_SIGN_FORMS`) so each role only sees the documents they need to physically sign — not every upload ever attached to the submission.
+
+```
+PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]
+THESIS_DEFENSE: 3→[B2]  4→[B2]  5→[B2]  6→[B2,B3]  8→[SIGNED]  9→[SIGNED]
+                11→[SIGNED]  12→[SIGNED]  14→[B4]  15→[THESIS]  16→[THESIS]  18→[THESIS]
+```
+
+---
 
 ## Conventions
-- UI text is Thai; use the Sarabun font (already global).
 - Reuse role colors via `ROLE_GRADIENT` / `ROLE_EMOJI` / `ROLE_LABELS` in `lib/utils.ts`.
 - Run `npm run build` before committing non-trivial changes.
-- Target users include older faculty — keep UI large, calm, and simple (no flashy motion).
+- No `STEP_NAMES` direct usage anywhere — always `getStepName(stepOrder, submissionType)`.
+- Prisma singleton: `src/lib/prisma.ts` uses `globalForPrisma.prisma ?? createClient()` then always sets `globalForPrisma.prisma = prisma`. Never add a `NODE_ENV !== "production"` guard — that was the bug that caused connection exhaustion on Vercel.
+
+---
 
 ## Roles in the system
 
 ### In-system roles (have accounts and login)
 | Role | Thai | Key Actions |
 |---|---|---|
-| Super Admin | ผู้ดูแลระบบสูงสุด | Create/delete users, assign roles, override any workflow step, view audit logs |
+| Super Admin | ผู้ดูแลระบบสูงสุด | Create/delete users, assign roles, override any workflow step |
 | Admin | เจ้าหน้าที่ภาควิชา (พี่โบ้) | Approve submissions, relay documents to Faculty, forward docs to Student |
-| Student | นิสิต | Fill forms, upload documents, assign committee members, track status |
-| Advisor | อาจารย์ที่ปรึกษา | Sign forms, monitor assigned students' progress |
-| Program Chair | ประธานหลักสูตร | Sign at Phase 1, 2, 3, 5 |
-| Head Exam Committee | ประธานกรรมการสอบ | Signs before regular committee in Phase 2, 3, 5 — assigned per submission by Student |
+| Student | นิสิต | Upload documents, assign committee members, track status |
+| Advisor | อาจารย์ที่ปรึกษา | Sign forms, monitor assigned students |
+| Program Chair | ประธานหลักสูตร | Sign at multiple phases |
+| Head Exam Committee | ประธานกรรมการสอบ | Signs before regular committee — assigned per submission by Student |
 | Exam Committee | กรรมการสอบ | Multiple members, sign separately in order — assigned per submission by Student |
-| Invited Exam Committee | กรรมการภายนอก | External examiner, Phase 5 only — assigned per submission by Student |
+| Invited Exam Committee | กรรมการภายนอก | External examiner — assigned per submission by Student |
 
-### External roles (no login — interact outside the system)
+### External roles (no login)
 | Role | How they interact |
 |---|---|
 | Faculty Dean | Signs บ.4 physically offline |
-| Finance | Receives email notification at end of Phase 1 only |
+| Finance | Receives email at end of PROPOSAL Phase 1 only |
 | Graduate School | Receives final document package outside the system |
 
 ---
 
-## Submission fields (from old Google Form — source of truth)
+## Submission fields (from Google Form — source of truth)
 
-When a Student creates a new submission, they must fill:
+**Student info:** ชื่อ-นามสกุล, รหัสนิสิต, หลักสูตร (ป.เอก / ป.โท เครื่องกล / ป.โท CPS), อีเมล์, เบอร์โทร
 
-**Student info:**
-- ชื่อ-นามสกุล
-- รหัสนิสิต
-- หลักสูตร: ป.เอก / ป.โท สาขาเครื่องกล / ป.โท สาขา CPS
-- อีเมล์
-- เบอร์โทรศัพท์
+**Committee (all assigned per submission by Student):** Advisor, Head Exam Committee, Exam Committee member/s, Invited Exam Committee
 
-**Committee assignment (all assigned by Student per submission):**
-- อาจารย์ที่ปรึกษา (Advisor)
-- ประธานกรรมการสอบ (Head Exam Committee)
-- กรรมการสอบ (Exam Committee member/s)
-- กรรมการภายนอก (Invited/External Exam Committee)
-
-**Exam logistics:**
-- วันที่สอบ + เวลา
-- ต้องการใช้ห้องประชุม (yes/no)
-- ต้องการที่จอดรถให้กรรมการภายนอก (yes/no)
-- เลขทะเบียนรถ (if parking needed)
-
-**Important rules:**
-- Program type (ป.เอก vs ป.โท) may affect required forms and number of committee members
-- All committee roles are per submission — no fixed department-level assignments
-- Invited Exam Committee must have been contacted by the Student beforehand (they agree offline first)
+**Exam logistics:** วันที่สอบ + เวลา, ห้องประชุม (yes/no), ที่จอดรถ (yes/no), เลขทะเบียนรถ
 
 ---
 
-## Deploy
-Hosted on Vercel, auto-deploys on push to `main` (GitHub: Jukkruu/thesis-app).
-No env vars required while in mockup mode.
+## Workflow — source of truth
+
+### PROPOSAL (9 steps)
+
+#### Phase 1 (Steps 1–3): บ.วศ.1ก + บ.วศ.1ข
+| Step | Role | Action |
+|------|------|--------|
+| 1 | STUDENT | Upload BW1A (บ.วศ.1ก) + BW1B (บ.วศ.1ข) — **starts PENDING, student must submit** |
+| 2 | ADMIN | Review and approve |
+| 3 | PROGRAM_CHAIR | Sign บ.วศ.1ก → **triggers finance email** |
+
+#### Phase 2 (Steps 4–9): บ.วศ.1ค + บ.วศ.1ง
+| Step | Role | Action |
+|------|------|--------|
+| 4 | STUDENT | Upload B1C (บ.วศ.1ค) + B1D (บ.วศ.1ง) |
+| 5 | HEAD_EXAM_COMMITTEE | Sign บ.วศ.1ค |
+| 6 | ADVISOR | Sign บ.วศ.1ค |
+| 7 | EXAM_COMMITTEE | All members sign บ.วศ.1ค (all must approve before advancing) |
+| 8 | ADMIN | Verify and approve |
+| 9 | PROGRAM_CHAIR | Sign บ.วศ.1ค + บ.วศ.1ง |
+
+If rejected → phase auto-resets to step 1 (Phase 1 rejection) or step 4 (Phase 2 rejection).
 
 ---
 
-## Detailed Workflow (from admin interview — source of truth)
+### THESIS_DEFENSE (18 steps)
 
-This is the **exact process** gathered from interviewing พี่โบ้ (Dept. Staff who currently manages everything manually over Line). Use this when implementing or adjusting workflow steps.
+#### Phase 3 (Steps 1–5): บ.2 + บ.3
+| Step | Role | Action |
+|------|------|--------|
+| 1 | STUDENT | Upload B2 (บ.2) + B3 (บ.3) — **starts PENDING, student must submit** |
+| 2 | EXAM_COMMITTEE | All members sign บ.3 |
+| 3 | ADVISOR | Sign บ.2 |
+| 4 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
+| 5 | PROGRAM_CHAIR | Sign บ.2 |
 
-### Phase 1 — บ.วศ.1ก + บ.วศ.1ข
-1. Student fills individual info + uploads บ.วศ.1ก (must already have Advisor signature) + บ.วศ.1ข
-2. Admin approves submission
-3. System sends email notification to Finance
-4. Program Chair signs บ.วศ.1ก
-5. ✅ บ.วศ.1ก + บ.วศ.1ข complete
+#### Phase 4 (Step 6): Faculty relay
+| Step | Role | Action |
+|------|------|--------|
+| 6 | ADMIN | Send docs to Faculty; receive back and forward to Student |
 
-### Phase 2 — บ.วศ.1ค + บ.วศ.1ง
-1. Student uploads บ.วศ.1ค + บ.วศ.1ง (all fields must be filled)
-2. Head Exam Committee signs บ.วศ.1ค
-3. Advisor signs บ.วศ.1ค
-4. Exam Committee members sign บ.วศ.1ค **in order** (sequential, not parallel)
-5. If all approved → Admin approves → Program Chair signs บ.วศ.1ค + บ.วศ.1ง
-6. If rejected → Student fixes and re-uploads
-7. ✅ บ.วศ.1ค + บ.วศ.1ง complete
+Faculty returns: ใบรายงานผลการสอบ, แบบรายงานฯ, invitation letter, แบบประเมิน "วิทยานิพนธ์ดีมาก" (Very Good only)
 
-### Phase 3 — บ.2 + บ.3
-1. Student uploads บ.2 (with student's own signature) + บ.3 (all fields filled)
-2. Exam Committee members each sign บ.3 **separately**
-3. If all committee approved → continue; else Student fixes thesis
-4. Advisor signs บ.3
-5. Head Exam Committee signs บ.3
-6. Program Chair signs บ.3
-7. Admin collects and sends to Faculty
-8. ✅ บ.2 + บ.3 complete
+#### Phase 5 (Steps 7–12): Post-defense signing
+| Step | Role | Action |
+|------|------|--------|
+| 7 | STUDENT | Upload invitation letter + แบบรายงานการเสนอผลงานฯ (formType: SIGNED) |
+| 8 | HEAD_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 9 | ADVISOR | Sign แบบรายงานฯ + ใบรายงานผลการสอบ |
+| 10 | EXAM_COMMITTEE | All members sign ใบรายงานผลการสอบ |
+| 11 | INVITED_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 12 | PROGRAM_CHAIR | Sign ใบรายงานผลการสอบ |
 
-### Phase 4 — Faculty issues exam documents
-Faculty sends back to Admin:
-- ใบรายงานผลการสอบวิทยานิพนธ์
-- แบบรายงานการเสนอผลงานทางวิชาการของนิสิต ระดับบัณฑิตศึกษา
-- Invitation letter
-- แบบประเมินผล "วิทยานิพนธ์ดีมาก" **(only when thesis result = Very Good)**
+#### Phase 6 (Steps 13–18): Thesis submission + cover signing
+| Step | Role | Action |
+|------|------|--------|
+| 13 | STUDENT | Upload B4 + THESIS (from e-thesis system, with barcode) |
+| 14 | PROGRAM_CHAIR | Sign บ.4 |
+| 15 | HEAD_EXAM_COMMITTEE | Sign thesis cover |
+| 16 | ADVISOR | Sign thesis cover |
+| 17 | EXAM_COMMITTEE | All members sign thesis cover |
+| 18 | INVITED_EXAM_COMMITTEE | Sign thesis cover |
 
-Admin forwards all documents to Student.
+If rejected at any step → auto-resets to nearest preceding STUDENT step (step 1, 7, or 13).
 
-### Phase 5 — Post-defense signing
-1. Student uploads invitation letter + แบบรายงานการเสนอผลงานทางวิชาการ (with student signature, all fields filled)
-2. Head Exam Committee signs ใบรายงานผลการสอบวิทยานิพนธ์
-3. Advisor signs แบบรายงานการเสนอผลงานทางวิชาการ + ใบรายงานผลการสอบวิทยานิพนธ์ + uploads แบบประเมินผล "วิทยานิพนธ์ดีมาก" **(only if Very Good, all fields filled)**
-4. Exam Committee signs ใบรายงานผลการสอบวิทยานิพนธ์
-5. **Invited** Exam Committee signs ใบรายงานผลการสอบวิทยานิพนธ์ (separate role from regular committee)
-6. Program Chair signs ใบรายงานผลการสอบวิทยานิพนธ์
-7. ✅ Phase 5 complete
+---
 
-> More phases to be added later.
-
-### Key rules
-- **Signing is always sequential** unless stated otherwise — never parallel except where noted
-- **"Very Good" flag** — แบบประเมินผล "วิทยานิพนธ์ดีมาก" only flows when `thesisResult === 'VERY_GOOD'`
-- **Invited Exam Committee** is a distinct role from regular Exam Committee
-- **Finance** receives an email notification at the end of Phase 1 (currently stubbed)
-- **Admin (พี่โบ้)** is the relay point between the department and Faculty — she currently does this manually over Line, which this system replaces
-- UI must be simple and large — target users include older faculty members
+## Key rules
+- **Sequential only** — no parallel signing
+- **EXAM_COMMITTEE** steps: all `committeeIds` members must approve (tracked via `committeeActions` JSON on `WorkflowStep`)
+- **Finance email** fires at PROPOSAL step 3 (PROGRAM_CHAIR approval) via `POST /api/email/finance`
+- **Admin (พี่โบ้)** relays at THESIS_DEFENSE step 6 — collects from Faculty, forwards to Student
+- **Student upload steps** start PENDING; student uploads required files then clicks submit to advance
+- **Rejection** immediately resets the phase — no separate resubmit step needed
