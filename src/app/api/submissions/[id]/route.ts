@@ -188,12 +188,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (sub.studentId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const rejectedStep = sub.workflowSteps.find((s: any) => s.status === "REJECTED");
     if (!rejectedStep) return NextResponse.json({ error: "No rejected step" }, { status: 400 });
-    await prisma.workflowStep.update({
-      where: { id: rejectedStep.id },
+
+    // Find the closest preceding STUDENT step (the upload step for this phase).
+    // That step and every step up through the rejected step must reset to PENDING
+    // so the student re-uploads and the whole phase re-runs.
+    const phaseStart = [...sub.workflowSteps]
+      .filter((s: any) => s.role === "STUDENT" && s.stepOrder <= rejectedStep.stepOrder)
+      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0] ?? rejectedStep;
+
+    const idsToReset = sub.workflowSteps
+      .filter((s: any) => s.stepOrder >= phaseStart.stepOrder && s.stepOrder <= rejectedStep.stepOrder)
+      .map((s: any) => s.id);
+
+    await prisma.workflowStep.updateMany({
+      where: { id: { in: idsToReset } },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
-    await notifyRole(rejectedStep.role, sub, "นักศึกษาแก้ไขและยื่นคำร้องใหม่แล้ว", "info");
+    await notifyRole(phaseStart.role, sub, "กรุณาอัปโหลดเอกสารใหม่และส่งอีกครั้ง", "pending");
   }
 
   else if (action === "admin_set_note") {

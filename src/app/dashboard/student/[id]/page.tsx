@@ -340,11 +340,17 @@ export default function StudentSubmissionDetail() {
                 </div>
               )}
 
-              {/* Uploaders for required forms not yet uploaded (multiUpload always shows) */}
+              {/* Uploaders for required forms — always show when it's the student's turn
+                  so they can re-upload after a rejection without being blocked */}
               {suggested?.forms
-                .filter((f) => suggested.multiUpload || !uploadedTypes.has(f))
+                .filter((f) => suggested.multiUpload || isMyTurn || !uploadedTypes.has(f))
                 .map((ft, idx) => (
-                  <FileUploader key={`${ft}-${idx}`} submissionId={sub.id} formType={ft} />
+                  <div key={`${ft}-${idx}`} className="space-y-1">
+                    {isMyTurn && uploadedTypes.has(ft) && !suggested.multiUpload && (
+                      <p className="text-xs text-gray-400">อัปโหลดใหม่เพื่อแทนที่ไฟล์เดิม (ถ้าต้องการแก้ไข)</p>
+                    )}
+                    <FileUploader submissionId={sub.id} formType={ft} />
+                  </div>
                 ))}
 
               {/* Optional remaining forms (not required for this step) */}
