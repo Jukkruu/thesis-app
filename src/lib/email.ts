@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
+import { ROLE_ROUTES } from "./roleRoutes";
+import type { Role } from "@/types";
 
 // All emails go here while testing; swap to recipient.email when going live
 const DEV_EMAIL_OVERRIDE = "outanagon2549@gmail.com";
@@ -9,6 +11,12 @@ function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
   return new Resend(apiKey);
+}
+
+function getAppUrl(): string {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
 }
 
 interface StepEmailOptions {
@@ -65,12 +73,15 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
   const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
 
+  const basePath = ROLE_ROUTES[role as Role] ?? "/dashboard";
+  const deepLink = `${getAppUrl()}/login?callbackUrl=${encodeURIComponent(`${basePath}/${sub.id}`)}`;
+
   for (const recipient of recipients) {
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
       to: [DEV_EMAIL_OVERRIDE],
       subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
-      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay),
+      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay, deepLink),
     });
 
     if (error) {
@@ -87,6 +98,7 @@ function buildHtml(
   stepName: string,
   thesisTitle: string,
   studentName: string,
+  deepLink: string,
 ): string {
   return `
     <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
@@ -96,7 +108,7 @@ function buildHtml(
       </div>
 
       <p style="color:#374151;font-size:16px;">เรียน ${recipientName} <span style="color:#6b7280;font-size:14px;">(${roleLabel})</span>,</p>
-      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาเข้าสู่ระบบเพื่อตรวจสอบและดำเนินการ</p>
+      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาคลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบและดำเนินการ</p>
 
       <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
         <p style="margin:0 0 4px;font-weight:700;color:#1e40af;font-size:13px;">ขั้นตอนที่ต้องดำเนินการ</p>
@@ -113,6 +125,13 @@ function buildHtml(
           <td style="padding:10px 14px;color:#111827;">${thesisTitle}</td>
         </tr>
       </table>
+
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${deepLink}"
+           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
+          เข้าสู่ระบบและดูคำร้อง
+        </a>
+      </div>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
         อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
