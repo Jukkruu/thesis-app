@@ -176,6 +176,17 @@ model Signature {
   @@map("signatures")
 }
 
+model MagicToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  redirectTo String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@map("magic_tokens")
+}
+
 model Notification {
   id        String   @id @default(cuid())
   type      String

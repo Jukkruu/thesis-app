@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
 import { ROLE_ROUTES } from "./roleRoutes";
@@ -34,6 +35,12 @@ interface StepEmailOptions {
   stepName: string;
 }
 
+interface Recipient {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): Promise<void> {
   const resend = getResend();
   if (!resend) {
@@ -41,24 +48,24 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
     return;
   }
 
-  let recipients: { name: string; email: string }[] = [];
+  let recipients: Recipient[] = [];
 
   try {
     if (role === "ADVISOR" && sub.advisorId) {
       const u = await prisma.user.findUnique({ where: { id: sub.advisorId } });
-      if (u) recipients = [{ name: u.name, email: u.email }];
+      if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     } else if (role === "HEAD_EXAM_COMMITTEE" && sub.headCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.headCommitteeId } });
-      if (u) recipients = [{ name: u.name, email: u.email }];
+      if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     } else if (role === "EXAM_COMMITTEE" && sub.committeeIds?.length) {
       const users = await prisma.user.findMany({ where: { id: { in: sub.committeeIds } } });
-      recipients = users.map((u) => ({ name: u.name, email: u.email }));
+      recipients = users.map((u) => ({ id: u.id, name: u.name, email: u.email }));
     } else if (role === "INVITED_EXAM_COMMITTEE" && sub.invitedCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.invitedCommitteeId } });
-      if (u) recipients = [{ name: u.name, email: u.email }];
+      if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     } else {
       const u = await prisma.user.findFirst({ where: { role: role as any } });
-      if (u) recipients = [{ name: u.name, email: u.email }];
+      if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     }
   } catch (e) {
     console.error("[email/step] Error looking up recipients:", e);
@@ -72,16 +79,28 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
 
   const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
-
   const basePath = ROLE_ROUTES[role as Role] ?? "/dashboard";
-  const deepLink = `${getAppUrl()}/login?callbackUrl=${encodeURIComponent(`${basePath}/${sub.id}`)}`;
+  const redirectTo = `${basePath}/${sub.id}`;
 
   for (const recipient of recipients) {
+    // One-time magic token — valid 48 hours
+    const rawToken = randomBytes(32).toString("hex");
+    await prisma.magicToken.create({
+      data: {
+        token:     rawToken,
+        userId:    recipient.id,
+        redirectTo,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      },
+    });
+
+    const magicLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to: [DEV_EMAIL_OVERRIDE],
+      to:   [DEV_EMAIL_OVERRIDE],
       subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
-      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay, deepLink),
+      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay, magicLink),
     });
 
     if (error) {
@@ -98,7 +117,7 @@ function buildHtml(
   stepName: string,
   thesisTitle: string,
   studentName: string,
-  deepLink: string,
+  magicLink: string,
 ): string {
   return `
     <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
@@ -108,7 +127,7 @@ function buildHtml(
       </div>
 
       <p style="color:#374151;font-size:16px;">เรียน ${recipientName} <span style="color:#6b7280;font-size:14px;">(${roleLabel})</span>,</p>
-      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาคลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบและดำเนินการ</p>
+      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาคลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบและดำเนินการได้ทันที</p>
 
       <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
         <p style="margin:0 0 4px;font-weight:700;color:#1e40af;font-size:13px;">ขั้นตอนที่ต้องดำเนินการ</p>
@@ -127,10 +146,11 @@ function buildHtml(
       </table>
 
       <div style="text-align:center;margin:28px 0;">
-        <a href="${deepLink}"
+        <a href="${magicLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          เข้าสู่ระบบและดูคำร้อง
+          คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
         </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
       </div>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
