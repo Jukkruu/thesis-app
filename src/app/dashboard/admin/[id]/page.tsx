@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, STEP_NAMES, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
 import { MockWorkflowStep, MockUpload } from "@/types";
 import Link from "next/link";
 import {
@@ -24,6 +24,7 @@ function StepCard({
   stepUploads,
   assignedName,
   committeeStatus,
+  submissionType,
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
@@ -31,6 +32,7 @@ function StepCard({
   stepUploads: MockUpload[];
   assignedName?: string | null;
   committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
+  submissionType?: string | null;
 }) {
   const [open,   setOpen]   = useState(false);
   const [action, setAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
@@ -49,7 +51,7 @@ function StepCard({
         <div className="space-y-0.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-gray-400 uppercase">ขั้นที่ {step.stepOrder}</span>
-            <span className="font-semibold text-gray-800">{STEP_NAMES[step.stepOrder]}</span>
+            <span className="font-semibold text-gray-800">{getStepName(step.stepOrder, submissionType) || ROLE_LABELS[step.role]}</span>
             {isCurrentStep && (
               <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
                 ● กำลังดำเนินการ
@@ -541,6 +543,7 @@ export default function AdminSubmissionDetail() {
                     isCurrentStep={step.stepOrder === currentOrd}
                     assignedName={assignedName}
                     committeeStatus={committeeStatus}
+                    submissionType={sub.submissionType}
                     onOverride={(stepOrder, action, notes) =>
                       adminOverrideStep(sub.id, stepOrder, action, notes)
                     }

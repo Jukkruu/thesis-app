@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { MockSubmission, Role } from "@/types";
 import {
   ArrowLeft, ChevronRight, FileText, Clock,
@@ -181,7 +181,7 @@ export default function AdminUserProfilePage() {
                     {/* Current step waiting on */}
                     {currentStep && sub.status === "IN_PROGRESS" && (
                       <span className="text-sm text-orange-600 font-medium">
-                        ⏳ รอ: {STEP_NAMES[currentStep.stepOrder]}
+                        ⏳ รอ: {getStepName(currentStep.stepOrder, sub.submissionType)}
                       </span>
                     )}
 

@@ -141,8 +141,11 @@ export async function POST(req: NextRequest) {
   }
   if (notifData.length) await prisma.notification.createMany({ data: notifData });
 
-  // Email the admin that a new submission is waiting for their review (step 2)
-  sendStepEmail({ role: "ADMIN", sub: submission, stepName: getStepName(2, data.submissionType) }).catch(() => {});
+  // Email whoever needs to act at step 2 (ADMIN for PROPOSAL, EXAM_COMMITTEE for THESIS_DEFENSE)
+  const step2 = (submission as any).workflowSteps?.find((s: any) => s.stepOrder === 2);
+  if (step2) {
+    sendStepEmail({ role: step2.role, sub: submission, stepName: getStepName(2, data.submissionType) }).catch(() => {});
+  }
 
   const updated = await prisma.submission.findUnique({
     where: { id: submission.id },

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
@@ -94,15 +94,18 @@ export default function AdminDashboard() {
     REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
   };
 
-  const stageData = Object.entries(STEP_NAMES).map(([order, name]) => {
-    const stepOrder = Number(order);
-    const count = submissions.filter((s) => {
-      if (s.status !== "IN_PROGRESS") return false;
-      const cur = s.workflowSteps.find((w) => w.status === "PENDING");
-      return cur?.stepOrder === stepOrder;
-    }).length;
-    return { stepOrder, name, count };
-  });
+  const stageGroups = new Map<string, { key: string; name: string; count: number }>();
+  for (const s of submissions) {
+    if (s.status !== "IN_PROGRESS") continue;
+    const cur = s.workflowSteps.find((w) => w.status === "PENDING");
+    if (!cur) continue;
+    const subType = s.submissionType ?? "PROPOSAL";
+    const key = `${subType}_${cur.stepOrder}`;
+    const name = getStepName(cur.stepOrder, s.submissionType) || `ขั้นที่ ${cur.stepOrder}`;
+    const prev = stageGroups.get(key);
+    stageGroups.set(key, { key, name, count: (prev?.count ?? 0) + 1 });
+  }
+  const stageData = Array.from(stageGroups.values()).sort((a, b) => a.key.localeCompare(b.key));
   const maxStage = Math.max(1, ...stageData.map((d) => d.count));
 
   const getStudent = (id: string) => users.find((u) => u.id === id);
@@ -167,7 +170,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
           <div className="space-y-2.5">
             {stageData.map((d) => (
-              <div key={d.stepOrder} className="flex items-center gap-3">
+              <div key={d.key} className="flex items-center gap-3">
                 <span className="w-44 shrink-0 text-sm text-gray-600 text-right truncate">{d.name}</span>
                 <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden">
                   <div

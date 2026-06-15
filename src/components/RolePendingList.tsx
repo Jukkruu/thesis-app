@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { Role } from "@/types";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { DashboardHeader } from "./DashboardHeader";
-import { STEP_NAMES, formatDate } from "@/lib/utils";
+import { getStepName, formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { ChevronRight, Clock, CheckCircle2, History, FileText, Layers } from "lucide-react";
 
@@ -161,7 +161,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
                         {isPendingTab && currentStep && (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full">
                             <Clock className="w-3 h-3" />
-                            {STEP_NAMES[currentStep.stepOrder] ?? `ขั้นที่ ${currentStep.stepOrder}`}
+                            {getStepName(currentStep.stepOrder, sub.submissionType) || `ขั้นที่ ${currentStep.stepOrder}`}
                           </span>
                         )}
                         {!isPendingTab && lastMyStep && (
