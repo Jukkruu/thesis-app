@@ -2,16 +2,21 @@
 
 import { useState } from "react";
 import { Download, FileText, History, ChevronDown, ChevronUp } from "lucide-react";
-import { FORM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
+import { FORM_LABELS, FORM_SHORT, formatBytes, formatDate, downloadFile } from "@/lib/utils";
 import type { MockUpload, FormType } from "@/types";
 
-/** Human-readable primary label for a file entry. */
+/** Short primary label — the form code for known types, filename for SIGNED. */
 function fileLabel(formType: string, fileName: string): string {
-  // SIGNED files are user-named signed copies — use their filename instead of the generic "เอกสารลงนาม"
-  if (formType === "SIGNED") {
-    return fileName.replace(/\.pdf$/i, "");
-  }
-  return FORM_LABELS[formType as FormType] ?? formType;
+  if (formType === "SIGNED") return fileName.replace(/\.pdf$/i, "");
+  return FORM_SHORT[formType as FormType] ?? FORM_LABELS[formType as FormType] ?? formType;
+}
+
+/** Subtitle description (e.g. "เสนอหัวข้อวิทยานิพนธ์") extracted from the full label. */
+function fileDesc(formType: string): string {
+  const full = FORM_LABELS[formType as FormType];
+  if (!full) return "";
+  const parts = full.split(" — ");
+  return parts.length > 1 ? parts[1] : "";
 }
 
 interface Group {
@@ -88,6 +93,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
           const key = `${formType}-${latest.id}`;
           const isOpen = openHistory.has(key);
           const label = fileLabel(formType, latest.fileName);
+          const desc  = fileDesc(formType);
           const isSignedType = formType === "SIGNED";
 
           return (
@@ -97,6 +103,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
                 <FileText className="w-4 h-4 text-blue-400 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-gray-800 leading-snug truncate">{label}</p>
+                  {desc && <p className="text-xs text-gray-500 truncate">{desc}</p>}
                   <p className="text-xs text-gray-400 truncate">
                     {isSignedType
                       ? `${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`

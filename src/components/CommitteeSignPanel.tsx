@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
-import { FORM_LABELS, downloadFile } from "@/lib/utils";
+import { FORM_LABELS, FORM_SHORT, downloadFile } from "@/lib/utils";
 import type { FormType } from "@/types";
 
 interface Props {
@@ -147,10 +147,10 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
                       const isSignedType = u.formType === "SIGNED";
                       const label = isSignedType
                         ? u.fileName.replace(/\.pdf$/i, "")
-                        : (FORM_LABELS[u.formType as FormType] ?? u.formType);
+                        : (FORM_SHORT[u.formType as FormType] ?? FORM_LABELS[u.formType as FormType] ?? u.formType);
                       const sublabel = isSignedType
                         ? FORM_LABELS["SIGNED"]
-                        : u.fileName;
+                        : (FORM_LABELS[u.formType as FormType] ?? u.fileName);
                       return (
                         <button
                           key={u.id}
