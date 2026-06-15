@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStepName, ROLE_LABELS } from "@/lib/utils";
-import { sendStepEmail } from "@/lib/email";
 
 // PROPOSAL: 9 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
@@ -124,27 +122,15 @@ export async function POST(req: NextRequest) {
     include: { workflowSteps: { orderBy: { stepOrder: "asc" } }, uploads: true },
   });
 
-  // Mark step 1 (STUDENT) as approved immediately
-  await prisma.workflowStep.update({
-    where: { submissionId_stepOrder: { submissionId: submission.id, stepOrder: 1 } },
-    data: { status: "APPROVED", actedAt: new Date(), actedByName: session.user.name, actedById: userId },
-  });
+  // Step 1 starts as PENDING — student must upload required files and click submit.
+  // The approve action will notify step 2 automatically when step 1 is completed.
 
-  // Notify advisor and admin
-  const notifData: any[] = [];
-  if (data.advisorId) {
-    notifData.push({ recipientId: data.advisorId, message: "มีคำร้องใหม่รอการตรวจสอบ", detail: data.title, submissionId: submission.id, type: "pending" });
-  }
+  // Notify admin that a new submission was created (informational)
   const admin = await prisma.user.findFirst({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
   if (admin) {
-    notifData.push({ recipientId: admin.id, message: "มีคำร้องวิทยานิพนธ์ใหม่", detail: data.title, submissionId: submission.id, type: "info" });
-  }
-  if (notifData.length) await prisma.notification.createMany({ data: notifData });
-
-  // Email whoever needs to act at step 2 (ADMIN for PROPOSAL, EXAM_COMMITTEE for THESIS_DEFENSE)
-  const step2 = (submission as any).workflowSteps?.find((s: any) => s.stepOrder === 2);
-  if (step2) {
-    sendStepEmail({ role: step2.role, sub: submission, stepName: getStepName(2, data.submissionType) }).catch(() => {});
+    await prisma.notification.create({
+      data: { recipientId: admin.id, message: "มีคำร้องวิทยานิพนธ์ใหม่", detail: data.title, submissionId: submission.id, type: "info" },
+    });
   }
 
   const updated = await prisma.submission.findUnique({
