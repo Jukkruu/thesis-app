@@ -83,6 +83,10 @@ export default function StudentSubmissionDetail() {
   // Remaining non-SIGNED forms the student hasn't uploaded yet
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
 
+  // Required forms for current step — student cannot advance until all are uploaded
+  const requiredForms = suggested?.forms ?? [];
+  const allRequiredUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f));
+
   function handleResubmit() {
     studentResubmit(sub!.id);
     showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
@@ -337,17 +341,29 @@ export default function StudentSubmissionDetail() {
 
               {/* Submit button — visible when it's the student's turn */}
               {isMyTurn && currentStep && (
-                <button
-                  onClick={() => {
-                    approveCurrentStep(sub.id);
-                    const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
-                    showToast(`${lbl} ✓`);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-                >
-                  <Send className="w-5 h-5" />
-                  {SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร"}
-                </button>
+                <>
+                  {!allRequiredUploaded && (
+                    <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">
+                      ⚠️ กรุณาอัปโหลดเอกสารให้ครบก่อนกดส่ง
+                    </p>
+                  )}
+                  <button
+                    disabled={!allRequiredUploaded}
+                    onClick={() => {
+                      approveCurrentStep(sub.id);
+                      const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
+                      showToast(`${lbl} ✓`);
+                    }}
+                    className={`w-full flex items-center justify-center gap-2 py-3.5 text-white rounded-xl font-semibold transition ${
+                      allRequiredUploaded
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    <Send className="w-5 h-5" />
+                    {SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร"}
+                  </button>
+                </>
               )}
 
               {/* Cancel — always available while in progress */}

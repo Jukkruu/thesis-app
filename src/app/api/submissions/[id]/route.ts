@@ -85,6 +85,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (step.role === "STUDENT" && sub.studentId !== userId)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    // Enforce required uploads before a student step advances
+    if (step.role === "STUDENT") {
+      const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
+        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D"] },
+        THESIS_DEFENSE: { 1: ["B2", "B3"], 7: ["SIGNED"], 13: ["B4", "THESIS"] },
+      };
+      const subType = sub.submissionType ?? "PROPOSAL";
+      const required = REQUIRED_UPLOADS[subType]?.[step.stepOrder] ?? [];
+      const uploaded = new Set(sub.uploads.map((u: any) => u.formType));
+      const missing = required.filter((f) => !uploaded.has(f));
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `กรุณาอัปโหลดเอกสารให้ครบก่อน: ${missing.join(", ")}` },
+          { status: 400 }
+        );
+      }
+    }
+
     await prisma.workflowStep.update({
       where: { id: step.id },
       data: { status: "APPROVED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes ?? null },
@@ -108,7 +126,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR") {
+    if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "PROPOSAL") {
       // Look up names for the finance email
       Promise.all([
         sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
