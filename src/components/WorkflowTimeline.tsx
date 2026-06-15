@@ -1,7 +1,7 @@
 "use client";
 
 import { MockUser, MockWorkflowStep } from "@/types";
-import { ROLE_LABELS, STEP_NAMES, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { StepStatusBadge } from "./StatusBadge";
 import { CheckCircle2, Clock, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 export function WorkflowTimeline({
   steps,
   users = [],
+  submissionType,
 }: {
   steps: MockWorkflowStep[];
   users?: MockUser[];
+  submissionType?: string | null;
 }) {
   const currentOrder = steps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
 
@@ -55,7 +57,7 @@ export function WorkflowTimeline({
               <div className="flex flex-wrap items-center gap-2 mb-0.5">
                 <span className="text-xs text-gray-400 font-medium">ขั้นที่ {step.stepOrder}</span>
                 <span className={cn("font-semibold", isCurrent ? "text-blue-800" : "text-gray-800")}>
-                  {STEP_NAMES[step.stepOrder] ?? ROLE_LABELS[step.role]}
+                  {getStepName(step.stepOrder, submissionType) || ROLE_LABELS[step.role]}
                 </span>
                 <StepStatusBadge status={step.status} />
                 {isCurrent && (

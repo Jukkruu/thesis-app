@@ -51,8 +51,10 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
           <p className="text-gray-500">
-            นักศึกษา: <span className="font-medium text-gray-700">{student?.name}</span>
-            {student?.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
+            นักศึกษา: <span className="font-medium text-gray-700">{sub.studentFullName ?? student?.name}</span>
+            {(sub.studentCode ?? student?.studentId) && (
+              <span className="text-gray-400"> ({sub.studentCode ?? student?.studentId})</span>
+            )}
           </p>
           {advisor && (
             <p className="text-gray-500 text-sm">
@@ -78,6 +80,14 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
             {sub.parkingNeeded && sub.carPlate && <InfoRow label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />}
             {sub.headCommitteeId && <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />}
+            {sub.committeeIds && sub.committeeIds.length > 0 && (
+              <InfoRow
+                label="กรรมการสอบ"
+                value={sub.committeeIds
+                  .map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid)
+                  .join(", ")}
+              />
+            )}
             {(sub.invitedProfName || sub.invitedCommitteeId) && (
               <InfoRow
                 label="กรรมการภายนอก"
@@ -132,7 +142,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         {/* Timeline — second on mobile so the action panel is reachable first */}
         <div className="order-2 lg:order-none lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
-          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} />
+          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} />
         </div>
 
         {/* Sidebar — first on mobile */}
