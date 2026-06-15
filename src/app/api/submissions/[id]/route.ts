@@ -168,13 +168,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (step.role !== role && role !== "ADMIN" && role !== "SUPER_ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    await prisma.workflowStep.update({
-      where: { id: step.id },
-      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes },
+    // Find the closest preceding STUDENT upload step (phase start) and reset the
+    // entire phase back to PENDING so the student must re-upload without a manual
+    // "resubmit" click. The rejection reason is included in the notification.
+    const phaseStart = [...sub.workflowSteps]
+      .filter((s: any) => s.role === "STUDENT" && s.stepOrder <= step.stepOrder)
+      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0] ?? step;
+
+    const idsToReset = sub.workflowSteps
+      .filter((s: any) => s.stepOrder >= phaseStart.stepOrder && s.stepOrder <= step.stepOrder)
+      .map((s: any) => s.id);
+
+    await prisma.workflowStep.updateMany({
+      where: { id: { in: idsToReset } },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
-    await prisma.submission.update({ where: { id }, data: { status: "REJECTED" } });
+
+    await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
+
+    const rejectionMsg = body.notes
+      ? `คำร้องถูกปฏิเสธ — "${body.notes}" กรุณาแก้ไขและอัปโหลดเอกสารใหม่`
+      : "คำร้องถูกปฏิเสธ — กรุณาแก้ไขและอัปโหลดเอกสารใหม่";
     await prisma.notification.create({
-      data: { recipientId: sub.studentId, message: "คำร้องถูกปฏิเสธ — กรุณาตรวจสอบและแก้ไข", detail: sub.title, submissionId: id, type: "rejected" },
+      data: { recipientId: sub.studentId, message: rejectionMsg, detail: sub.title, submissionId: id, type: "rejected" },
     });
   }
 
