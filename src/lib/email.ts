@@ -1,0 +1,123 @@
+import { Resend } from "resend";
+import { prisma } from "./prisma";
+import { ROLE_LABELS } from "./utils";
+
+// All emails go here while testing; swap to recipient.email when going live
+const DEV_EMAIL_OVERRIDE = "outanagon2549@gmail.com";
+
+function getResend(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
+
+interface StepEmailOptions {
+  role: string;
+  sub: {
+    id: string;
+    title: string;
+    studentFullName?: string | null;
+    studentCode?: string | null;
+    advisorId?: string | null;
+    headCommitteeId?: string | null;
+    committeeIds?: string[];
+    invitedCommitteeId?: string | null;
+  };
+  stepName: string;
+}
+
+export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    console.log("[email/step] RESEND_API_KEY not set — skipping");
+    return;
+  }
+
+  let recipients: { name: string; email: string }[] = [];
+
+  try {
+    if (role === "ADVISOR" && sub.advisorId) {
+      const u = await prisma.user.findUnique({ where: { id: sub.advisorId } });
+      if (u) recipients = [{ name: u.name, email: u.email }];
+    } else if (role === "HEAD_EXAM_COMMITTEE" && sub.headCommitteeId) {
+      const u = await prisma.user.findUnique({ where: { id: sub.headCommitteeId } });
+      if (u) recipients = [{ name: u.name, email: u.email }];
+    } else if (role === "EXAM_COMMITTEE" && sub.committeeIds?.length) {
+      const users = await prisma.user.findMany({ where: { id: { in: sub.committeeIds } } });
+      recipients = users.map((u) => ({ name: u.name, email: u.email }));
+    } else if (role === "INVITED_EXAM_COMMITTEE" && sub.invitedCommitteeId) {
+      const u = await prisma.user.findUnique({ where: { id: sub.invitedCommitteeId } });
+      if (u) recipients = [{ name: u.name, email: u.email }];
+    } else {
+      const u = await prisma.user.findFirst({ where: { role: role as any } });
+      if (u) recipients = [{ name: u.name, email: u.email }];
+    }
+  } catch (e) {
+    console.error("[email/step] Error looking up recipients:", e);
+    return;
+  }
+
+  if (!recipients.length) {
+    console.log(`[email/step] No recipients found for role ${role}`);
+    return;
+  }
+
+  const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
+  const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
+
+  for (const recipient of recipients) {
+    const { error } = await resend.emails.send({
+      from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
+      to: [DEV_EMAIL_OVERRIDE],
+      subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
+      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay),
+    });
+
+    if (error) {
+      console.error(`[email/step] Resend error (intended: ${recipient.email}):`, JSON.stringify(error));
+    } else {
+      console.log(`[email/step] Sent to ${DEV_EMAIL_OVERRIDE} (intended: ${recipient.email})`);
+    }
+  }
+}
+
+function buildHtml(
+  recipientName: string,
+  roleLabel: string,
+  stepName: string,
+  thesisTitle: string,
+  studentName: string,
+): string {
+  return `
+    <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:20px;">🔔 ถึงคิวดำเนินการของท่าน</h1>
+        <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
+      </div>
+
+      <p style="color:#374151;font-size:16px;">เรียน ${recipientName} <span style="color:#6b7280;font-size:14px;">(${roleLabel})</span>,</p>
+      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาเข้าสู่ระบบเพื่อตรวจสอบและดำเนินการ</p>
+
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0 0 4px;font-weight:700;color:#1e40af;font-size:13px;">ขั้นตอนที่ต้องดำเนินการ</p>
+        <p style="margin:0;color:#1d4ed8;font-size:16px;font-weight:600;">${stepName}</p>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:15px;">
+        <tr style="background:#f3f4f6;">
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;width:40%;">ชื่อนิสิต</td>
+          <td style="padding:10px 14px;color:#111827;">${studentName}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;">ชื่อวิทยานิพนธ์</td>
+          <td style="padding:10px 14px;color:#111827;">${thesisTitle}</td>
+        </tr>
+      </table>
+
+      <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
+        อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
+        กรุณาอย่าตอบกลับอีเมลนี้
+      </p>
+    </div>
+  `;
+}

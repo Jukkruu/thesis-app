@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
+import { sendStepEmail } from "@/lib/email";
 
 const WORKFLOW_ROLES = [
   "STUDENT", "ADMIN", "PROGRAM_CHAIR", "HEAD_EXAM_COMMITTEE",
@@ -109,6 +110,9 @@ export async function POST(req: NextRequest) {
     notifData.push({ recipientId: admin.id, message: "มีคำร้องวิทยานิพนธ์ใหม่", detail: data.title, submissionId: submission.id, type: "info" });
   }
   if (notifData.length) await prisma.notification.createMany({ data: notifData });
+
+  // Email the admin that a new submission is waiting for their review (step 2)
+  sendStepEmail({ role: "ADMIN", sub: submission, stepName: STEP_NAMES[2] }).catch(() => {});
 
   const updated = await prisma.submission.findUnique({
     where: { id: submission.id },

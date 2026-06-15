@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STEP_NAMES, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
+import { sendStepEmail } from "@/lib/email";
 
 function mapSub(s: any) {
   return {
@@ -98,6 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (nextStep) {
         const msg = `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS]}`;
         await notifyRole(nextStep.role, sub, msg, "pending");
+        sendStepEmail({ role: nextStep.role, sub, stepName: STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS] }).catch(() => {});
       }
     }
 
