@@ -17,12 +17,18 @@ export async function POST(req: NextRequest) {
   if (!file || !submissionId || !formType)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  // Generate a descriptive filename: e.g. "บ.วศ.1ก_6300001.pdf"
-  const sub = await prisma.submission.findUnique({ where: { id: submissionId }, select: { studentCode: true } });
-  const shortLabel = FORM_SHORT[formType as FormType] ?? formType;
-  const displayFileName = sub?.studentCode
-    ? `${shortLabel}_${sub.studentCode}.pdf`
-    : `${shortLabel}.pdf`;
+  // SIGNED uploads (committee's own signed copies) keep their original filename — it's already descriptive.
+  // All other form types get renamed: e.g. "บ.วศ.1ก_6300001.pdf"
+  let displayFileName: string;
+  if (formType === "SIGNED") {
+    displayFileName = file.name;
+  } else {
+    const sub = await prisma.submission.findUnique({ where: { id: submissionId }, select: { studentCode: true } });
+    const shortLabel = FORM_SHORT[formType as FormType] ?? formType;
+    displayFileName = sub?.studentCode
+      ? `${shortLabel}_${sub.studentCode}.pdf`
+      : `${shortLabel}.pdf`;
+  }
 
   const path = `${submissionId}/${formType}_${Date.now()}.pdf`;
   let fileUrl: string | undefined;

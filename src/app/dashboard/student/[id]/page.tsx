@@ -5,14 +5,15 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
+import { ROLE_LABELS, formatDate } from "@/lib/utils";
+import { PROGRAM_LABELS } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
 import {
-  ArrowLeft, Download, FileText, Send, Upload,
+  ArrowLeft, Send, Upload,
   AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle,
 } from "lucide-react";
-import { PROGRAM_LABELS } from "@/lib/utils";
+import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
 
 // Which forms are relevant to upload at which step
@@ -259,29 +260,12 @@ export default function StudentSubmissionDetail() {
         <div className="order-1 md:order-none space-y-4">
           {/* Uploaded files */}
           {sub.uploads.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h2 className="font-semibold text-gray-800 text-sm mb-3">
-                เอกสารที่อัปโหลดแล้ว ({sub.uploads.length})
-              </h2>
-              <ul className="space-y-2.5">
-                {sub.uploads.map((u) => (
-                  <li key={u.id} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
-                    <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-700 leading-snug">{FORM_LABELS[u.formType]}</p>
-                      <p className="text-xs text-gray-400">{u.fileName} · {formatBytes(u.fileSize)}</p>
-                    </div>
-                    <button
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
-                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      ดาวน์โหลด
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <FileList
+              uploads={sub.uploads}
+              submissionTitle={sub.title}
+              title={`เอกสารที่อัปโหลดแล้ว (${sub.uploads.length})`}
+              compact
+            />
           )}
 
           {/* Upload section — always visible when in progress */}

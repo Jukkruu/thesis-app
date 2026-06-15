@@ -6,6 +6,7 @@ import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
 import { FORM_LABELS, downloadFile } from "@/lib/utils";
+import type { FormType } from "@/types";
 
 interface Props {
   submissionId: string;
@@ -132,20 +133,40 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
               </p>
               {sub?.uploads && sub.uploads.length > 0 ? (
                 <div className="space-y-1.5">
-                  {sub.uploads.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
-                      className="w-full flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
-                    >
-                      <Download className="w-4 h-4 text-blue-500 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-700 truncate">{FORM_LABELS[u.formType]}</p>
-                        <p className="text-xs text-gray-400 truncate">{u.fileName}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {(() => {
+                    // Show latest version of each unique filename (dedup re-uploads)
+                    const latestByName = new Map<string, typeof sub.uploads[0]>();
+                    for (const u of sub.uploads) {
+                      const cur = latestByName.get(u.fileName);
+                      if (!cur || new Date(u.uploadedAt) > new Date(cur.uploadedAt)) {
+                        latestByName.set(u.fileName, u);
+                      }
+                    }
+                    return Array.from(latestByName.values()).map((u) => {
+                      // SIGNED files: use filename as label; other types: use Thai form name
+                      const isSignedType = u.formType === "SIGNED";
+                      const label = isSignedType
+                        ? u.fileName.replace(/\.pdf$/i, "")
+                        : (FORM_LABELS[u.formType as FormType] ?? u.formType);
+                      const sublabel = isSignedType
+                        ? FORM_LABELS["SIGNED"]
+                        : u.fileName;
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => downloadFile(u.id, u.fileName, label, sub.title, u.fileUrl)}
+                          className="w-full flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
+                        >
+                          <Download className="w-4 h-4 text-blue-500 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-700 truncate">{label}</p>
+                            <p className="text-xs text-gray-400 truncate">{sublabel}</p>
+                          </div>
+                        </button>
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3 text-center">
