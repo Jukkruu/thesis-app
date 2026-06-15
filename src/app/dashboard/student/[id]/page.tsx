@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { ROLE_LABELS, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, FORM_LABELS, formatDate } from "@/lib/utils";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
@@ -313,38 +313,55 @@ export default function StudentSubmissionDetail() {
                 </div>
               </div>
 
-              {/* Suggested forms for current step — shown first with highlight */}
+              {/* Required docs checklist — only when it's the student's turn and there are required forms */}
+              {isMyTurn && suggested && (
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    เอกสารที่ต้องอัปโหลดก่อนส่ง
+                    {suggested.multiUpload && <span className="font-normal">(อัปโหลดได้หลายไฟล์)</span>}
+                  </p>
+                  {suggested.forms.map((ft) => {
+                    const done = uploadedTypes.has(ft);
+                    return (
+                      <div key={ft} className="flex items-center gap-2">
+                        {done
+                          ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                          : <XCircle className="w-4 h-4 text-orange-400 shrink-0" />}
+                        <span className={`text-xs flex-1 ${done ? "text-green-700" : "text-gray-800 font-medium"}`}>
+                          {FORM_LABELS[ft]}
+                        </span>
+                        <span className={`text-xs font-semibold shrink-0 ${done ? "text-green-500" : "text-orange-500"}`}>
+                          {done ? "✓ อัปโหลดแล้ว" : "รอ"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Uploaders for required forms not yet uploaded (multiUpload always shows) */}
               {suggested?.forms
-                // multiUpload steps (SIGNED): always show uploader; others: hide once uploaded
                 .filter((f) => suggested.multiUpload || !uploadedTypes.has(f))
                 .map((ft, idx) => (
-                  <div key={`${ft}-${idx}`} className="space-y-1.5">
-                    <p className="text-xs font-medium text-blue-600 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                      {suggested.multiUpload ? "อัปโหลดเอกสารที่จำเป็น (อัปโหลดได้หลายไฟล์)" : "แนะนำสำหรับขั้นตอนนี้"}
-                    </p>
-                    <FileUploader submissionId={sub.id} formType={ft} />
-                  </div>
+                  <FileUploader key={`${ft}-${idx}`} submissionId={sub.id} formType={ft} />
                 ))}
 
-              {/* All remaining forms — always visible, never collapsed */}
+              {/* Optional remaining forms (not required for this step) */}
               {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => (
                 <FileUploader key={ft} submissionId={sub.id} formType={ft} />
               ))}
 
-              {/* All uploaded */}
-              {remaining.length === 0 && (
-                <p className="text-sm text-green-600 bg-green-50 rounded-xl px-3 py-2 text-center">
-                  ✓ อัปโหลดเอกสารครบทุกรายการแล้ว
-                </p>
-              )}
-
-              {/* Submit button — visible when it's the student's turn */}
+              {/* Submit button */}
               {isMyTurn && currentStep && (
                 <>
-                  {!allRequiredUploaded && (
+                  {allRequiredUploaded ? (
+                    <p className="text-xs text-green-600 text-center bg-green-50 rounded-lg px-3 py-2 font-medium">
+                      ✓ อัปโหลดครบแล้ว — กดส่งได้เลย
+                    </p>
+                  ) : (
                     <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">
-                      ⚠️ กรุณาอัปโหลดเอกสารให้ครบก่อนกดส่ง
+                      ⚠️ กรุณาอัปโหลดเอกสารที่ยังรอให้ครบก่อน
                     </p>
                   )}
                   <button
