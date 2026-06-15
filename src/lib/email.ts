@@ -25,6 +25,7 @@ interface StepEmailOptions {
   sub: {
     id: string;
     title: string;
+    studentId?: string | null;
     studentFullName?: string | null;
     studentCode?: string | null;
     advisorId?: string | null;
@@ -51,7 +52,10 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
   let recipients: Recipient[] = [];
 
   try {
-    if (role === "ADVISOR" && sub.advisorId) {
+    if (role === "STUDENT" && sub.studentId) {
+      const u = await prisma.user.findUnique({ where: { id: sub.studentId } });
+      if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
+    } else if (role === "ADVISOR" && sub.advisorId) {
       const u = await prisma.user.findUnique({ where: { id: sub.advisorId } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     } else if (role === "HEAD_EXAM_COMMITTEE" && sub.headCommitteeId) {

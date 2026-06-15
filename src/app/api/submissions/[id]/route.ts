@@ -30,7 +30,8 @@ async function getSub(id: string) {
 
 async function notifyRole(role: string, sub: any, message: string, type: string) {
   let recipientId: string | null = null;
-  if (role === "ADVISOR")              recipientId = sub.advisorId;
+  if (role === "STUDENT")              recipientId = sub.studentId;
+  else if (role === "ADVISOR")         recipientId = sub.advisorId;
   else if (role === "HEAD_EXAM_COMMITTEE") recipientId = sub.headCommitteeId;
   else if (role === "INVITED_EXAM_COMMITTEE") recipientId = sub.invitedCommitteeId;
   else if (role === "EXAM_COMMITTEE") {
@@ -80,6 +81,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
     if (step.role !== role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // For STUDENT steps, only the submission's own student can advance
+    if (step.role === "STUDENT" && sub.studentId !== userId)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await prisma.workflowStep.update({
       where: { id: step.id },

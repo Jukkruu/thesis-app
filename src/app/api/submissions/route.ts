@@ -5,8 +5,39 @@ import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
 import { sendStepEmail } from "@/lib/email";
 
 const WORKFLOW_ROLES = [
-  "STUDENT", "ADMIN", "PROGRAM_CHAIR", "HEAD_EXAM_COMMITTEE",
-  "EXAM_COMMITTEE", "ADVISOR", "INVITED_EXAM_COMMITTEE", "PROGRAM_CHAIR",
+  // Phase 1 — บ.วศ.1ก + บ.วศ.1ข
+  "STUDENT",               // 1  upload BW1A + BW1B
+  "ADMIN",                 // 2  approve
+  "PROGRAM_CHAIR",         // 3  sign BW1A → email finance
+  // Phase 2 — บ.วศ.1ค + บ.วศ.1ง
+  "STUDENT",               // 4  upload B1C + B1D
+  "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
+  "ADVISOR",               // 6  sign B1C
+  "EXAM_COMMITTEE",        // 7  sign B1C (all members)
+  "ADMIN",                 // 8  approve
+  "PROGRAM_CHAIR",         // 9  sign B1C + B1D
+  // Phase 3 — บ.2 + บ.3
+  "STUDENT",               // 10 upload B2 + B3
+  "EXAM_COMMITTEE",        // 11 sign B3 (all members)
+  "ADVISOR",               // 12 sign B2
+  "HEAD_EXAM_COMMITTEE",   // 13 sign B2
+  "PROGRAM_CHAIR",         // 14 sign B2
+  // Phase 4 — Admin relay (faculty round-trip)
+  "ADMIN",                 // 15 send to faculty + receive back + forward to student
+  // Phase 5 — Post-defense signing
+  "STUDENT",               // 16 upload invitation letter + แบบรายงานฯ
+  "HEAD_EXAM_COMMITTEE",   // 17 sign ใบรายงานผล
+  "ADVISOR",               // 18 sign แบบรายงาน + ใบรายงานผล
+  "EXAM_COMMITTEE",        // 19 sign ใบรายงานผล (all members)
+  "INVITED_EXAM_COMMITTEE",// 20 sign ใบรายงานผล
+  "PROGRAM_CHAIR",         // 21 sign ใบรายงานผล
+  // Phase 6 — Thesis submission
+  "STUDENT",               // 22 upload B4 + THESIS
+  "PROGRAM_CHAIR",         // 23 sign B4
+  "HEAD_EXAM_COMMITTEE",   // 24 sign thesis cover
+  "ADVISOR",               // 25 sign thesis cover
+  "EXAM_COMMITTEE",        // 26 sign thesis cover (all members)
+  "INVITED_EXAM_COMMITTEE",// 27 sign thesis cover
 ] as const;
 
 function mapSub(s: any) {
