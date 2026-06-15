@@ -104,16 +104,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR") {
-      fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: sub.studentFullName ?? sub.studentId,
-          studentCode: sub.studentCode ?? "-",
-          program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
-          thesisTitle: sub.title,
-          submissionId: id,
-        }),
+      // Look up names for the finance email
+      Promise.all([
+        sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
+        sub.headCommitteeId ? prisma.user.findUnique({ where: { id: sub.headCommitteeId }, select: { name: true } }) : null,
+        (sub.committeeIds as string[] | undefined)?.length
+          ? prisma.user.findMany({ where: { id: { in: sub.committeeIds as string[] } }, select: { name: true } })
+          : [],
+      ]).then(([advisorUser, headUser, committeeUsers]) => {
+        fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentName: sub.studentFullName ?? sub.studentId,
+            studentCode: sub.studentCode ?? "-",
+            studentEmail: sub.studentEmail,
+            studentPhone: sub.studentPhone,
+            program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
+            thesisTitle: sub.title,
+            submissionId: id,
+            advisorName: advisorUser?.name,
+            headCommitteeName: headUser?.name,
+            committeeNames: (committeeUsers as { name: string }[]).map((u) => u.name),
+            invitedProfName: (sub as any).invitedProfName,
+            invitedProfAffiliation: (sub as any).invitedProfAffiliation,
+            examDate: (sub as any).examDate,
+            examTime: (sub as any).examTime,
+            roomNeeded: (sub as any).roomNeeded,
+            parkingNeeded: (sub as any).parkingNeeded,
+            carPlate: (sub as any).carPlate,
+          }),
+        }).catch(() => {});
       }).catch(() => {});
     }
   }

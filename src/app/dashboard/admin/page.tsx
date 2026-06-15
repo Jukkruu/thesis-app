@@ -9,11 +9,52 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle, Bell,
+  Trash2, Search, AlertCircle, Bell, UserCheck,
 } from "lucide-react";
+import type { MockSubmission, MockWorkflowStep } from "@/types";
 
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function resolvePendingInfo(
+  sub: MockSubmission,
+  step: MockWorkflowStep,
+  users: { id: string; name: string; role: string }[],
+): { label: string; detail: string | null } {
+  const label = ROLE_LABELS[step.role];
+  switch (step.role) {
+    case "ADVISOR": {
+      const u = users.find((u) => u.id === sub.advisorId);
+      return { label, detail: u?.name ?? null };
+    }
+    case "HEAD_EXAM_COMMITTEE": {
+      const u = users.find((u) => u.id === sub.headCommitteeId);
+      return { label, detail: u?.name ?? null };
+    }
+    case "EXAM_COMMITTEE": {
+      const memberIds: string[] = step.committeeMembers?.length
+        ? step.committeeMembers
+        : (sub.committeeIds ?? []);
+      const signedIds = new Set((step.committeeActions ?? []).map((a) => a.userId));
+      const pending = memberIds.filter((id) => !signedIds.has(id));
+      const names = pending.map((id) => users.find((u) => u.id === id)?.name ?? id).filter(Boolean);
+      const detail = names.length
+        ? `รอ ${names.length}/${memberIds.length}: ${names.join(", ")}`
+        : null;
+      return { label, detail };
+    }
+    case "INVITED_EXAM_COMMITTEE": {
+      const u = users.find((u) => u.id === sub.invitedCommitteeId);
+      return { label, detail: u?.name ?? sub.invitedProfName ?? null };
+    }
+    case "PROGRAM_CHAIR": {
+      const u = users.find((u) => u.role === "PROGRAM_CHAIR");
+      return { label, detail: u?.name ?? null };
+    }
+    default:
+      return { label, detail: null };
+  }
 }
 
 const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
@@ -260,11 +301,15 @@ export default function AdminDashboard() {
                 {/* Status + waiting */}
                 <div className="flex flex-wrap items-center gap-2">
                   <SubmissionStatusBadge status={sub.status} />
-                  {currentStep ? (
-                    <span className="text-sm text-orange-600 font-medium">
-                      ⏳ รอ: {ROLE_LABELS[currentStep.role]} (ขั้นที่ {currentStep.stepOrder}/{totalSteps})
-                    </span>
-                  ) : sub.status === "COMPLETED" ? (
+                  {currentStep ? (() => {
+                    const { label, detail } = resolvePendingInfo(sub, currentStep, users);
+                    return (
+                      <span className="text-sm text-orange-600 font-medium">
+                        ⏳ ขั้นที่ {currentStep.stepOrder}/{totalSteps}: {label}
+                        {detail && <span className="text-orange-500 font-normal"> — {detail}</span>}
+                      </span>
+                    );
+                  })() : sub.status === "COMPLETED" ? (
                     <span className="text-sm text-green-600 font-medium">✓ ผ่านครบทุกขั้นตอน</span>
                   ) : null}
                   {stuckDays > 7 && (

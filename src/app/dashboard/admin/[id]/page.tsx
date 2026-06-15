@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, StickyNote,
+  CheckCircle2, XCircle, Clock, StickyNote, User,
 } from "lucide-react";
 
 // ─── Step control card ────────────────────────────────────────────────────────
@@ -21,11 +21,15 @@ function StepCard({
   isCurrentStep,
   onOverride,
   stepUploads,
+  assignedName,
+  committeeStatus,
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
   onOverride: (stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => void;
   stepUploads: MockUpload[];
+  assignedName?: string | null;
+  committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
 }) {
   const [open,   setOpen]   = useState(false);
   const [action, setAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
@@ -52,6 +56,12 @@ function StepCard({
             )}
           </div>
           <p className="text-sm text-gray-500">{ROLE_LABELS[step.role]}</p>
+          {assignedName && !step.actedByName && (
+            <p className="text-sm text-blue-600 flex items-center gap-1">
+              <User className="w-3.5 h-3.5" />
+              {assignedName}
+            </p>
+          )}
           {step.actedByName && (
             <p className="text-sm text-gray-500">
               โดย <span className="font-medium text-gray-700">{step.actedByName}</span>
@@ -90,6 +100,34 @@ function StepCard({
                 <Download className="w-3 h-3" />
                 ดาวน์โหลด
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Committee sign status */}
+      {committeeStatus && committeeStatus.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">สถานะลงนามกรรมการ</p>
+          {committeeStatus.map((m) => (
+            <div key={m.name} className="flex items-center gap-2">
+              {m.signed ? (
+                m.approved
+                  ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+              ) : (
+                <Clock className="w-4 h-4 text-gray-300 shrink-0" />
+              )}
+              <span className={`text-sm ${m.signed ? (m.approved ? "text-green-700" : "text-red-600") : "text-gray-500"}`}>
+                {m.name}
+              </span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                m.signed
+                  ? m.approved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                  : "bg-gray-100 text-gray-400"
+              }`}>
+                {m.signed ? (m.approved ? "อนุมัติ" : "ปฏิเสธ") : "รอลงนาม"}
+              </span>
             </div>
           ))}
         </div>
@@ -477,12 +515,31 @@ export default function AdminSubmissionDetail() {
                   const to = step.actedAt ? new Date(step.actedAt).getTime() : Infinity;
                   return t >= from && t <= to;
                 });
+
+                // Resolve who is assigned to this step
+                let assignedName: string | null = null;
+                if (step.role === "ADVISOR") assignedName = advisor?.name ?? null;
+                else if (step.role === "HEAD_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? null;
+                else if (step.role === "INVITED_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? (sub.invitedProfName ?? null);
+                else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => u.role === "PROGRAM_CHAIR")?.name ?? null;
+
+                // Committee sign breakdown
+                const committeeStatus = step.role === "EXAM_COMMITTEE"
+                  ? (step.committeeMembers?.length ? step.committeeMembers : (sub.committeeIds ?? [])).map((uid) => {
+                      const u = allUsers.find((u) => u.id === uid);
+                      const action = step.committeeActions?.find((a) => a.userId === uid);
+                      return { name: u?.name ?? uid, signed: !!action, approved: action?.decision === "APPROVED" };
+                    })
+                  : undefined;
+
                 return (
                   <StepCard
                     key={step.id}
                     step={step}
                     stepUploads={stepUploads}
                     isCurrentStep={step.stepOrder === currentOrd}
+                    assignedName={assignedName}
+                    committeeStatus={committeeStatus}
                     onOverride={(stepOrder, action, notes) =>
                       adminOverrideStep(sub.id, stepOrder, action, notes)
                     }

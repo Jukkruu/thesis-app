@@ -97,6 +97,18 @@ export const STEP_LABELS: Record<StepStatus, string> = {
   SKIPPED: "ข้าม",
 };
 
+export const FORM_SHORT: Record<FormType, string> = {
+  BW1A:   "บ.วศ.1ก",
+  BW1B:   "บ.วศ.1ข",
+  B1C:    "บ.วศ.1ค",
+  B1D:    "บ.วศ.1ง",
+  B2:     "บ.2",
+  B3:     "บ.3",
+  B4:     "บ.4",
+  THESIS: "วิทยานิพนธ์",
+  SIGNED: "เอกสารลงนาม",
+};
+
 export const STEP_NAMES: Record<number, string> = {
   1: "นักศึกษายื่นเอกสาร",
   2: "เจ้าหน้าที่ตรวจรับและอนุมัติ",

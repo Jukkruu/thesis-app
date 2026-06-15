@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, BUCKET } from "@/lib/supabase";
+import { FORM_SHORT } from "@/lib/utils";
+import type { FormType } from "@/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -15,7 +17,14 @@ export async function POST(req: NextRequest) {
   if (!file || !submissionId || !formType)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const path = `${submissionId}/${formType}_${Date.now()}_${file.name}`;
+  // Generate a descriptive filename: e.g. "บ.วศ.1ก_6300001.pdf"
+  const sub = await prisma.submission.findUnique({ where: { id: submissionId }, select: { studentCode: true } });
+  const shortLabel = FORM_SHORT[formType as FormType] ?? formType;
+  const displayFileName = sub?.studentCode
+    ? `${shortLabel}_${sub.studentCode}.pdf`
+    : `${shortLabel}.pdf`;
+
+  const path = `${submissionId}/${formType}_${Date.now()}.pdf`;
   let fileUrl: string | undefined;
 
   try {
@@ -28,7 +37,7 @@ export async function POST(req: NextRequest) {
   const upload = await prisma.formUpload.create({
     data: {
       formType: formType as any,
-      fileName: file.name,
+      fileName: displayFileName,
       fileSize: file.size,
       fileUrl: fileUrl ?? null,
       submissionId,
