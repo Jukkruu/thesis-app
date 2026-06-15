@@ -1,43 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
+import { getStepName, ROLE_LABELS } from "@/lib/utils";
 import { sendStepEmail } from "@/lib/email";
 
-const WORKFLOW_ROLES = [
-  // Phase 1 — บ.วศ.1ก + บ.วศ.1ข
+// PROPOSAL: 9 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
+const PROPOSAL_ROLES = [
   "STUDENT",               // 1  upload BW1A + BW1B
   "ADMIN",                 // 2  approve
-  "PROGRAM_CHAIR",         // 3  sign BW1A → email finance
-  // Phase 2 — บ.วศ.1ค + บ.วศ.1ง
+  "PROGRAM_CHAIR",         // 3  sign BW1A → finance email
   "STUDENT",               // 4  upload B1C + B1D
   "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
   "ADVISOR",               // 6  sign B1C
   "EXAM_COMMITTEE",        // 7  sign B1C (all members)
   "ADMIN",                 // 8  approve
   "PROGRAM_CHAIR",         // 9  sign B1C + B1D
-  // Phase 3 — บ.2 + บ.3
-  "STUDENT",               // 10 upload B2 + B3
-  "EXAM_COMMITTEE",        // 11 sign B3 (all members)
-  "ADVISOR",               // 12 sign B2
-  "HEAD_EXAM_COMMITTEE",   // 13 sign B2
-  "PROGRAM_CHAIR",         // 14 sign B2
-  // Phase 4 — Admin relay (faculty round-trip)
-  "ADMIN",                 // 15 send to faculty + receive back + forward to student
-  // Phase 5 — Post-defense signing
-  "STUDENT",               // 16 upload invitation letter + แบบรายงานฯ
-  "HEAD_EXAM_COMMITTEE",   // 17 sign ใบรายงานผล
-  "ADVISOR",               // 18 sign แบบรายงาน + ใบรายงานผล
-  "EXAM_COMMITTEE",        // 19 sign ใบรายงานผล (all members)
-  "INVITED_EXAM_COMMITTEE",// 20 sign ใบรายงานผล
-  "PROGRAM_CHAIR",         // 21 sign ใบรายงานผล
-  // Phase 6 — Thesis submission
-  "STUDENT",               // 22 upload B4 + THESIS
-  "PROGRAM_CHAIR",         // 23 sign B4
-  "HEAD_EXAM_COMMITTEE",   // 24 sign thesis cover
-  "ADVISOR",               // 25 sign thesis cover
-  "EXAM_COMMITTEE",        // 26 sign thesis cover (all members)
-  "INVITED_EXAM_COMMITTEE",// 27 sign thesis cover
+] as const;
+
+// THESIS_DEFENSE: 18 steps — บ.2/3 through thesis cover signing
+const THESIS_ROLES = [
+  "STUDENT",               // 1  upload B2 + B3
+  "EXAM_COMMITTEE",        // 2  sign B3 (all members)
+  "ADVISOR",               // 3  sign B2
+  "HEAD_EXAM_COMMITTEE",   // 4  sign B2
+  "PROGRAM_CHAIR",         // 5  sign B2
+  "ADMIN",                 // 6  relay: send to faculty + receive back
+  "STUDENT",               // 7  upload invitation letter + แบบรายงานฯ
+  "HEAD_EXAM_COMMITTEE",   // 8  sign ใบรายงานผล
+  "ADVISOR",               // 9  sign แบบรายงาน + ใบรายงานผล
+  "EXAM_COMMITTEE",        // 10 sign ใบรายงานผล (all members)
+  "INVITED_EXAM_COMMITTEE",// 11 sign ใบรายงานผล
+  "PROGRAM_CHAIR",         // 12 sign ใบรายงานผล
+  "STUDENT",               // 13 upload B4 + THESIS
+  "PROGRAM_CHAIR",         // 14 sign B4
+  "HEAD_EXAM_COMMITTEE",   // 15 sign thesis cover
+  "ADVISOR",               // 16 sign thesis cover
+  "EXAM_COMMITTEE",        // 17 sign thesis cover (all members)
+  "INVITED_EXAM_COMMITTEE",// 18 sign thesis cover
 ] as const;
 
 function mapSub(s: any) {
@@ -114,7 +113,7 @@ export async function POST(req: NextRequest) {
       parkingNeeded: data.parkingNeeded ?? false,
       carPlate: data.carPlate,
       workflowSteps: {
-        create: WORKFLOW_ROLES.map((role, i) => ({
+        create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,
           role,
           status: "PENDING",
@@ -143,7 +142,7 @@ export async function POST(req: NextRequest) {
   if (notifData.length) await prisma.notification.createMany({ data: notifData });
 
   // Email the admin that a new submission is waiting for their review (step 2)
-  sendStepEmail({ role: "ADMIN", sub: submission, stepName: STEP_NAMES[2] }).catch(() => {});
+  sendStepEmail({ role: "ADMIN", sub: submission, stepName: getStepName(2, data.submissionType) }).catch(() => {});
 
   const updated = await prisma.submission.findUnique({
     where: { id: submission.id },

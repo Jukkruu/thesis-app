@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { STEP_NAMES, ROLE_LABELS } from "@/lib/utils";
+import { getStepName, ROLE_LABELS } from "@/lib/utils";
 import { sendStepEmail } from "@/lib/email";
 
 function mapSub(s: any) {
@@ -80,7 +80,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } else {
         const nextStep = sub.workflowSteps.find((s: any) => s.stepOrder > step.stepOrder && s.status === "PENDING");
         if (nextStep) {
-          const msg = `ถึงคิวของท่าน: ${STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS]}`;
+          const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
+          const msg = `ถึงคิวของท่าน: ${stepName}`;
           let recipientId: string | null = nextStep.role === "ADVISOR" ? (sub as any).advisorId : null;
           if (!recipientId) {
             const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (recipientId) {
             await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
           }
-          sendStepEmail({ role: nextStep.role, sub, stepName: STEP_NAMES[nextStep.stepOrder] ?? ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS] }).catch(() => {});
+          sendStepEmail({ role: nextStep.role, sub, stepName }).catch(() => {});
         }
       }
     }

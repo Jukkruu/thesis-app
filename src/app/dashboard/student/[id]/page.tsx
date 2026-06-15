@@ -16,25 +16,39 @@ import {
 import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
 
-// Required uploads per STUDENT step (step order → forms + guidance)
-const SUGGESTED_BY_STEP: Record<number, { forms: FormType[]; label: string; multiUpload?: boolean }> = {
-  1:  { forms: ["BW1A", "BW1B"],  label: "บ.วศ.1ก (ที่อาจารย์ที่ปรึกษาลงนามแล้ว) + บ.วศ.1ข" },
-  4:  { forms: ["B1C", "B1D"],    label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
-  10: { forms: ["B2", "B3"],      label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
-  16: { forms: ["SIGNED"],        label: "invitation letter + แบบรายงานการเสนอผลงานฯ (ลายเซ็นนิสิต)", multiUpload: true },
-  22: { forms: ["B4", "THESIS"],  label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
+type StepSuggestion = { forms: FormType[]; label: string; multiUpload?: boolean };
+
+// Per-type step suggestions — keyed by submissionType → stepOrder
+const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
+  PROPOSAL: {
+    1: { forms: ["BW1A", "BW1B"], label: "บ.วศ.1ก (ที่อาจารย์ที่ปรึกษาลงนามแล้ว) + บ.วศ.1ข" },
+    4: { forms: ["B1C", "B1D"],   label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
+  },
+  THESIS_DEFENSE: {
+    1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
+    7:  { forms: ["SIGNED"],       label: "invitation letter + แบบรายงานการเสนอผลงานฯ (ลายเซ็นนิสิต)", multiUpload: true },
+    13: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
+  },
 };
 
-// Submit button label per student step
-const SUBMIT_LABEL: Record<number, string> = {
-  1:  "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข",
-  4:  "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
-  10: "ส่งเอกสาร บ.2 + บ.3",
-  16: "ส่งเอกสารหลังสอบ",
-  22: "ส่ง บ.4 + วิทยานิพนธ์",
+// Per-type submit button labels
+const SUBMIT_LABEL: Record<string, Record<number, string>> = {
+  PROPOSAL: {
+    1: "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข",
+    4: "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
+  },
+  THESIS_DEFENSE: {
+    1:  "ส่งเอกสาร บ.2 + บ.3",
+    7:  "ส่งเอกสารหลังสอบ",
+    13: "ส่ง บ.4 + วิทยานิพนธ์",
+  },
 };
 
-const ALL_STUDENT_FORMS: FormType[] = ["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS"];
+// Non-SIGNED forms allowed for early upload per submission type
+const ALL_STUDENT_FORMS: Record<string, FormType[]> = {
+  PROPOSAL:       ["BW1A", "BW1B", "B1C", "B1D"],
+  THESIS_DEFENSE: ["B2", "B3", "B4", "THESIS"],
+};
 
 export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -61,10 +75,13 @@ export default function StudentSubmissionDetail() {
   const subStatus    = sub.status;
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
-  // Suggested forms for this step
-  const suggested = currentStep ? (SUGGESTED_BY_STEP[currentStep.stepOrder] ?? null) : null;
-  // Remaining forms student hasn't uploaded yet
-  const remaining = ALL_STUDENT_FORMS.filter((f) => !uploadedTypes.has(f));
+  const subType = sub.submissionType ?? "PROPOSAL";
+  // Suggested forms for this step (per submission type + step order)
+  const suggested = currentStep
+    ? (SUGGESTED_BY_STEP[subType]?.[currentStep.stepOrder] ?? null)
+    : null;
+  // Remaining non-SIGNED forms the student hasn't uploaded yet
+  const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
 
   function handleResubmit() {
     studentResubmit(sub!.id);
@@ -323,12 +340,13 @@ export default function StudentSubmissionDetail() {
                 <button
                   onClick={() => {
                     approveCurrentStep(sub.id);
-                    showToast(`${SUBMIT_LABEL[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว"} ✓`);
+                    const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
+                    showToast(`${lbl} ✓`);
                   }}
                   className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
                 >
                   <Send className="w-5 h-5" />
-                  {SUBMIT_LABEL[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร"}
+                  {SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร"}
                 </button>
               )}
 
