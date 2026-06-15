@@ -10,9 +10,10 @@ interface Props {
   submissionId: string;
   label?: string;
   onSuccess?: () => void;
+  formsToShow?: string[];   // if provided, only show these formTypes in the download list
 }
 
-export function SignatureButton({ submissionId, label = "อัปโหลด", onSuccess }: Props) {
+export function SignatureButton({ submissionId, label = "อัปโหลด", onSuccess, formsToShow }: Props) {
   const { approveCurrentStep, rejectCurrentStep, submissions } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
@@ -66,13 +67,19 @@ export function SignatureButton({ submissionId, label = "อัปโหลด",
             <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">1</span>
             ดาวน์โหลดเอกสารเพื่อลงนาม
           </p>
-          {sub?.uploads && sub.uploads.length > 0 ? (
+          {(() => {
+            const downloads = sub?.uploads
+              ? (formsToShow?.length
+                  ? sub.uploads.filter((u) => formsToShow.includes(u.formType))
+                  : sub.uploads)
+              : [];
+            return downloads.length > 0 ? (
             <div className="space-y-2">
-              {sub.uploads.map((u) => (
+              {downloads.map((u) => (
                 <button
                   key={u.id}
                   type="button"
-                  onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
+                  onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub?.title ?? "", u.fileUrl)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
                 >
                   <Download className="w-4 h-4 text-blue-500 shrink-0" />
@@ -87,7 +94,8 @@ export function SignatureButton({ submissionId, label = "อัปโหลด",
             <p className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3 text-center">
               ยังไม่มีเอกสารแนบ — นักศึกษายังไม่ได้อัปโหลดไฟล์
             </p>
-          )}
+          );
+          })()}
         </div>
       )}
 

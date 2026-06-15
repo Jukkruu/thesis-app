@@ -35,6 +35,35 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn    = currentStep?.role === user?.role;
+
+  // Which form types the current role needs to download and physically sign
+  const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
+    PROPOSAL: {
+      2: ["BW1A", "BW1B"],
+      3: ["BW1A"],
+      5: ["B1C"],
+      6: ["B1C"],
+      8: ["B1C", "B1D"],
+      9: ["B1C", "B1D"],
+    },
+    THESIS_DEFENSE: {
+      3: ["B2"],
+      4: ["B2"],
+      5: ["B2"],
+      6: ["B2", "B3"],
+      8: ["SIGNED"],
+      9: ["SIGNED"],
+      11: ["SIGNED"],
+      12: ["SIGNED"],
+      14: ["B4"],
+      15: ["THESIS"],
+      16: ["THESIS"],
+      18: ["THESIS"],
+    },
+  };
+  const formsToShow = currentStep
+    ? (STEP_SIGN_FORMS[sub.submissionType ?? "PROPOSAL"]?.[currentStep.stepOrder] ?? [])
+    : [];
   const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
   const totalSteps  = sub.workflowSteps.length;
 
@@ -164,6 +193,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role !== "EXAM_COMMITTEE" && (
             <SignatureButton
               submissionId={sub.id}
+              formsToShow={formsToShow}
               onSuccess={() => router.push(backPath)}
             />
           )}
