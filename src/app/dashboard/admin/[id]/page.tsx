@@ -11,8 +11,10 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, StickyNote, User,
+  CheckCircle2, XCircle, Clock, StickyNote, User, History,
 } from "lucide-react";
+import { FORM_LABELS as FORM_LABELS_MAP } from "@/lib/utils";
+import type { FormType } from "@/types";
 
 // ─── Step control card ────────────────────────────────────────────────────────
 
@@ -583,29 +585,9 @@ export default function AdminSubmissionDetail() {
             )}
           </div>
 
-          {/* Documents */}
+          {/* Documents — grouped by form type */}
           {sub.uploads.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-gray-800 mb-4">เอกสารแนบ ({sub.uploads.length})</h2>
-              <ul className="space-y-3">
-                {sub.uploads.map((u) => (
-                  <li key={u.id} className="flex items-center gap-3 py-1.5 border-b border-gray-100 last:border-0">
-                    <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-700 leading-snug">{FORM_LABELS[u.formType]}</p>
-                      <p className="text-xs text-gray-400 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
-                    </div>
-                    <button
-                      onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub.title, u.fileUrl)}
-                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      ดาวน์โหลด
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <AdminFileList uploads={sub.uploads} submissionTitle={sub.title} />
           )}
 
           {/* Admin note — visible to all parties */}
@@ -683,6 +665,86 @@ function AdminInfoItem({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs text-gray-400">{label}</p>
       <p className="font-medium text-gray-800 text-sm">{value}</p>
+    </div>
+  );
+}
+
+function AdminFileList({ uploads, submissionTitle }: { uploads: MockUpload[]; submissionTitle: string }) {
+  const [openHistory, setOpenHistory] = useState<Set<string>>(new Set());
+
+  const groups: { formType: FormType; latest: MockUpload; history: MockUpload[] }[] = [];
+  const seen = new Set<string>();
+  for (const ft of Object.keys(FORM_LABELS_MAP) as FormType[]) {
+    const byType = uploads
+      .filter((u) => u.formType === ft)
+      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    if (byType.length === 0) continue;
+    seen.add(ft);
+    groups.push({ formType: ft, latest: byType[0], history: byType.slice(1) });
+  }
+
+  function toggle(ft: string) {
+    setOpenHistory((prev) => {
+      const next = new Set(prev);
+      next.has(ft) ? next.delete(ft) : next.add(ft);
+      return next;
+    });
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+      <h2 className="font-semibold text-gray-800">เอกสารแนบ</h2>
+      <div className="space-y-2">
+        {groups.map(({ formType, latest, history }) => {
+          const isOpen = openHistory.has(formType);
+          return (
+            <div key={formType} className="rounded-xl border border-gray-100 overflow-hidden">
+              <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50">
+                <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{FORM_LABELS_MAP[formType]}</p>
+                  <p className="text-xs text-gray-400 truncate">{latest.fileName} · {formatBytes(latest.fileSize)}</p>
+                </div>
+                <button
+                  onClick={() => downloadFile(latest.id, latest.fileName, FORM_LABELS_MAP[formType], submissionTitle, latest.fileUrl)}
+                  className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  ดาวน์โหลด
+                </button>
+              </div>
+              {history.length > 0 && (
+                <>
+                  <button
+                    onClick={() => toggle(formType)}
+                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition border-t border-gray-100"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    ประวัติ ({history.length})
+                    {isOpen ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+                  </button>
+                  {isOpen && (
+                    <div className="divide-y divide-gray-100 bg-white border-t border-gray-100">
+                      {history.map((u) => (
+                        <div key={u.id} className="flex items-center gap-2 px-3 py-2">
+                          <FileText className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-500 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
+                            <p className="text-xs text-gray-400">{formatDate(u.uploadedAt)}</p>
+                          </div>
+                          <button onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS_MAP[formType], submissionTitle, u.fileUrl)}>
+                            <Download className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
