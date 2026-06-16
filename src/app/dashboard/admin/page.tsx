@@ -9,7 +9,7 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle, Bell,
+  Trash2, Search, AlertCircle, Bell, BarChart2,
 } from "lucide-react";
 import type { MockSubmission, MockWorkflowStep } from "@/types";
 
@@ -57,8 +57,10 @@ export default function AdminDashboard() {
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
   const [search,        setSearch]        = useState("");
 
-  const inProgress = submissions.filter((s) => s.status === "IN_PROGRESS");
-  const needsMe    = inProgress.filter((s) => s.workflowSteps.find((w) => w.status === "PENDING")?.role === "ADMIN");
+  const inProgress        = submissions.filter((s) => s.status === "IN_PROGRESS");
+  const needsMe           = inProgress.filter((s) => s.workflowSteps.find((w) => w.status === "PENDING")?.role === "ADMIN");
+  const proposalInProgress = inProgress.filter((s) => s.submissionType === "PROPOSAL");
+  const thesisInProgress   = inProgress.filter((s) => s.submissionType === "THESIS_DEFENSE");
 
   const counts = {
     ALL:         submissions.length,
@@ -99,6 +101,14 @@ export default function AdminDashboard() {
         <SummaryCard icon={<CheckCircle2 className="w-6 h-6 text-green-500" />} label="เสร็จสิ้น"       value={counts.COMPLETED}   color="bg-green-50 border-green-200" />
         <SummaryCard icon={<XCircle className="w-6 h-6 text-red-400" />}        label="ถูกปฏิเสธ"       value={counts.REJECTED}    color="bg-red-50 border-red-200" />
       </div>
+
+      {/* Step distribution dashboard */}
+      {inProgress.length > 0 && (
+        <StepDistributionDashboard
+          proposalSubs={proposalInProgress}
+          thesisSubs={thesisInProgress}
+        />
+      )}
 
       {/* My pending approvals */}
       {needsMe.length > 0 && (
@@ -276,6 +286,126 @@ function SummaryCard({ icon, label, value, color }: { icon: React.ReactNode; lab
       {icon}
       <p className="text-3xl font-bold text-gray-900">{value}</p>
       <p className="text-sm text-gray-600">{label}</p>
+    </div>
+  );
+}
+
+function buildStepCounts(subs: MockSubmission[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const sub of subs) {
+    const pending = sub.workflowSteps.find((s) => s.status === "PENDING");
+    if (pending) map.set(pending.stepOrder, (map.get(pending.stepOrder) ?? 0) + 1);
+  }
+  return map;
+}
+
+function StepDistributionDashboard({
+  proposalSubs,
+  thesisSubs,
+}: {
+  proposalSubs: MockSubmission[];
+  thesisSubs: MockSubmission[];
+}) {
+  const proposalCounts = buildStepCounts(proposalSubs);
+  const thesisCounts   = buildStepCounts(thesisSubs);
+
+  const maxCount = Math.max(
+    1,
+    ...Array.from(proposalCounts.values()),
+    ...Array.from(thesisCounts.values()),
+  );
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+        <BarChart2 className="w-5 h-5 text-slate-500" />
+        <h2 className="font-semibold text-gray-800">การกระจายตามขั้นตอน</h2>
+        <span className="ml-auto text-sm text-gray-400">
+          {proposalSubs.length + thesisSubs.length} คำร้องกำลังดำเนินการ
+        </span>
+      </div>
+
+      <div className="divide-y divide-gray-50">
+        {proposalSubs.length > 0 && (
+          <div className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                PROPOSAL
+              </span>
+              <span className="text-xs text-gray-400">
+                เสนอหัวข้อวิทยานิพนธ์ · {proposalSubs.length} คำร้อง
+              </span>
+            </div>
+            <StepBars
+              counts={proposalCounts}
+              totalSteps={9}
+              submissionType="PROPOSAL"
+              maxCount={maxCount}
+              barColor="bg-blue-500"
+            />
+          </div>
+        )}
+
+        {thesisSubs.length > 0 && (
+          <div className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+                THESIS DEFENSE
+              </span>
+              <span className="text-xs text-gray-400">
+                สอบวิทยานิพนธ์ · {thesisSubs.length} คำร้อง
+              </span>
+            </div>
+            <StepBars
+              counts={thesisCounts}
+              totalSteps={18}
+              submissionType="THESIS_DEFENSE"
+              maxCount={maxCount}
+              barColor="bg-purple-500"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StepBars({
+  counts,
+  totalSteps,
+  submissionType,
+  maxCount,
+  barColor,
+}: {
+  counts: Map<number, number>;
+  totalSteps: number;
+  submissionType: string;
+  maxCount: number;
+  barColor: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+        const count = counts.get(step) ?? 0;
+        const pct   = (count / maxCount) * 100;
+        return (
+          <div key={step} className={`flex items-center gap-2 ${count === 0 ? "opacity-30" : ""}`}>
+            <span className="text-xs text-gray-500 font-mono w-5 text-right shrink-0">{step}</span>
+            <div className="w-28 h-3.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+              {count > 0 && (
+                <div
+                  className={`h-full ${barColor} rounded-full`}
+                  style={{ width: `${Math.max(pct, 12)}%` }}
+                />
+              )}
+            </div>
+            <span className={`text-xs font-bold w-4 shrink-0 ${count > 0 ? "text-gray-700" : "text-gray-300"}`}>
+              {count > 0 ? count : "·"}
+            </span>
+            <span className="text-xs text-gray-600 truncate">{getStepName(step, submissionType)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
