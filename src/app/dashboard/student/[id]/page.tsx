@@ -50,6 +50,19 @@ const ALL_STUDENT_FORMS: Record<string, FormType[]> = {
   THESIS_DEFENSE: ["B2", "B3", "B4", "THESIS"],
 };
 
+// Warnings shown above the uploader — reminder of what must be done BEFORE uploading
+const FORM_UPLOAD_WARNINGS: Partial<Record<FormType, string>> = {
+  BW1A:  "กรอกข้อมูลให้ครบถ้วน และให้อาจารย์ที่ปรึกษาลงนามก่อนอัปโหลด",
+  BW1B:  "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
+  B1C:   "กรอกข้อมูลให้ครบถ้วน — กรรมการจะลงนามผ่านระบบหลังอัปโหลด",
+  B1D:   "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
+  B2:    "กรอกข้อมูลให้ครบถ้วนและลงนามโดยนิสิตก่อนอัปโหลด",
+  B3:    "กรอกข้อมูลการสอบให้ครบถ้วนก่อนอัปโหลด",
+  B4:    "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
+  THESIS: "ต้องเป็นไฟล์ที่ผ่านระบบ e-thesis ของจุฬาฯ และมี barcode กำกับเรียบร้อยแล้ว",
+  SIGNED: "ต้องลงนามโดยนิสิตในเอกสารก่อนอัปโหลด",
+};
+
 export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission } = useApp();
@@ -350,13 +363,27 @@ export default function StudentSubmissionDetail() {
                     {isMyTurn && uploadedTypes.has(ft) && !suggested.multiUpload && (
                       <p className="text-xs text-gray-400">อัปโหลดใหม่เพื่อแทนที่ไฟล์เดิม (ถ้าต้องการแก้ไข)</p>
                     )}
+                    {FORM_UPLOAD_WARNINGS[ft] && (
+                      <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        {FORM_UPLOAD_WARNINGS[ft]}
+                      </p>
+                    )}
                     <FileUploader submissionId={sub.id} formType={ft} />
                   </div>
                 ))}
 
               {/* Optional remaining forms (not required for this step) */}
               {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => (
-                <FileUploader key={ft} submissionId={sub.id} formType={ft} />
+                <div key={ft} className="space-y-1">
+                  {FORM_UPLOAD_WARNINGS[ft] && (
+                    <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      {FORM_UPLOAD_WARNINGS[ft]}
+                    </p>
+                  )}
+                  <FileUploader submissionId={sub.id} formType={ft} />
+                </div>
               ))}
 
               {/* Submit button */}

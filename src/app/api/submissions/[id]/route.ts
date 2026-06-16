@@ -122,20 +122,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
         const msg = `ถึงคิวของท่าน: ${stepName}`;
         await notifyRole(nextStep.role, sub, msg, "pending");
-        sendStepEmail({ role: nextStep.role, sub, stepName }).catch(() => {});
+        try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
       }
     }
 
     if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "PROPOSAL") {
-      // Look up names for the finance email
-      Promise.all([
-        sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
-        sub.headCommitteeId ? prisma.user.findUnique({ where: { id: sub.headCommitteeId }, select: { name: true } }) : null,
-        (sub.committeeIds as string[] | undefined)?.length
-          ? prisma.user.findMany({ where: { id: { in: sub.committeeIds as string[] } }, select: { name: true } })
-          : [],
-      ]).then(([advisorUser, headUser, committeeUsers]) => {
-        fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
+      try {
+        const invitedId = (sub as any).invitedCommitteeId as string | null | undefined;
+        const [advisorUser, headUser, committeeUsers, invitedUser] = await Promise.all([
+          sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
+          sub.headCommitteeId ? prisma.user.findUnique({ where: { id: sub.headCommitteeId }, select: { name: true } }) : null,
+          (sub.committeeIds as string[] | undefined)?.length
+            ? prisma.user.findMany({ where: { id: { in: sub.committeeIds as string[] } }, select: { name: true } })
+            : Promise.resolve([]),
+          invitedId ? prisma.user.findUnique({ where: { id: invitedId }, select: { name: true, email: true } }) : null,
+        ]);
+        await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -149,16 +151,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             advisorName: advisorUser?.name,
             headCommitteeName: headUser?.name,
             committeeNames: (committeeUsers as { name: string }[]).map((u) => u.name),
-            invitedProfName: (sub as any).invitedProfName,
+            invitedProfName: (sub as any).invitedProfName ?? invitedUser?.name,
             invitedProfAffiliation: (sub as any).invitedProfAffiliation,
+            invitedProfEmail: (sub as any).invitedProfEmail ?? invitedUser?.email,
+            invitedProfPhone: (sub as any).invitedProfPhone,
             examDate: (sub as any).examDate,
             examTime: (sub as any).examTime,
             roomNeeded: (sub as any).roomNeeded,
             parkingNeeded: (sub as any).parkingNeeded,
             carPlate: (sub as any).carPlate,
           }),
-        }).catch(() => {});
-      }).catch(() => {});
+        });
+      } catch (e) {
+        console.error("[email/finance]", e);
+      }
     }
   }
 

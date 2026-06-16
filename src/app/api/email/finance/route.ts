@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     committeeNames?: string[];
     invitedProfName?: string;
     invitedProfAffiliation?: string;
+    invitedProfEmail?: string;
+    invitedProfPhone?: string;
     examDate?: string;
     examTime?: string;
     roomNeeded?: boolean;
@@ -33,7 +35,8 @@ export async function POST(req: NextRequest) {
   const {
     studentName, studentCode, studentEmail, studentPhone,
     program, thesisTitle, submissionId,
-    advisorName, headCommitteeName, committeeNames, invitedProfName, invitedProfAffiliation,
+    advisorName, headCommitteeName, committeeNames,
+    invitedProfName, invitedProfAffiliation, invitedProfEmail, invitedProfPhone,
     examDate, examTime, roomNeeded, parkingNeeded, carPlate,
   } = body;
 
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
     ...(committeeNames ?? []).map((name, i) =>
       `<tr style="${i % 2 === 0 ? "background:#f9fafb;" : ""}"><td style="padding:10px 14px;font-weight:600;color:#6b7280;">กรรมการสอบ ${i + 1}</td><td style="padding:10px 14px;color:#111827;">${name}</td></tr>`
     ),
-    invitedProfName ? `<tr><td style="padding:10px 14px;font-weight:600;color:#6b7280;">กรรมการภายนอก</td><td style="padding:10px 14px;color:#111827;">${invitedProfName}${invitedProfAffiliation ? ` (${invitedProfAffiliation})` : ""}</td></tr>` : "",
+    invitedProfName ? `<tr><td style="padding:10px 14px;font-weight:600;color:#6b7280;">กรรมการภายนอก</td><td style="padding:10px 14px;color:#111827;">${invitedProfName}${invitedProfAffiliation ? ` (${invitedProfAffiliation})` : ""}${invitedProfEmail ? `<br><span style="color:#6b7280;font-size:13px;">📧 ${invitedProfEmail}</span>` : ""}${invitedProfPhone ? `<br><span style="color:#6b7280;font-size:13px;">📞 ${invitedProfPhone}</span>` : ""}</td></tr>` : "",
   ].filter(Boolean).join("\n");
 
   const { data, error } = await resend.emails.send({
