@@ -105,15 +105,15 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
 
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to:   [recipient.email],
+      to:   ["outanagon2549@gmail.com"],
       subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
       html: buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink),
     });
 
     if (error) {
-      console.error(`[email/step] Resend error for ${recipient.email}:`, JSON.stringify(error));
+      console.error(`[email/step] Resend error (intended: ${recipient.email}):`, JSON.stringify(error));
     } else {
-      console.log(`[email/step] Sent to ${recipient.email}`);
+      console.log(`[email/step] Sent to outanagon2549@gmail.com (intended: ${recipient.email})`);
     }
   }
 }
