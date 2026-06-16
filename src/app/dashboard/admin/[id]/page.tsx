@@ -216,8 +216,10 @@ export default function AdminSubmissionDetail() {
   const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
-  const [noteText,    setNoteText]    = useState(sub?.adminNote ?? "");
-  const [noteSaved,   setNoteSaved]   = useState(false);
+  const [noteText,      setNoteText]      = useState(sub?.adminNote ?? "");
+  const [noteSaved,     setNoteSaved]     = useState(false);
+  const [noteSavedAt,   setNoteSavedAt]   = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   if (!sub) {
     return (
@@ -605,9 +607,9 @@ export default function AdminSubmissionDetail() {
               placeholder="เพิ่มบันทึกหรือคำแนะนำ..."
               className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
-            {noteSaved && (
+            {noteSaved && noteSavedAt && (
               <p className="text-xs text-green-600 flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" /> บันทึกแล้ว
+                <Check className="w-3.5 h-3.5" /> บันทึกแล้ว · {noteSavedAt}
               </p>
             )}
             <button
@@ -615,6 +617,7 @@ export default function AdminSubmissionDetail() {
                 if (!sub) return;
                 adminSetNote(sub.id, noteText);
                 setNoteSaved(true);
+                setNoteSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
               }}
               className="w-full py-2.5 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition text-sm"
             >
@@ -634,19 +637,26 @@ export default function AdminSubmissionDetail() {
                 ลบคำร้องนี้
               </button>
             ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-red-600 font-medium text-center">
-                  ยืนยันการลบ? ไม่สามารถกู้คืนได้
+              <div className="space-y-3">
+                <p className="text-sm text-red-600">
+                  พิมพ์ <span className="font-bold font-mono">ลบ</span> เพื่อยืนยัน — การลบไม่สามารถกู้คืนได้
                 </p>
+                <input
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="พิมพ์ว่า 'ลบ'"
+                  className="w-full border border-red-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
                 <div className="flex gap-2">
                   <button
-                    onClick={handleDelete}
-                    className="flex-1 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+                    onClick={() => { if (deleteConfirm === "ลบ") handleDelete(); }}
+                    disabled={deleteConfirm !== "ลบ"}
+                    className="flex-1 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ยืนยันลบ
                   </button>
                   <button
-                    onClick={() => setConfirmDel(false)}
+                    onClick={() => { setConfirmDel(false); setDeleteConfirm(""); }}
                     className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition"
                   >
                     ยกเลิก

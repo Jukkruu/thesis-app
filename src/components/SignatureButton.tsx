@@ -76,11 +76,16 @@ export function SignatureButton({ submissionId, label = "อัปโหลด",
   async function handleReject() {
     if (!notes.trim()) { setError("กรุณาระบุเหตุผลในการปฏิเสธ"); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 400));
-    rejectCurrentStep(submissionId, notes);
-    setLoading(false);
-    showToast("บันทึกการปฏิเสธเรียบร้อยแล้ว", "error");
-    onSuccess?.();
+    setError(null);
+    try {
+      await rejectCurrentStep(submissionId, notes);
+      showToast("บันทึกการปฏิเสธเรียบร้อยแล้ว", "error");
+      onSuccess?.();
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

@@ -9,7 +9,7 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle, Bell, BarChart2,
+  Trash2, Search, AlertCircle, Bell, BarChart2, BookOpen, GraduationCap,
 } from "lucide-react";
 import type { MockSubmission, MockWorkflowStep } from "@/types";
 
@@ -200,8 +200,20 @@ export default function AdminDashboard() {
                 {/* Title + actions */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 text-lg leading-snug truncate">{sub.title}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {sub.submissionType === "PROPOSAL" && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
+                          <BookOpen className="w-3 h-3" />โครงร่าง
+                        </span>
+                      )}
+                      {sub.submissionType === "THESIS_DEFENSE" && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full shrink-0">
+                          <GraduationCap className="w-3 h-3" />สอบวิทยานิพนธ์
+                        </span>
+                      )}
+                      <p className="font-semibold text-gray-900 text-lg leading-snug truncate">{sub.title}</p>
+                    </div>
+                    <p className="text-sm text-gray-500">
                       {student && (
                         <Link
                           href={`/dashboard/admin/users/${student.id}`}

@@ -1,17 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { ROLE_LABELS, FORM_LABELS, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, FORM_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Send, Upload,
-  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
@@ -67,6 +68,8 @@ export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission } = useApp();
   const { showToast } = useToast();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -89,25 +92,38 @@ export default function StudentSubmissionDetail() {
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
   const subType = sub.submissionType ?? "PROPOSAL";
-  // Suggested forms for this step (per submission type + step order)
   const suggested = currentStep
     ? (SUGGESTED_BY_STEP[subType]?.[currentStep.stepOrder] ?? null)
     : null;
-  // Remaining non-SIGNED forms the student hasn't uploaded yet
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
-
-  // Required forms for current step — student cannot advance until all are uploaded
   const requiredForms = suggested?.forms ?? [];
   const allRequiredUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f));
+
+  // Who is responsible for the current step (with name if available)
+  function resolvePendingName(): string {
+    if (!currentStep || !sub) return "";
+    switch (currentStep.role) {
+      case "ADVISOR":             return allUsers.find((u) => u.id === sub.advisorId)?.name ?? ROLE_LABELS[currentStep.role];
+      case "HEAD_EXAM_COMMITTEE": return allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? ROLE_LABELS[currentStep.role];
+      case "PROGRAM_CHAIR":       return allUsers.find((u) => u.role === "PROGRAM_CHAIR")?.name ?? ROLE_LABELS[currentStep.role];
+      case "EXAM_COMMITTEE": {
+        const memberIds = (currentStep.committeeMembers?.length ? currentStep.committeeMembers : (sub.committeeIds ?? [])) as string[];
+        const done = ((currentStep.committeeActions ?? []) as any[]).filter((a) => a.decision === "APPROVED").length;
+        const names = memberIds.map((uid) => allUsers.find((u) => u.id === uid)?.name ?? uid);
+        return `${names.join(", ")} (ลงนามแล้ว ${done}/${memberIds.length})`;
+      }
+      default: return ROLE_LABELS[currentStep.role];
+    }
+  }
 
   function handleResubmit() {
     studentResubmit(sub!.id);
     showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
   }
 
-  function handleCancel() {
-    if (!confirm("ต้องการยกเลิกคำร้องนี้ใช่หรือไม่?\nหลังจากยกเลิกแล้วจะไม่สามารถดำเนินการต่อได้")) return;
+  function handleCancelConfirm() {
     cancelSubmission(sub!.id);
+    setShowCancelModal(false);
     showToast("ยกเลิกคำร้องแล้ว", "info");
   }
 
@@ -140,6 +156,15 @@ export default function StudentSubmissionDetail() {
 
     if (subStatus === "REJECTED") {
       const rejectedStep = sub.workflowSteps.find((s) => s.status === "REJECTED");
+      const prevStep = rejectedStep
+        ? [...sub.workflowSteps]
+            .filter((s) => s.stepOrder < rejectedStep.stepOrder)
+            .sort((a, b) => b.stepOrder - a.stepOrder)[0]
+        : null;
+      const goBackTo = prevStep ?? rejectedStep;
+      const goBackName = goBackTo
+        ? (getStepName(goBackTo.stepOrder, sub.submissionType) || ROLE_LABELS[goBackTo.role])
+        : null;
       return (
         <div className="bg-red-50 border border-red-300 rounded-2xl p-5 space-y-3">
           <div className="flex items-start gap-4">
@@ -156,6 +181,11 @@ export default function StudentSubmissionDetail() {
               )}
             </div>
           </div>
+          {goBackName && (
+            <p className="text-xs text-red-500 bg-red-100 rounded-lg px-3 py-2">
+              เมื่อกดยื่นใหม่ คำร้องจะกลับไปยัง: <span className="font-semibold">{goBackName}</span>
+            </p>
+          )}
           <button
             onClick={handleResubmit}
             className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
@@ -184,6 +214,7 @@ export default function StudentSubmissionDetail() {
     }
 
     if (currentStep) {
+      const pendingName = resolvePendingName();
       return (
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
           <div className="flex items-start gap-4">
@@ -191,14 +222,15 @@ export default function StudentSubmissionDetail() {
             <div className="flex-1">
               <p className="text-orange-800 font-bold text-lg">รอการดำเนินการ</p>
               <p className="text-orange-600 text-sm mt-1">
-                ขณะนี้รอ <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span> (ขั้นที่ {currentStep.stepOrder})
+                ขั้นที่ {currentStep.stepOrder}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
               </p>
-              <p className="text-orange-500 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
+              <p className="text-orange-700 text-sm font-medium">{pendingName}</p>
+              <p className="text-orange-400 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
             </div>
           </div>
           <button
-            onClick={handleCancel}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-100 transition"
+            onClick={() => setShowCancelModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
           >
             <XCircle className="w-4 h-4" />
             ยกเลิกคำร้องนี้
@@ -419,7 +451,7 @@ export default function StudentSubmissionDetail() {
 
               {/* Cancel — always available while in progress */}
               <button
-                onClick={handleCancel}
+                onClick={() => setShowCancelModal(true)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
               >
                 <XCircle className="w-4 h-4" />
@@ -429,6 +461,46 @@ export default function StudentSubmissionDetail() {
           )}
         </div>
       </div>
+
+      {/* Cancel confirmation modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">ยืนยันการยกเลิกคำร้อง</p>
+                <p className="text-sm text-gray-500">หลังจากยกเลิกแล้วจะไม่สามารถดำเนินการต่อได้</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">เหตุผล (ไม่บังคับ)</label>
+              <textarea
+                value={cancelNote}
+                onChange={(e) => setCancelNote(e.target.value)}
+                placeholder="ระบุเหตุผลในการยกเลิก..."
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelConfirm}
+                className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+              >
+                ยืนยันยกเลิก
+              </button>
+              <button
+                onClick={() => { setShowCancelModal(false); setCancelNote(""); }}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition"
+              >
+                ไม่ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

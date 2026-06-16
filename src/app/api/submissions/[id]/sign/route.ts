@@ -81,6 +81,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         data: { recipientId: prevRecipientId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
       });
     }
+    try {
+      const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
+      await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
+    } catch (e) { console.error("[email/reject/committee]", e); }
     if (prevStep.role !== "STUDENT") {
       await prisma.notification.create({
         data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },

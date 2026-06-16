@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
 import { PROGRAM_LABELS } from "@/lib/utils";
@@ -233,6 +233,9 @@ export default function NewSubmissionPage() {
   const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
   const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
+  const DRAFT_KEY = `thesis-draft-${submissionType}`;
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+
   const [title,              setTitle]              = useState("");
   const [advisorId,          setAdvisorId]          = useState("");
   const [studentFullName,    setStudentFullName]    = useState("");
@@ -252,6 +255,67 @@ export default function NewSubmissionPage() {
   const [parkingNeeded,      setParkingNeeded]      = useState(false);
   const [carPlate,           setCarPlate]           = useState("");
   const [error,              setError]              = useState<string | null>(null);
+
+  // Draft save / restore
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        const hasContent = d.title || d.studentFullName || d.studentCode || d.studentEmail;
+        if (hasContent) setShowDraftBanner(true);
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveDraft = useCallback(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        title, advisorId, studentFullName, studentCode, program, studentEmail, studentPhone,
+        headCommitteeId, committeeIds, invitedProfName, invitedProfAffil, invitedProfEmail,
+        invitedProfPhone, examDate, examTime, roomNeeded, parkingNeeded, carPlate,
+      }));
+    } catch { /* ignore */ }
+  }, [title, advisorId, studentFullName, studentCode, program, studentEmail, studentPhone,
+      headCommitteeId, committeeIds, invitedProfName, invitedProfAffil, invitedProfEmail,
+      invitedProfPhone, examDate, examTime, roomNeeded, parkingNeeded, carPlate, DRAFT_KEY]);
+
+  useEffect(() => {
+    if (!showDraftBanner) saveDraft();
+  }, [saveDraft, showDraftBanner]);
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.title)            setTitle(d.title);
+      if (d.advisorId)        setAdvisorId(d.advisorId);
+      if (d.studentFullName)  setStudentFullName(d.studentFullName);
+      if (d.studentCode)      setStudentCode(d.studentCode);
+      if (d.program)          setProgram(d.program);
+      if (d.studentEmail)     setStudentEmail(d.studentEmail);
+      if (d.studentPhone)     setStudentPhone(d.studentPhone);
+      if (d.headCommitteeId)  setHeadCommitteeId(d.headCommitteeId);
+      if (d.committeeIds)     setCommitteeIds(d.committeeIds);
+      if (d.invitedProfName)  setInvitedProfName(d.invitedProfName);
+      if (d.invitedProfAffil) setInvitedProfAffil(d.invitedProfAffil);
+      if (d.invitedProfEmail) setInvitedProfEmail(d.invitedProfEmail);
+      if (d.invitedProfPhone) setInvitedProfPhone(d.invitedProfPhone);
+      if (d.examDate)         setExamDate(d.examDate);
+      if (d.examTime)         setExamTime(d.examTime);
+      if (d.roomNeeded !== undefined) setRoomNeeded(d.roomNeeded);
+      if (d.parkingNeeded !== undefined) setParkingNeeded(d.parkingNeeded);
+      if (d.carPlate)         setCarPlate(d.carPlate);
+    } catch { /* ignore */ }
+    setShowDraftBanner(false);
+  }
+
+  function discardDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    setShowDraftBanner(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -289,6 +353,7 @@ export default function NewSubmissionPage() {
     };
 
     const sub = await createSubmission(data);
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     router.push(`/dashboard/student/${sub.id}`);
   }
 
@@ -313,6 +378,33 @@ export default function NewSubmissionPage() {
               ].filter(Boolean).join(", ")}
               {" "}ยังไม่มีในระบบ — กรุณาให้ผู้ดูแลระบบเพิ่มบัญชีผู้ใช้ก่อนยื่นคำร้อง
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Draft restore banner */}
+      {showDraftBanner && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl px-4 py-4 flex items-start gap-3">
+          <span className="text-amber-500 text-lg shrink-0 mt-0.5">💾</span>
+          <div className="flex-1 space-y-2">
+            <p className="font-semibold text-amber-800 text-sm">พบข้อมูลที่กรอกไว้ก่อนหน้า</p>
+            <p className="text-amber-700 text-xs">ต้องการกรอกต่อจากที่ค้างไว้ หรือเริ่มใหม่?</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={restoreDraft}
+                className="px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition"
+              >
+                กรอกต่อจากที่ค้างไว้
+              </button>
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="px-3 py-1.5 bg-white border border-amber-300 text-amber-700 text-xs font-medium rounded-lg hover:bg-amber-50 transition"
+              >
+                เริ่มใหม่
+              </button>
+            </div>
           </div>
         </div>
       )}

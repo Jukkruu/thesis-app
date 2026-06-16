@@ -32,6 +32,8 @@ interface StepEmailOptions {
     invitedCommitteeId?: string | null;
   };
   stepName: string;
+  /** For EXAM_COMMITTEE chain-sign: send email to only this specific member instead of all */
+  specificMemberId?: string;
 }
 
 interface Recipient {
@@ -40,7 +42,8 @@ interface Recipient {
   email: string;
 }
 
-export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): Promise<void> {
+export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
+  const { role, sub, stepName } = options;
   const resend = getResend();
   if (!resend) {
     console.log("[email/step] RESEND_API_KEY not set — skipping");
@@ -59,9 +62,14 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
     } else if (role === "HEAD_EXAM_COMMITTEE" && sub.headCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.headCommitteeId } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
-    } else if (role === "EXAM_COMMITTEE" && sub.committeeIds?.length) {
-      const users = await prisma.user.findMany({ where: { id: { in: sub.committeeIds } } });
-      recipients = users.map((u) => ({ id: u.id, name: u.name, email: u.email }));
+    } else if (role === "EXAM_COMMITTEE") {
+      if (options.specificMemberId) {
+        const u = await prisma.user.findUnique({ where: { id: options.specificMemberId } });
+        if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
+      } else if (sub.committeeIds?.length) {
+        const users = await prisma.user.findMany({ where: { id: { in: sub.committeeIds } } });
+        recipients = users.map((u) => ({ id: u.id, name: u.name, email: u.email }));
+      }
     } else if (role === "INVITED_EXAM_COMMITTEE" && sub.invitedCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.invitedCommitteeId } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
