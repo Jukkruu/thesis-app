@@ -165,33 +165,44 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   else if (action === "reject") {
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
-    if (step.role !== role && role !== "ADMIN" && role !== "SUPER_ADMIN")
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Any authenticated user with access can reject — no role restriction
 
-    // Find the closest preceding STUDENT upload step (phase start) and reset the
-    // entire phase back to PENDING so the student must re-upload without a manual
-    // "resubmit" click. The rejection reason is included in the notification.
-    const phaseStart = [...sub.workflowSteps]
-      .filter((s: any) => s.role === "STUDENT" && s.stepOrder <= step.stepOrder)
-      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0] ?? step;
+    // Go back exactly one step (the immediately preceding step)
+    const prevStep = [...sub.workflowSteps]
+      .filter((s: any) => s.stepOrder < step.stepOrder)
+      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
 
-    const idsToReset = sub.workflowSteps
-      .filter((s: any) => s.stepOrder >= phaseStart.stepOrder && s.stepOrder <= step.stepOrder)
-      .map((s: any) => s.id);
+    if (!prevStep) {
+      return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
+    }
 
+    // Reset current step and previous step both to PENDING.
+    // workflowSteps are fetched ordered by stepOrder asc, so find() will pick
+    // prevStep (lower order) as the active step on the next load.
     await prisma.workflowStep.updateMany({
-      where: { id: { in: idsToReset } },
+      where: { id: { in: [step.id, prevStep.id] } },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
 
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
 
-    const rejectionMsg = body.notes
-      ? `คำร้องถูกปฏิเสธ — "${body.notes}" กรุณาแก้ไขและอัปโหลดเอกสารใหม่`
-      : "คำร้องถูกปฏิเสธ — กรุณาแก้ไขและอัปโหลดเอกสารใหม่";
-    await prisma.notification.create({
-      data: { recipientId: sub.studentId, message: rejectionMsg, detail: sub.title, submissionId: id, type: "rejected" },
-    });
+    const byLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
+    const rejectionNote = body.notes
+      ? `ส่งกลับเพื่อแก้ไข — "${body.notes}"`
+      : `ส่งกลับโดย ${byLabel}`;
+
+    // Notify the role being sent back to
+    await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
+
+    // Also notify student if the step being sent back to is not the student step
+    if (prevStep.role !== "STUDENT") {
+      const studentNote = body.notes
+        ? `คำร้องถูกส่งกลับ — "${body.notes}"`
+        : `คำร้องถูกส่งกลับขั้นตอนก่อนหน้าโดย ${byLabel}`;
+      await prisma.notification.create({
+        data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
+      });
+    }
   }
 
   else if (action === "cancel") {

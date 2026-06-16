@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useRouter } from "next/navigation";
 import { WorkflowTimeline } from "./WorkflowTimeline";
@@ -8,7 +9,7 @@ import { CommitteeSignPanel } from "./CommitteeSignPanel";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { FileList } from "./FileList";
 import { ROLE_LABELS, formatDate, PROGRAM_LABELS } from "@/lib/utils";
-import { ArrowLeft, Clock, AlertCircle, StickyNote, CalendarDays } from "lucide-react";
+import { ArrowLeft, Clock, AlertCircle, StickyNote, CalendarDays, XCircle, Loader2, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
@@ -17,8 +18,12 @@ interface Props {
 }
 
 export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
-  const { user, submissions, users } = useApp();
+  const { user, submissions, users, rejectCurrentStep } = useApp();
   const router = useRouter();
+  const [showSendBack, setShowSendBack] = useState(false);
+  const [sendBackNote, setSendBackNote] = useState("");
+  const [sendBackLoading, setSendBackLoading] = useState(false);
+  const [sendBackError, setSendBackError] = useState<string | null>(null);
   const sub = submissions.find((s) => s.id === submissionId);
 
   if (!sub) {
@@ -208,6 +213,58 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
               </div>
               <p className="text-orange-600 font-medium">{ROLE_LABELS[currentStep.role]}</p>
               <p className="text-sm text-orange-500 mt-1">ขั้นที่ {currentStep.stepOrder} จาก {totalSteps}</p>
+            </div>
+          )}
+
+          {/* Send-back panel — visible to all roles when submission is in progress */}
+          {currentStep && sub.status === "IN_PROGRESS" && currentStep.stepOrder > 1 && (
+            <div className="bg-white border border-red-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => { setShowSendBack((v) => !v); setSendBackError(null); }}
+                className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+              >
+                <span className="flex items-center gap-2">
+                  <XCircle className="w-4 h-4" />
+                  ส่งกลับขั้นตอนก่อนหน้า
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showSendBack ? "rotate-180" : ""}`} />
+              </button>
+
+              {showSendBack && (
+                <div className="px-5 pb-5 space-y-3 border-t border-red-100">
+                  <p className="text-xs text-gray-500 pt-3">
+                    จะส่งกลับไปยัง <span className="font-semibold text-gray-700">{ROLE_LABELS[sub.workflowSteps.filter((s) => s.stepOrder < currentStep.stepOrder).sort((a, b) => b.stepOrder - a.stepOrder)[0]?.role] ?? "ขั้นก่อนหน้า"}</span> เพื่อแก้ไข
+                  </p>
+                  <textarea
+                    value={sendBackNote}
+                    onChange={(e) => { setSendBackNote(e.target.value); setSendBackError(null); }}
+                    placeholder="เหตุผลหรือหมายเหตุ (ไม่บังคับ)"
+                    className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-300"
+                  />
+                  {sendBackError && (
+                    <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{sendBackError}</p>
+                  )}
+                  <button
+                    disabled={sendBackLoading}
+                    onClick={async () => {
+                      setSendBackLoading(true);
+                      setSendBackError(null);
+                      try {
+                        await rejectCurrentStep(sub.id, sendBackNote);
+                        router.push(backPath);
+                      } catch (e: any) {
+                        setSendBackError(e?.message ?? "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+                      } finally {
+                        setSendBackLoading(false);
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 disabled:opacity-60 transition"
+                  >
+                    {sendBackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                    {sendBackLoading ? "กำลังส่งกลับ..." : "ยืนยันส่งกลับ"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
