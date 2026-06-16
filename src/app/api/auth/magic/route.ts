@@ -22,9 +22,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // One-time use — delete the token
-  await prisma.magicToken.delete({ where: { token } });
-
   // Build the session JWT matching the NextAuth JWT callback output
   const isSecure = req.url.startsWith("https://");
   const cookieName = isSecure

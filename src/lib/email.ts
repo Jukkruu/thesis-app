@@ -5,8 +5,6 @@ import { ROLE_LABELS } from "./utils";
 import { ROLE_ROUTES } from "./roleRoutes";
 import type { Role } from "@/types";
 
-// All emails go here while testing; swap to recipient.email when going live
-const DEV_EMAIL_OVERRIDE = "outanagon2549@gmail.com";
 
 function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
@@ -87,14 +85,19 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
   const redirectTo = `${basePath}/${sub.id}`;
 
   for (const recipient of recipients) {
-    // One-time magic token — valid 48 hours
+    // Clean up any expired tokens for this user before creating a new one
+    await prisma.magicToken.deleteMany({
+      where: { userId: recipient.id, expiresAt: { lt: new Date() } },
+    });
+
+    // Magic token — valid 7 days, reusable until expiry
     const rawToken = randomBytes(32).toString("hex");
     await prisma.magicToken.create({
       data: {
         token:     rawToken,
         userId:    recipient.id,
         redirectTo,
-        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -102,21 +105,22 @@ export async function sendStepEmail({ role, sub, stepName }: StepEmailOptions): 
 
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to:   [DEV_EMAIL_OVERRIDE],
+      to:   [recipient.email],
       subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
-      html: buildHtml(recipient.name, roleLabel, stepName, sub.title, studentDisplay, magicLink),
+      html: buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink),
     });
 
     if (error) {
-      console.error(`[email/step] Resend error (intended: ${recipient.email}):`, JSON.stringify(error));
+      console.error(`[email/step] Resend error for ${recipient.email}:`, JSON.stringify(error));
     } else {
-      console.log(`[email/step] Sent to ${DEV_EMAIL_OVERRIDE} (intended: ${recipient.email})`);
+      console.log(`[email/step] Sent to ${recipient.email}`);
     }
   }
 }
 
 function buildHtml(
   recipientName: string,
+  recipientEmail: string,
   roleLabel: string,
   stepName: string,
   thesisTitle: string,
@@ -147,6 +151,10 @@ function buildHtml(
           <td style="padding:10px 14px;font-weight:600;color:#6b7280;">ชื่อวิทยานิพนธ์</td>
           <td style="padding:10px 14px;color:#111827;">${thesisTitle}</td>
         </tr>
+        <tr style="background:#f3f4f6;">
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;">เข้าสู่ระบบในฐานะ</td>
+          <td style="padding:10px 14px;color:#111827;">${recipientName} (${recipientEmail})</td>
+        </tr>
       </table>
 
       <div style="text-align:center;margin:28px 0;">
@@ -154,7 +162,7 @@ function buildHtml(
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
           คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
         </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้หลายครั้งและหมดอายุใน 7 วัน</p>
       </div>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
