@@ -5,12 +5,13 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download } from "lucide-react";
 import { FORM_LABELS, downloadFile } from "@/lib/utils";
+import type { FormType } from "@/types";
 
 interface Props {
   submissionId: string;
   label?: string;
   onSuccess?: () => void;
-  formsToShow?: string[];   // if provided, only show these formTypes in the download list
+  formsToShow?: string[];
 }
 
 export function SignatureButton({ submissionId, label = "อัปโหลด", onSuccess, formsToShow }: Props) {
@@ -20,27 +21,53 @@ export function SignatureButton({ submissionId, label = "อัปโหลด",
   const [showReject, setShowReject] = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
-  const [signedFile, setSignedFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Per-form upload state
+  const [fileByForm,      setFileByForm]      = useState<Record<string, File | null>>({});
+  const [uploadingForm,   setUploadingForm]   = useState<string | null>(null);
+  const [uploadedForms,   setUploadedForms]   = useState<Set<string>>(new Set());
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const sub = submissions.find((s) => s.id === submissionId);
 
+  // Determine which form slots to show for upload.
+  // Non-SIGNED types upload with their own formType (versions the original file).
+  // SIGNED or no formsToShow → single SIGNED slot.
+  const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
+  const uploadTargets: string[] = nonSignedForms.length ? nonSignedForms : ["SIGNED"];
+  const allFormsUploaded = uploadTargets.every((ft) => uploadedForms.has(ft));
+
+  async function handleUploadForm(formType: string, file: File) {
+    setUploadingForm(formType);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("submissionId", submissionId);
+      fd.append("formType", formType);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("upload failed");
+      setUploadedForms((prev) => new Set([...prev, formType]));
+    } catch {
+      setError("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } finally {
+      setUploadingForm(null);
+    }
+  }
+
   async function handleApprove() {
-    if (!signedFile) { setError("กรุณาแนบเอกสารที่ลงนามแล้วก่อนอัปโหลด"); return; }
+    if (!allFormsUploaded) {
+      setError("กรุณาอัปโหลดเอกสารที่ลงนามแล้วให้ครบก่อน");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", signedFile);
-      formData.append("submissionId", submissionId);
-      formData.append("formType", "SIGNED");
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("upload failed");
       await approveCurrentStep(submissionId, notes || undefined);
       showToast("อัปโหลดและอนุมัติเรียบร้อยแล้ว ✓");
       onSuccess?.();
     } catch {
-      setError("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง");
+      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
     } finally {
       setLoading(false);
     }
@@ -73,73 +100,122 @@ export function SignatureButton({ submissionId, label = "อัปโหลด",
                   ? sub.uploads.filter((u) => formsToShow.includes(u.formType))
                   : sub.uploads)
               : [];
-            return downloads.length > 0 ? (
-            <div className="space-y-2">
-              {downloads.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], sub?.title ?? "", u.fileUrl)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
-                >
-                  <Download className="w-4 h-4 text-blue-500 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-700 truncate">{FORM_LABELS[u.formType]}</p>
-                    <p className="text-xs text-gray-400 truncate">{u.fileName}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3 text-center">
-              ยังไม่มีเอกสารแนบ — นักศึกษายังไม่ได้อัปโหลดไฟล์
-            </p>
-          );
+            // Show only the latest version of each formType
+            const latestByType = new Map<string, typeof downloads[0]>();
+            for (const u of [...downloads].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())) {
+              if (!latestByType.has(u.formType)) latestByType.set(u.formType, u);
+            }
+            const latestDownloads = [...latestByType.values()];
+            return latestDownloads.length > 0 ? (
+              <div className="space-y-2">
+                {latestDownloads.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType as FormType], sub?.title ?? "", u.fileUrl)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
+                  >
+                    <Download className="w-4 h-4 text-blue-500 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-700 truncate">{FORM_LABELS[u.formType as FormType] ?? u.formType}</p>
+                      <p className="text-xs text-gray-400 truncate">{u.fileName}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3 text-center">
+                ยังไม่มีเอกสารแนบ — นักศึกษายังไม่ได้อัปโหลดไฟล์
+              </p>
+            );
           })()}
         </div>
       )}
 
-      {/* Step 2: Upload signed file */}
+      {/* Step 2: Upload signed file(s) — one slot per upload target */}
       {!showReject && (
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-2">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-gray-700">
             <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
             อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
           </p>
-          <div
-            onClick={() => fileRef.current?.click()}
-            className={cn(
-              "flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition",
-              signedFile
-                ? "border-green-300 bg-green-50"
-                : "border-gray-200 hover:border-blue-400 hover:bg-blue-50"
-            )}
-          >
-            {signedFile ? (
-              <>
-                <FileText className="w-6 h-6 text-green-600 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-medium text-green-700 truncate">{signedFile.name}</p>
-                  <p className="text-xs text-green-600">เลือกแล้ว — คลิกเพื่อเปลี่ยน</p>
+
+          {uploadTargets.map((ft) => {
+            const isDone      = uploadedForms.has(ft);
+            const isUploading = uploadingForm === ft;
+            const selected    = fileByForm[ft] ?? null;
+            const label       = FORM_LABELS[ft as FormType] ?? ft;
+
+            return (
+              <div key={ft}>
+                {uploadTargets.length > 1 && (
+                  <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>
+                )}
+
+                <div
+                  onClick={() => !isDone && !isUploading && fileRefs.current[ft]?.click()}
+                  className={cn(
+                    "flex items-center gap-3 p-4 border-2 border-dashed rounded-xl transition",
+                    isDone
+                      ? "border-green-300 bg-green-50 cursor-default"
+                      : selected
+                      ? "border-blue-300 bg-blue-50 cursor-pointer"
+                      : "border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer"
+                  )}
+                >
+                  {isDone ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                  ) : isUploading ? (
+                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin shrink-0" />
+                  ) : selected ? (
+                    <FileText className="w-5 h-5 text-blue-400 shrink-0" />
+                  ) : (
+                    <Upload className="w-5 h-5 text-gray-400 shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {isDone ? (
+                      <p className="text-sm font-medium text-green-700">อัปโหลดสำเร็จแล้ว</p>
+                    ) : isUploading ? (
+                      <p className="text-sm text-blue-600">กำลังอัปโหลด...</p>
+                    ) : selected ? (
+                      <>
+                        <p className="text-sm font-medium text-gray-700 truncate">{selected.name}</p>
+                        <p className="text-xs text-gray-400">คลิกเพื่อเปลี่ยน</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
+                        <p className="text-xs text-gray-400">เอกสารที่ลงนามแล้วเท่านั้น</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </>
-            ) : (
-              <>
-                <Upload className="w-6 h-6 text-gray-400 shrink-0" />
-                <div>
-                  <p className="font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
-                  <p className="text-sm text-gray-400">เอกสารที่ลงนามแล้วเท่านั้น</p>
-                </div>
-              </>
-            )}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => { setSignedFile(e.target.files?.[0] ?? null); setError(null); }}
-          />
+
+                <input
+                  ref={(el) => { fileRefs.current[ft] = el; }}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    setFileByForm((prev) => ({ ...prev, [ft]: f }));
+                    setError(null);
+                  }}
+                />
+
+                {/* Upload button shown when a file is selected and not yet uploaded */}
+                {selected && !isDone && !isUploading && (
+                  <button
+                    onClick={() => handleUploadForm(ft, selected)}
+                    className="mt-2 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    อัปโหลด{uploadTargets.length > 1 ? ` ${label}` : ""}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
