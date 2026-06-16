@@ -12,9 +12,10 @@ interface Props {
   submissionId: string;
   step: MockWorkflowStep;
   onSuccess?: () => void;
+  formsToShow?: string[];
 }
 
-export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
+export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow }: Props) {
   const { user, users, submissions, committeeSign } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
@@ -42,10 +43,12 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
     }
     setLoading(true);
     if (decision === "APPROVED" && signedFile) {
+      const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
+      const uploadFormType = nonSignedForms.length === 1 ? nonSignedForms[0] : "SIGNED";
       const formData = new FormData();
       formData.append("file", signedFile);
       formData.append("submissionId", submissionId);
-      formData.append("formType", "SIGNED");
+      formData.append("formType", uploadFormType);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         setError("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
@@ -134,15 +137,15 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess }: Props) {
               {sub?.uploads && sub.uploads.length > 0 ? (
                 <div className="space-y-1.5">
                   {(() => {
-                    // Show latest version of each unique filename (dedup re-uploads)
-                    const latestByName = new Map<string, typeof sub.uploads[0]>();
-                    for (const u of sub.uploads) {
-                      const cur = latestByName.get(u.fileName);
-                      if (!cur || new Date(u.uploadedAt) > new Date(cur.uploadedAt)) {
-                        latestByName.set(u.fileName, u);
-                      }
+                    const filtered = formsToShow?.length
+                      ? sub.uploads.filter((u) => formsToShow.includes(u.formType))
+                      : sub.uploads;
+                    // Show latest version of each formType
+                    const latestByType = new Map<string, typeof sub.uploads[0]>();
+                    for (const u of [...filtered].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())) {
+                      if (!latestByType.has(u.formType)) latestByType.set(u.formType, u);
                     }
-                    return Array.from(latestByName.values()).map((u) => {
+                    return Array.from(latestByType.values()).map((u) => {
                       // SIGNED files: use filename as label; other types: use Thai form name
                       const isSignedType = u.formType === "SIGNED";
                       const label = isSignedType

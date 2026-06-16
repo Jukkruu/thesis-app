@@ -43,6 +43,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       3: ["BW1A"],
       5: ["B1C"],
       6: ["B1C"],
+      7: ["B1C"],
       8: ["B1C", "B1D"],
       9: ["B1C", "B1D"],
     },
@@ -186,6 +187,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
+              formsToShow={formsToShow}
               onSuccess={() => router.push(backPath)}
             />
           )}
