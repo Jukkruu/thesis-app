@@ -264,15 +264,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   else if (action === "admin_override_step") {
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { stepOrder, decision, notes } = body;
-    await prisma.workflowStep.update({
-      where: { submissionId_stepOrder: { submissionId: id, stepOrder } },
-      data: { status: decision, actedAt: now, actedByName: userName, actedById: userId, notes: notes ?? null },
-    });
+
+    const targetStep = sub.workflowSteps.find((s: any) => s.stepOrder === stepOrder);
+    if (!targetStep) return NextResponse.json({ error: "Step not found" }, { status: 404 });
+
+    // Rejecting a currently PENDING step → go back one step (same as action: "reject")
+    if (decision === "REJECTED" && targetStep.status === "PENDING") {
+      const prevStep = [...sub.workflowSteps]
+        .filter((s: any) => s.stepOrder < stepOrder)
+        .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
+      const idsToReset = prevStep ? [targetStep.id, prevStep.id] : [targetStep.id];
+      await prisma.workflowStep.updateMany({
+        where: { id: { in: idsToReset } },
+        data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+      });
+      if (prevStep) {
+        const rejectionNote = notes ? `ส่งกลับเพื่อแก้ไข — "${notes}"` : `ส่งกลับโดย Admin`;
+        await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
+        if (prevStep.role !== "STUDENT") {
+          await prisma.notification.create({
+            data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId: id, type: "rejected" },
+          });
+        }
+      }
+    } else {
+      // Direct override — set the step status exactly as requested
+      await prisma.workflowStep.update({
+        where: { submissionId_stepOrder: { submissionId: id, stepOrder } },
+        data: { status: decision, actedAt: now, actedByName: userName, actedById: userId, notes: notes ?? null },
+      });
+    }
+
     const updatedSub = await getSub(id);
     if (updatedSub) {
       const hasPending  = updatedSub.workflowSteps.some((s: any) => s.status === "PENDING");
       const hasRejected = updatedSub.workflowSteps.some((s: any) => s.status === "REJECTED");
-      // Pending takes priority: if any step still needs action the submission stays IN_PROGRESS
       await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
     }
   }
