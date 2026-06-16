@@ -75,9 +75,11 @@ Each of the 4 form types (BW1A, BW1B, B1C, B1D) has a single display slot in `Fi
 
 ```
 PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]
-THESIS_DEFENSE: 3→[B2]  4→[B2]  5→[B2]  6→[B2,B3]  8→[SIGNED]  9→[SIGNED]
-                11→[SIGNED]  12→[SIGNED]  14→[B4]  15→[THESIS]  16→[THESIS]  18→[THESIS]
+THESIS_DEFENSE: 2→[B3]  3→[B3]  4→[B2]⚠️  5→[B2]⚠️  6→[B2,B3]
+                8→[SIGNED]  9→[SIGNED]  10→[SIGNED]  11→[SIGNED]  12→[SIGNED]
+                14→[B4]  15→[THESIS]  16→[THESIS]  17→[THESIS]  18→[THESIS]
 ```
+⚠️ Steps 4 and 5 form assignments need confirmation from dept staff.
 
 ### Admin dashboard (`src/app/dashboard/admin/page.tsx`)
 Layout (top to bottom):
@@ -166,9 +168,9 @@ If rejected → goes back one step (e.g. step 8 → step 7, step 7 → step 6).
 |------|------|--------|
 | 1 | STUDENT | Upload B2 (บ.2) + B3 (บ.3) — **starts PENDING, student must submit** |
 | 2 | EXAM_COMMITTEE | All members sign บ.3 |
-| 3 | ADVISOR | Sign บ.2 |
-| 4 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
-| 5 | PROGRAM_CHAIR | Sign บ.2 |
+| 3 | ADVISOR | Sign บ.3 |
+| 4 | HEAD_EXAM_COMMITTEE | Sign บ.2 ⚠️ **needs confirmation** |
+| 5 | PROGRAM_CHAIR | Sign บ.2 ⚠️ **needs confirmation** |
 
 #### Phase 4 (Step 6): Faculty relay
 | Step | Role | Action |
@@ -205,6 +207,6 @@ If rejected at any step → goes back one step.
 - **Sequential only** — no parallel signing
 - **EXAM_COMMITTEE** steps: all `committeeIds` members must approve (tracked via `committeeActions` JSON on `WorkflowStep`)
 - **Finance email** fires at PROPOSAL step 3 (PROGRAM_CHAIR approval) via `POST /api/email/finance`
-- **Admin (พี่โบ้)** relays at THESIS_DEFENSE step 6 — collects from Faculty, forwards to Student
+- **Admin (พี่โบ้)** relays at THESIS_DEFENSE step 6 — collects from Faculty, forwards to Student. **TODO UX**: Add a step-6-specific instruction banner in the Admin approval panel explaining the physical relay process (don't approve until Faculty documents are received back and forwarded to student).
 - **Student upload steps** start PENDING; student uploads required files then clicks submit to advance
 - **Rejection** goes back exactly one step — any role can reject, no role restriction

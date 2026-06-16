@@ -48,17 +48,20 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       9: ["B1C", "B1D"],
     },
     THESIS_DEFENSE: {
-      3: ["B2"],
-      4: ["B2"],
-      5: ["B2"],
-      6: ["B2", "B3"],
+      2: ["B3"],         // EXAM_COMMITTEE signs B3
+      3: ["B3"],         // ADVISOR signs B3
+      4: ["B2"],         // HEAD_EXAM_COMMITTEE — verify with user
+      5: ["B2"],         // PROGRAM_CHAIR — verify with user
+      6: ["B2", "B3"],   // ADMIN relay to Faculty (needs both)
       8: ["SIGNED"],
       9: ["SIGNED"],
+      10: ["SIGNED"],    // EXAM_COMMITTEE post-defense
       11: ["SIGNED"],
       12: ["SIGNED"],
       14: ["B4"],
       15: ["THESIS"],
       16: ["THESIS"],
+      17: ["THESIS"],    // EXAM_COMMITTEE thesis cover
       18: ["THESIS"],
     },
   };
