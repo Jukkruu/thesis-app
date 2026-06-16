@@ -67,10 +67,11 @@ interface Props {
   uploads: MockUpload[];
   submissionTitle: string;
   title?: string;
-  compact?: boolean; // smaller spacing, used inside panels
+  compact?: boolean;
+  hideHistory?: boolean; // show only latest version per type, no history toggle
 }
 
-export function FileList({ uploads, submissionTitle, title = "เอกสารแนบ", compact = false }: Props) {
+export function FileList({ uploads, submissionTitle, title = "เอกสารแนบ", compact = false, hideHistory = false }: Props) {
   const [openHistory, setOpenHistory] = useState<Set<string>>(new Set());
 
   if (!uploads.length) return null;
@@ -120,7 +121,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
               </div>
 
               {/* History */}
-              {history.length > 0 && (
+              {!hideHistory && history.length > 0 && (
                 <>
                   <button
                     onClick={() => toggle(key)}

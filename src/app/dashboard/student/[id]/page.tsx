@@ -289,13 +289,14 @@ export default function StudentSubmissionDetail() {
 
         {/* Right: files + upload — first on mobile */}
         <div className="order-1 md:order-none space-y-4">
-          {/* Uploaded files */}
+          {/* Uploaded files — show only latest per type, no history */}
           {sub.uploads.length > 0 && (
             <FileList
               uploads={sub.uploads}
               submissionTitle={sub.title}
-              title={`เอกสารที่อัปโหลดแล้ว (${sub.uploads.length})`}
+              title={`เอกสารแนบ (${new Set(sub.uploads.map((u) => u.formType)).size} ไฟล์)`}
               compact
+              hideHistory
             />
           )}
 
