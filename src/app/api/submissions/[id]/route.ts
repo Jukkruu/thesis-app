@@ -268,7 +268,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (updatedSub) {
       const hasPending  = updatedSub.workflowSteps.some((s: any) => s.status === "PENDING");
       const hasRejected = updatedSub.workflowSteps.some((s: any) => s.status === "REJECTED");
-      await prisma.submission.update({ where: { id }, data: { status: hasRejected ? "REJECTED" : hasPending ? "IN_PROGRESS" : "COMPLETED" } });
+      // Pending takes priority: if any step still needs action the submission stays IN_PROGRESS
+      await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
     }
   }
 

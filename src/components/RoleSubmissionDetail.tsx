@@ -188,7 +188,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           )}
 
           {/* Action — committee step uses multi-member panel */}
-          {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role === "EXAM_COMMITTEE" && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
@@ -197,7 +197,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role !== "EXAM_COMMITTEE" && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && (
             <SignatureButton
               submissionId={sub.id}
               formsToShow={formsToShow}
@@ -205,7 +205,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {!isMyTurn && currentStep && sub.status === "IN_PROGRESS" && (
+          {!isMyTurn && currentStep && !["COMPLETED", "CANCELLED"].includes(sub.status) && (
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 text-orange-700 font-semibold mb-1">
                 <Clock className="w-5 h-5" />
@@ -216,8 +216,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
-          {/* Send-back panel — visible to all roles when submission is in progress */}
-          {currentStep && sub.status === "IN_PROGRESS" && currentStep.stepOrder > 1 && (
+          {/* Send-back panel — visible to all roles whenever there is an active step to go back from */}
+          {currentStep && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep.stepOrder > 1 && (
             <div className="bg-white border border-red-200 rounded-2xl overflow-hidden">
               <button
                 onClick={() => { setShowSendBack((v) => !v); setSendBackError(null); }}
