@@ -11,7 +11,7 @@ export type Role =
   | "ADMIN"
   | "SUPER_ADMIN";
 
-export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED";
+export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED" | "FINANCE_DOC";
 export type ProgramType = "PHD" | "ME_MECH" | "ME_CPS";
 export type SubmissionType = "PROPOSAL" | "THESIS_DEFENSE";
 export type StepStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";

@@ -85,10 +85,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (step.role === "STUDENT" && sub.studentId !== userId)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // Enforce required uploads before a student step advances
-    if (step.role === "STUDENT") {
+    // Enforce required uploads before certain steps can advance
+    {
       const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
-        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D"] },
+        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["FINANCE_DOC"], 5: ["B1C", "B1D"] },
         THESIS_DEFENSE: { 1: ["B2", "B3"], 7: ["SIGNED"], 13: ["B4", "THESIS"] },
       };
       const subType = sub.submissionType ?? "PROPOSAL";

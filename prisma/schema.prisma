@@ -28,6 +28,7 @@ enum FormType {
   B4
   THESIS
   SIGNED
+  FINANCE_DOC
 }
 
 enum ProgramType {
