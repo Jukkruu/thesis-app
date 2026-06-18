@@ -45,6 +45,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (prevActions.some((a) => a.userId === userId))
     return NextResponse.json({ error: "Already signed" }, { status: 400 });
 
+  // Enforce sequential order: all members before this one must have approved first
+  const memberIndex = (step.committeeMembers as string[]).indexOf(userId);
+  const prevMembers = (step.committeeMembers as string[]).slice(0, memberIndex);
+  const notYetSigned = prevMembers.filter(
+    (mid) => prevActions.find((a) => a.userId === mid)?.decision !== "APPROVED"
+  );
+  if (notYetSigned.length > 0) {
+    return NextResponse.json({ error: "รอกรรมการลำดับก่อนหน้าลงนามและอัปโหลดก่อน" }, { status: 400 });
+  }
+
   const now = new Date();
   const newActions = [...prevActions, { userId, name: userName, decision, notes, actedAt: now.toISOString() }];
 

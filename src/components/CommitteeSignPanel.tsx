@@ -31,6 +31,9 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
   const approvedCount = actions.filter((a) => a.decision === "APPROVED").length;
   const myAction  = actions.find((a) => a.userId === user?.id);
   const iAmMember = user ? members.includes(user.id) : false;
+  const myIndex   = user ? members.indexOf(user.id) : -1;
+  const prevMembers = myIndex > 0 ? members.slice(0, myIndex) : [];
+  const isMyTurn  = prevMembers.every((mid) => actions.find((a) => a.userId === mid)?.decision === "APPROVED");
 
   async function act(decision: "APPROVED" | "REJECTED") {
     if (decision === "APPROVED" && !signedFile) {
@@ -85,29 +88,36 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
         </span>
       </div>
 
-      {/* Member roster */}
+      {/* Member roster — sequential order */}
       <ul className="space-y-2">
-        {members.map((mid) => {
+        {members.map((mid, idx) => {
           const m = users.find((u) => u.id === mid);
           const a = actions.find((x) => x.userId === mid);
+          const prevDone = members.slice(0, idx).every((pid) => actions.find((x) => x.userId === pid)?.decision === "APPROVED");
+          const isActive = !a && prevDone;
           return (
             <li key={mid} className="flex items-center gap-2.5 text-sm">
+              <span className="text-xs font-bold text-gray-400 w-5 shrink-0 text-center">{idx + 1}</span>
               {a?.decision === "APPROVED" ? (
                 <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
               ) : a?.decision === "REJECTED" ? (
                 <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+              ) : isActive ? (
+                <Clock className="w-4 h-4 text-blue-400 shrink-0" />
               ) : (
-                <Clock className="w-4 h-4 text-gray-300 shrink-0" />
+                <Clock className="w-4 h-4 text-gray-200 shrink-0" />
               )}
-              <span className={`flex-1 ${a ? "text-gray-700" : "text-gray-400"}`}>
+              <span className={`flex-1 ${a ? "text-gray-700" : isActive ? "text-blue-700 font-medium" : "text-gray-300"}`}>
                 {m?.name ?? mid}
                 {mid === user?.id && <span className="text-blue-500"> (ท่าน)</span>}
               </span>
-              {a && (
+              {a ? (
                 <span className={`text-xs font-medium ${a.decision === "APPROVED" ? "text-green-600" : "text-red-500"}`}>
                   {a.decision === "APPROVED" ? "อัปโหลดแล้ว" : "ไม่อนุมัติ"}
                 </span>
-              )}
+              ) : isActive ? (
+                <span className="text-xs font-medium text-blue-500">● กำลังรอ</span>
+              ) : null}
             </li>
           );
         })}
@@ -121,8 +131,12 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
       ) : myAction ? (
         <div className={`rounded-xl px-4 py-3 text-sm font-medium ${myAction.decision === "APPROVED" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
           {myAction.decision === "APPROVED"
-            ? "✓ ท่านอัปโหลดแล้ว — รอกรรมการท่านอื่นลงนามให้ครบ"
+            ? "✓ ท่านอัปโหลดแล้ว — รอกรรมการลำดับถัดไป"
             : "ท่านไม่อนุมัติวิทยานิพนธ์นี้"}
+        </div>
+      ) : !isMyTurn ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 text-center">
+          รอกรรมการลำดับที่ {myIndex} ลงนามและอัปโหลดก่อน
         </div>
       ) : (
         <div className="space-y-4 pt-1 border-t border-gray-100">
@@ -278,7 +292,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
             )}
           </div>
           <p className="text-xs text-gray-400 text-center">
-            วิทยานิพนธ์จะผ่านขั้นนี้เมื่อกรรมการครบทุกท่านอัปโหลดแล้ว
+            กรรมการต้องลงนามตามลำดับ — แต่ละท่านต้องอัปโหลดก่อนจึงจะถึงคิวท่านถัดไป
           </p>
         </div>
       )}
