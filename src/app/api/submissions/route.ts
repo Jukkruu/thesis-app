@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// PROPOSAL: 10 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
+// PROPOSAL: 9 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
-  "STUDENT",               // 1   upload BW1A + BW1B
-  "ADMIN",                 // 2   approve
-  "PROGRAM_CHAIR",         // 3   sign BW1A → finance email
-  "ADMIN",                 // 4   upload finance document
-  "STUDENT",               // 5   upload B1C + B1D
-  "HEAD_EXAM_COMMITTEE",   // 6   sign B1C
-  "ADVISOR",               // 7   sign B1C
-  "EXAM_COMMITTEE",        // 8   sign B1C (all members)
-  "ADMIN",                 // 9   approve
-  "PROGRAM_CHAIR",         // 10  sign B1C + B1D
+  "STUDENT",               // 1  upload BW1A + BW1B
+  "ADMIN",                 // 2  approve
+  "PROGRAM_CHAIR",         // 3  sign BW1A → finance email
+  "STUDENT",               // 4  upload B1C + B1D + (admin uploads FINANCE_DOC anytime)
+  "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
+  "ADVISOR",               // 6  sign B1C
+  "EXAM_COMMITTEE",        // 7  sign B1C (all members)
+  "ADMIN",                 // 8  approve
+  "PROGRAM_CHAIR",         // 9  sign B1C + B1D
 ] as const;
 
 // THESIS_DEFENSE: 18 steps — บ.2/3 through thesis cover signing

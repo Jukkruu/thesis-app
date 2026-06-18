@@ -39,14 +39,13 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   // Which form types the current role needs to download and physically sign
   const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
     PROPOSAL: {
-      2:  ["BW1A", "BW1B"],
-      3:  ["BW1A"],
-      4:  ["FINANCE_DOC"],
-      6:  ["B1C"],
-      7:  ["B1C"],
-      8:  ["B1C"],
-      9:  ["B1C", "B1D"],
-      10: ["B1C", "B1D"],
+      2: ["BW1A", "BW1B"],
+      3: ["BW1A"],
+      5: ["B1C"],
+      6: ["B1C"],
+      7: ["B1C"],
+      8: ["B1C", "B1D"],
+      9: ["B1C", "B1D"],
     },
     THESIS_DEFENSE: {
       2: ["B3"],         // EXAM_COMMITTEE signs B3

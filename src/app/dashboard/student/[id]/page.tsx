@@ -23,7 +23,7 @@ type StepSuggestion = { forms: FormType[]; label: string; multiUpload?: boolean 
 const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
   PROPOSAL: {
     1: { forms: ["BW1A", "BW1B"], label: "บ.วศ.1ก (ที่อาจารย์ที่ปรึกษาลงนามแล้ว) + บ.วศ.1ข" },
-    5: { forms: ["B1C", "B1D"],   label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
+    4: { forms: ["B1C", "B1D"],   label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
   },
   THESIS_DEFENSE: {
     1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
@@ -36,7 +36,7 @@ const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
 const SUBMIT_LABEL: Record<string, Record<number, string>> = {
   PROPOSAL: {
     1: "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข",
-    5: "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
+    4: "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
   },
   THESIS_DEFENSE: {
     1:  "ส่งเอกสาร บ.2 + บ.3",

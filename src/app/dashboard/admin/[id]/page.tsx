@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, StickyNote, User,
+  CheckCircle2, XCircle, Clock, StickyNote, User, Upload, Loader2,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 
@@ -211,6 +211,11 @@ export default function AdminSubmissionDetail() {
   const [rejectNotes,  setRejectNotes]  = useState("");
   const [showReject,   setShowReject]   = useState(false);
 
+  const [financeFile,      setFinanceFile]      = useState<File | null>(null);
+  const [financeUploading, setFinanceUploading] = useState(false);
+  const [financeUploaded,  setFinanceUploaded]  = useState(false);
+  const [financeError,     setFinanceError]     = useState<string | null>(null);
+
   const [editMode,    setEditMode]    = useState(false);
   const [editTitle,   setEditTitle]   = useState(sub?.title ?? "");
   const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
@@ -237,6 +242,26 @@ export default function AdminSubmissionDetail() {
   const currentOrd = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const doneCount  = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
   const totalSteps = sub.workflowSteps.length;
+
+  async function handleFinanceUpload(file: File) {
+    if (!sub) return;
+    setFinanceUploading(true);
+    setFinanceError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("submissionId", sub.id);
+      fd.append("formType", "FINANCE_DOC");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("upload failed");
+      setFinanceUploaded(true);
+      setFinanceFile(null);
+    } catch {
+      setFinanceError("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } finally {
+      setFinanceUploading(false);
+    }
+  }
 
   function saveEdit() {
     if (!sub || !editTitle.trim()) return;
@@ -326,6 +351,65 @@ export default function AdminSubmissionDetail() {
                   ยกเลิก
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Finance document upload — shown at PROPOSAL step 4 regardless of whose turn it is */}
+      {sub.submissionType === "PROPOSAL" && currentOrd === 4 && (
+        <div className="bg-white border-2 border-green-300 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-green-600" />
+            <h2 className="font-semibold text-green-800 text-lg">อัปโหลดเอกสารการเงิน</h2>
+          </div>
+          <p className="text-sm text-gray-500">
+            อัปโหลดเอกสารการเงินที่ได้รับจากฝ่ายการเงิน — นิสิตจะสามารถส่งขั้นตอนนี้ได้เมื่อมีเอกสารครบ (บ.วศ.1ค + บ.วศ.1ง + เอกสารการเงิน)
+          </p>
+          {sub.uploads.some((u) => u.formType === "FINANCE_DOC") ? (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+              <p className="text-sm font-semibold text-green-800">อัปโหลดเอกสารการเงินแล้ว</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label
+                className={`flex items-center gap-3 p-4 border-2 border-dashed rounded-xl transition cursor-pointer ${
+                  financeUploaded ? "border-green-300 bg-green-50" : financeFile ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:border-green-400 hover:bg-green-50"
+                }`}
+              >
+                {financeFile ? <FileText className="w-5 h-5 text-blue-400 shrink-0" /> : <Upload className="w-5 h-5 text-gray-400 shrink-0" />}
+                <div className="min-w-0 flex-1">
+                  {financeFile ? (
+                    <>
+                      <p className="text-sm font-medium text-gray-700 truncate">{financeFile.name}</p>
+                      <p className="text-xs text-gray-400">คลิกเพื่อเปลี่ยน</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
+                      <p className="text-xs text-gray-400">เอกสารการเงินจากฝ่ายการเงิน</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => { setFinanceFile(e.target.files?.[0] ?? null); setFinanceError(null); }}
+                />
+              </label>
+              {financeError && <p className="text-sm text-red-600">{financeError}</p>}
+              {financeFile && (
+                <button
+                  onClick={() => handleFinanceUpload(financeFile)}
+                  disabled={financeUploading}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition disabled:opacity-60"
+                >
+                  {financeUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                  {financeUploading ? "กำลังอัปโหลด..." : "อัปโหลดเอกสารการเงิน"}
+                </button>
+              )}
             </div>
           )}
         </div>
