@@ -116,7 +116,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
                   className="shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  ดาวน์โหลด
+                  ดูเอกสาร
                 </button>
               </div>
 
