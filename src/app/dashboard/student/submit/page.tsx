@@ -257,6 +257,8 @@ export default function NewSubmissionPage() {
   const [parkingNeeded,      setParkingNeeded]      = useState(false);
   const [carPlate,           setCarPlate]           = useState("");
   const [error,              setError]              = useState<string | null>(null);
+  const [showConfirm,        setShowConfirm]        = useState(false);
+  const [submitting,         setSubmitting]         = useState(false);
 
   // Draft save / restore
   useEffect(() => {
@@ -320,45 +322,58 @@ export default function NewSubmissionPage() {
     setShowDraftBanner(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim())           { setError("กรุณาระบุชื่อหัวข้อ");       return; }
-    if (!studentFullName.trim()) { setError("กรุณาระบุชื่อ-นามสกุล");     return; }
-    if (!studentCode.trim())     { setError("กรุณาระบุรหัสนิสิต");        return; }
-    if (!program)                { setError("กรุณาเลือกหลักสูตร");         return; }
-    if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");            return; }
-    if (!advisorId)              { setError("กรุณาเลือกอาจารย์ที่ปรึกษา");             return; }
-    if (!invitedProfName.trim()) { setError("กรุณาระบุชื่อ-นามสกุลกรรมการภายนอก");    return; }
-    if (!invitedProfAffil.trim()){ setError("กรุณาระบุสังกัดกรรมการภายนอก");           return; }
-    if (!invitedProfEmail.trim()){ setError("กรุณาระบุอีเมลกรรมการภายนอก");            return; }
-    if (!invitedProfPhone.trim()){ setError("กรุณาระบุเบอร์โทรศัพท์กรรมการภายนอก");   return; }
+    if (!title.trim())              { setError("กรุณาระบุชื่อหัวข้อ");                         return; }
+    if (!studentFullName.trim())    { setError("กรุณาระบุชื่อ-นามสกุล");                       return; }
+    if (!studentCode.trim())        { setError("กรุณาระบุรหัสนิสิต");                          return; }
+    if (!program)                   { setError("กรุณาเลือกหลักสูตร");                           return; }
+    if (!studentEmail.trim())       { setError("กรุณาระบุอีเมล");                              return; }
+    if (!advisorId)                 { setError("กรุณาเลือกอาจารย์ที่ปรึกษา");                  return; }
+    if (!headCommitteeId)           { setError("กรุณาเลือกประธานกรรมการสอบ");                  return; }
+    if (!committeeIds.length)       { setError("กรุณาเลือกกรรมการสอบอย่างน้อย 1 คน");          return; }
+    if (!examDate.trim())           { setError("กรุณาระบุวันที่สอบ");                          return; }
+    if (!examTime.trim())           { setError("กรุณาระบุเวลาสอบ");                            return; }
+    if (!invitedProfName.trim())    { setError("กรุณาระบุชื่อ-นามสกุลกรรมการภายนอก");          return; }
+    if (!invitedProfAffil.trim())   { setError("กรุณาระบุสังกัดกรรมการภายนอก");                return; }
+    if (!invitedProfEmail.trim())   { setError("กรุณาระบุอีเมลกรรมการภายนอก");                 return; }
+    setError(null);
+    setShowConfirm(true);
+  }
 
-    const data: SubmissionFormData = {
-      title: title.trim(),
-      submissionType,
-      advisorId,
-      studentFullName: studentFullName.trim(),
-      studentCode: studentCode.trim(),
-      program: program as ProgramType,
-      studentEmail: studentEmail.trim(),
-      studentPhone: studentPhone.trim(),
-      headCommitteeId:      headCommitteeId || undefined,
-      committeeIds:         committeeIds.length ? committeeIds : undefined,
-      coAdvisorIds:         coAdvisorIds.length ? coAdvisorIds : undefined,
-      invitedProfName:      invitedProfName.trim() || undefined,
-      invitedProfAffiliation: invitedProfAffil.trim() || undefined,
-      invitedProfEmail:     invitedProfEmail.trim() || undefined,
-      invitedProfPhone:     invitedProfPhone.trim() || undefined,
-      examDate:     examDate || undefined,
-      examTime:     examTime || undefined,
-      roomNeeded,
-      parkingNeeded,
-      carPlate: parkingNeeded ? carPlate.trim() : undefined,
-    };
-
-    const sub = await createSubmission(data);
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-    router.push(`/dashboard/student/${sub.id}`);
+  async function doSubmit() {
+    setSubmitting(true);
+    try {
+      const data: SubmissionFormData = {
+        title: title.trim(),
+        submissionType,
+        advisorId,
+        studentFullName: studentFullName.trim(),
+        studentCode: studentCode.trim(),
+        program: program as ProgramType,
+        studentEmail: studentEmail.trim(),
+        studentPhone: studentPhone.trim(),
+        headCommitteeId:      headCommitteeId || undefined,
+        committeeIds:         committeeIds.length ? committeeIds : undefined,
+        coAdvisorIds:         coAdvisorIds.length ? coAdvisorIds : undefined,
+        invitedProfName:      invitedProfName.trim() || undefined,
+        invitedProfAffiliation: invitedProfAffil.trim() || undefined,
+        invitedProfEmail:     invitedProfEmail.trim() || undefined,
+        invitedProfPhone:     invitedProfPhone.trim() || undefined,
+        examDate:     examDate || undefined,
+        examTime:     examTime || undefined,
+        roomNeeded,
+        parkingNeeded,
+        carPlate: parkingNeeded ? carPlate.trim() : undefined,
+      };
+      const sub = await createSubmission(data);
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      router.push(`/dashboard/student/${sub.id}`);
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+      setSubmitting(false);
+      setShowConfirm(false);
+    }
   }
 
   return (
@@ -478,7 +493,7 @@ export default function NewSubmissionPage() {
                 placeholder="ค้นหาอาจารย์ที่ปรึกษา..."
               />
             </Field>
-            <Field label="ประธานกรรมการสอบ">
+            <Field label="ประธานกรรมการสอบ" required>
               <SearchableSelect
                 options={headCandidates}
                 value={headCommitteeId}
@@ -488,7 +503,7 @@ export default function NewSubmissionPage() {
             </Field>
           </div>
 
-          <Field label={`กรรมการสอบ${committeeIds.length ? ` (${committeeIds.length} คน)` : ""}`}>
+          <Field label={`กรรมการสอบ${committeeIds.length ? ` (${committeeIds.length} คน)` : ""}`} required>
             <MultiPicker
               options={committees}
               selected={committeeIds}
@@ -537,10 +552,10 @@ export default function NewSubmissionPage() {
                     placeholder="email@university.ac.th"
                   />
                 </Field>
-                <Field label="เบอร์โทรศัพท์" required>
+                <Field label="เบอร์โทรศัพท์">
                   <input
                     value={invitedProfPhone}
-                    onChange={(e) => { setInvitedProfPhone(e.target.value); setError(null); }}
+                    onChange={(e) => setInvitedProfPhone(e.target.value)}
                     className={INPUT}
                     placeholder="0812345678"
                   />
@@ -553,11 +568,11 @@ export default function NewSubmissionPage() {
         {/* ── ข้อมูลการสอบ ── */}
         <Section icon={<CalendarDays className="w-4 h-4" />} title="ข้อมูลการสอบ">
           <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="วันที่สอบ">
-              <input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className={INPUT} />
+            <Field label="วันที่สอบ" required>
+              <input type="date" value={examDate} onChange={(e) => { setExamDate(e.target.value); setError(null); }} className={INPUT} />
             </Field>
-            <Field label="เวลาสอบ">
-              <input type="time" value={examTime} onChange={(e) => setExamTime(e.target.value)} className={INPUT} />
+            <Field label="เวลาสอบ" required>
+              <input type="time" value={examTime} onChange={(e) => { setExamTime(e.target.value); setError(null); }} className={INPUT} />
             </Field>
           </div>
 
@@ -582,16 +597,52 @@ export default function NewSubmissionPage() {
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</p>
         )}
 
-        <button
-          type="submit"
-          className={`w-full py-3.5 text-white font-semibold rounded-xl transition shadow-sm text-base ${
-            isProposal
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-indigo-600 hover:bg-indigo-700"
-          }`}
-        >
-          ยืนยันยื่นคำร้อง — {formTitle}
-        </button>
+        {!showConfirm ? (
+          <button
+            type="submit"
+            className={`w-full py-3.5 text-white font-semibold rounded-xl transition shadow-sm text-base ${
+              isProposal
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+          >
+            ตรวจสอบและยืนยัน — {formTitle}
+          </button>
+        ) : (
+          <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">⚠️</span>
+              <div>
+                <p className="font-bold text-amber-800 text-lg">ตรวจสอบชื่อวิทยานิพนธ์ก่อนยืนยัน</p>
+                <p className="text-sm text-amber-700 mt-0.5">เมื่อยื่นแล้วชื่อวิทยานิพนธ์ไม่สามารถแก้ไขได้โดยนิสิต — กรุณาตรวจสอบให้ถูกต้อง</p>
+              </div>
+            </div>
+            <div className="bg-white border border-amber-300 rounded-xl px-4 py-3">
+              <p className="text-xs text-gray-400 mb-1">ชื่อวิทยานิพนธ์ที่จะยื่น</p>
+              <p className="font-semibold text-gray-900 text-base leading-snug">{title.trim()}</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={doSubmit}
+                disabled={submitting}
+                className={`flex-1 py-3 text-white font-semibold rounded-xl transition disabled:opacity-60 ${
+                  isProposal ? "bg-blue-600 hover:bg-blue-700" : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {submitting ? "กำลังยื่น..." : "ยืนยันยื่นคำร้อง"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                disabled={submitting}
+                className="flex-1 py-3 bg-white border-2 border-amber-300 text-amber-700 font-semibold rounded-xl hover:bg-amber-50 transition disabled:opacity-60"
+              >
+                กลับแก้ไข
+              </button>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );
