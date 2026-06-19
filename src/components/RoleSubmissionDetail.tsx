@@ -52,17 +52,17 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       3:  ["B2"],           // ADVISOR signs B2
       4:  ["B2"],           // HEAD_EXAM_COMMITTEE signs B2
       5:  ["B2"],           // PROGRAM_CHAIR signs B2
-      6:  ["B2", "B3"],     // ADMIN relay to Faculty
-      8:  ["SIGNED"],       // ADVISOR signs แบบรายงาน + ใบรายงานผล
-      9:  ["SIGNED"],       // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
-      10: ["SIGNED"],       // EXAM_COMMITTEE signs ใบรายงานผล
-      11: ["SIGNED"],       // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
-      12: ["SIGNED"],       // PROGRAM_CHAIR signs ใบรายงานผล
-      14: ["B4"],
-      15: ["THESIS"],       // ADVISOR signs thesis
-      16: ["THESIS"],       // HEAD_EXAM_COMMITTEE signs thesis cover
-      17: ["THESIS"],       // EXAM_COMMITTEE signs thesis cover
-      18: ["THESIS"],       // INVITED_EXAM_COMMITTEE signs thesis cover
+      6:  ["B2", "B3"],     // ADMIN: relay to Faculty (download B2+B3)
+      9:  ["SIGNED"],       // ADVISOR signs แบบรายงาน + ใบรายงานผล
+      10: ["SIGNED"],       // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
+      11: ["SIGNED"],       // EXAM_COMMITTEE signs ใบรายงานผล
+      12: ["SIGNED"],       // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
+      13: ["SIGNED"],       // PROGRAM_CHAIR signs ใบรายงานผล
+      15: ["B4"],           // PROGRAM_CHAIR signs B4
+      16: ["THESIS"],       // ADVISOR signs thesis
+      17: ["THESIS"],       // HEAD_EXAM_COMMITTEE signs thesis cover
+      18: ["THESIS"],       // EXAM_COMMITTEE signs thesis cover
+      19: ["THESIS"],       // INVITED_EXAM_COMMITTEE signs thesis cover
     },
   };
   const formsToShow = currentStep

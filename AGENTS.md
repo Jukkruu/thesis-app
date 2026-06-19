@@ -36,9 +36,10 @@ FINANCE_EMAIL         # recipient for finance notifications
 - **EXAM_COMMITTEE steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All members must approve before the step advances.
 - **Required uploads gate**: Before a STUDENT step can advance, the student must upload specific form types. Enforced server-side in `PATCH /api/submissions/[id]` (action `"approve"`) and client-side in the student detail page.
   ```
-  PROPOSAL:       step 1 → [BW1A, BW1B],  step 4 → [B1C, B1D]
-  THESIS_DEFENSE: step 1 → [B2, B3],      step 7 → [SIGNED],   step 13 → [B4, THESIS]
+  PROPOSAL:       step 1 → [BW1A, BW1B],  step 4 → [B1C, B1D, FINANCE_DOC]
+  THESIS_DEFENSE: step 1 → [B2, B3],      step 8 → [SIGNED],   step 14 → [B4, THESIS]
   ```
+  PROPOSAL step 4 requires both student docs AND admin FINANCE_DOC upload before student can advance. Admin uploads FINANCE_DOC via a yellow card shown on the admin panel whenever PROPOSAL step 4 is pending.
 - **Tailwind class names in lookup maps must be whole static strings** (no interpolation).
 - UI text is Thai; use Sarabun font (already global). Keep UI large and calm — target users include older faculty.
 
@@ -76,8 +77,8 @@ Each of the 4 form types (BW1A, BW1B, B1C, B1D) has a single display slot in `Fi
 ```
 PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]
 THESIS_DEFENSE: 2→[B3]  3→[B2]  4→[B2]  5→[B2]  6→[B2,B3]
-                8→[SIGNED]  9→[SIGNED]  10→[SIGNED]  11→[SIGNED]  12→[SIGNED]
-                14→[B4]  15→[THESIS]  16→[THESIS]  17→[THESIS]  18→[THESIS]
+                9→[SIGNED]  10→[SIGNED]  11→[SIGNED]  12→[SIGNED]  13→[SIGNED]
+                15→[B4]  16→[THESIS]  17→[THESIS]  18→[THESIS]  19→[THESIS]
 ```
 
 ### Admin dashboard (`src/app/dashboard/admin/page.tsx`)
@@ -171,32 +172,33 @@ If rejected → goes back one step (e.g. step 8 → step 7, step 7 → step 6).
 | 4 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
 | 5 | PROGRAM_CHAIR | Sign บ.2 |
 
-#### Phase 4 (Step 6): Faculty relay
+#### Phase 4 (Steps 6–7): Faculty relay
 | Step | Role | Action |
 |------|------|--------|
-| 6 | ADMIN | Send B2+B3 to Faculty; receive back (ใบรายงานผล · แบบรายงานฯ · invitation letter); upload received docs; forward to Student; then approve |
+| 6 | ADMIN | Collect B2+B3, send to Faculty, approve to confirm delivery → triggers notify admin for step 7 |
+| 7 | ADMIN | Receive docs back from Faculty, upload (formType: SIGNED × multiple + FINANCE_DOC), forward to Student, then approve → triggers invitation emails |
 
-Faculty returns: ใบรายงานผลการสอบ, แบบรายงานฯ, invitation letter, แบบประเมิน "วิทยานิพนธ์ดีมาก" (Very Good only)
+Faculty returns: ใบรายงานผลการสอบ, แบบรายงานฯ, invitation letter, แบบประเมิน "วิทยานิพนธ์ดีมาก" (Very Good only). Step 7 requires at least 1 SIGNED upload before admin can approve (server-gated).
 
-#### Phase 5 (Steps 7–12): Post-defense signing
+#### Phase 5 (Steps 8–13): Post-defense signing
 | Step | Role | Action |
 |------|------|--------|
-| 7 | STUDENT | Fill info and sign แบบรายงานการเสนอผลงานฯ then upload (formType: SIGNED) |
-| 8 | ADVISOR | Sign แบบรายงานฯ + ใบรายงานผลการสอบ |
-| 9 | HEAD_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
-| 10 | EXAM_COMMITTEE | All members sign ใบรายงานผลการสอบ (sequential) |
-| 11 | INVITED_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
-| 12 | PROGRAM_CHAIR | Sign ใบรายงานผลการสอบ |
+| 8  | STUDENT | Fill info and sign แบบรายงานการเสนอผลงานฯ then upload (formType: SIGNED) |
+| 9  | ADVISOR | Sign แบบรายงานฯ + ใบรายงานผลการสอบ |
+| 10 | HEAD_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 11 | EXAM_COMMITTEE | All members sign ใบรายงานผลการสอบ (sequential) |
+| 12 | INVITED_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 13 | PROGRAM_CHAIR | Sign ใบรายงานผลการสอบ |
 
-#### Phase 6 (Steps 13–18): Thesis submission + cover signing
+#### Phase 6 (Steps 14–19): Thesis submission + cover signing
 | Step | Role | Action |
 |------|------|--------|
-| 13 | STUDENT | Upload B4 + THESIS (from e-thesis system, with barcode) |
-| 14 | PROGRAM_CHAIR | Sign บ.4 |
-| 15 | ADVISOR | Sign thesis cover (3 points) |
-| 16 | HEAD_EXAM_COMMITTEE | Sign thesis cover |
-| 17 | EXAM_COMMITTEE | All members sign thesis cover (sequential) |
-| 18 | INVITED_EXAM_COMMITTEE | Sign thesis cover |
+| 14 | STUDENT | Upload B4 + THESIS (from e-thesis system, with barcode) |
+| 15 | PROGRAM_CHAIR | Sign บ.4 |
+| 16 | ADVISOR | Sign thesis cover (3 points) |
+| 17 | HEAD_EXAM_COMMITTEE | Sign thesis cover |
+| 18 | EXAM_COMMITTEE | All members sign thesis cover (sequential) |
+| 19 | INVITED_EXAM_COMMITTEE | Sign thesis cover |
 
 If rejected at any step → goes back one step.
 

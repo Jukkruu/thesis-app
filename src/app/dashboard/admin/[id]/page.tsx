@@ -11,9 +11,10 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, StickyNote, User,
+  CheckCircle2, XCircle, Clock, StickyNote, User, Upload,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
+import { FileUploader } from "@/components/FileUploader";
 
 // ─── Step control card ────────────────────────────────────────────────────────
 
@@ -206,9 +207,11 @@ export default function AdminSubmissionDetail() {
 
   const sub = submissions.find((s) => s.id === id);
 
-  const isMyTurn = sub?.workflowSteps.find((s) => s.status === "PENDING")?.role === "ADMIN";
-  const isThesisRelayStep = sub?.submissionType === "THESIS_DEFENSE" &&
-    sub?.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder === 6;
+  const pendingStep$ = sub?.workflowSteps.find((s) => s.status === "PENDING");
+  const isMyTurn = pendingStep$?.role === "ADMIN";
+  const isThesisRelayStep  = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 6;
+  const isThesisUploadStep = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 7;
+  const isProposalFinanceStep = sub?.submissionType === "PROPOSAL" && pendingStep$?.stepOrder === 4;
   const [approveNotes, setApproveNotes] = useState("");
   const [rejectNotes,  setRejectNotes]  = useState("");
   const [showReject,   setShowReject]   = useState(false);
@@ -274,19 +277,42 @@ export default function AdminSubmissionDetail() {
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
             <h2 className="font-semibold text-blue-800 text-lg">
-              {isThesisRelayStep ? "ถึงคิวของท่าน — นำส่งเอกสารไปยังคณะและรับกลับ" : "ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร"}
+              {isThesisRelayStep
+                ? "ถึงคิวของท่าน — นำส่งเอกสารไปยังคณะ"
+                : isThesisUploadStep
+                ? "ถึงคิวของท่าน — อัปโหลดเอกสารจากคณะ"
+                : "ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร"}
             </h2>
           </div>
           {isThesisRelayStep ? (
             <div className="space-y-2 text-sm text-gray-600">
-              <p>ขั้นตอนนี้ต้องดำเนินการทางกายภาพ กรุณาทำตามลำดับก่อนกดอนุมัติ:</p>
+              <p>ขั้นตอนนี้ต้องดำเนินการทางกายภาพก่อนกดอนุมัติ:</p>
               <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
-                <li>นำ บ.2 + บ.3 ส่งไปยังคณะวิศวกรรมศาสตร์</li>
-                <li>รับเอกสารจากคณะกลับ (ใบรายงานผลการสอบ · แบบรายงานฯ · invitation letter)</li>
-                <li>อัปโหลดเอกสารที่ได้รับกลับในช่องเอกสารด้านขวา</li>
+                <li>พิมพ์ / รวบรวม บ.2 + บ.3 จากระบบ</li>
+                <li>นำส่งไปยังคณะวิศวกรรมศาสตร์</li>
+                <li>กดอนุมัติเพื่อยืนยันว่านำส่งแล้ว (รอรับเอกสารกลับในขั้นถัดไป)</li>
+              </ol>
+            </div>
+          ) : isThesisUploadStep ? (
+            <div className="space-y-3 text-sm text-gray-600">
+              <p>รับเอกสารจากคณะแล้วอัปโหลดก่อนกดอนุมัติ:</p>
+              <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
+                <li>รับเอกสารจากคณะ (ใบรายงานผลการสอบ · แบบรายงานฯ · invitation letter · แบบประเมิน ถ้ามี)</li>
+                <li>อัปโหลดเอกสารทั้งหมดด้านล่าง</li>
                 <li>ส่งต่อเอกสารให้นิสิต</li>
                 <li>กดอนุมัติเพื่อแจ้งให้นิสิตดำเนินขั้นถัดไป</li>
               </ol>
+              <div className="space-y-2 pt-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" /> อัปโหลดเอกสารจากคณะ (SIGNED)
+                </p>
+                <FileUploader submissionId={sub.id} formType="SIGNED" />
+                <p className="text-xs text-gray-400">อัปโหลดซ้ำได้หลายครั้ง — แต่ละไฟล์จะแสดงแยกกัน</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 pt-1">
+                  <Upload className="w-3.5 h-3.5" /> เอกสารการเงิน (FINANCE_DOC)
+                </p>
+                <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
+              </div>
             </div>
           ) : (
             <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
@@ -345,6 +371,21 @@ export default function AdminSubmissionDetail() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* PROPOSAL step 4: admin must upload FINANCE_DOC while student uploads B1C+B1D */}
+      {isProposalFinanceStep && (
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-yellow-600" />
+            <h2 className="font-semibold text-yellow-800 text-lg">อัปโหลดเอกสารการเงิน</h2>
+          </div>
+          <p className="text-sm text-gray-600">
+            ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
+            นิสิตจึงจะสามารถส่งขั้นตอนนี้ได้
+          </p>
+          <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
         </div>
       )}
 

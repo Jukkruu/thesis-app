@@ -88,8 +88,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Enforce required uploads before certain steps can advance
     {
       const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
-        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D"] },
-        THESIS_DEFENSE: { 1: ["B2", "B3"], 7: ["SIGNED"], 13: ["B4", "THESIS"] },
+        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D", "FINANCE_DOC"] },
+        THESIS_DEFENSE: { 1: ["B2", "B3"], 8: ["SIGNED"], 14: ["B4", "THESIS"] },
       };
       const subType = sub.submissionType ?? "PROPOSAL";
       const required = REQUIRED_UPLOADS[subType]?.[step.stepOrder] ?? [];
@@ -98,6 +98,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (missing.length > 0) {
         return NextResponse.json(
           { error: `กรุณาอัปโหลดเอกสารให้ครบก่อน: ${missing.join(", ")}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // THESIS step 7 (ADMIN upload step): require at least one SIGNED doc uploaded before approving
+    if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 7 && step.role === "ADMIN") {
+      const hasSigned = sub.uploads.some((u: any) => u.formType === "SIGNED");
+      if (!hasSigned) {
+        return NextResponse.json(
+          { error: "กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อนอนุมัติ" },
           { status: 400 }
         );
       }
@@ -134,8 +145,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         await notifyRole(nextStep.role, sub, msg, "pending");
         try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
       }
-      // After THESIS step 6 (ADMIN relay), send invitation email to Advisor and External committee
-      if (step.stepOrder === 6 && step.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
+      // After THESIS step 5 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
+      if (step.stepOrder === 5 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
+        try {
+          const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+          if (adminUser) {
+            await prisma.notification.create({
+              data: { recipientId: adminUser.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" },
+            });
+            await sendStepEmail({ role: "ADMIN", sub, stepName: "นำส่ง บ.2+บ.3 ไปคณะ" });
+          }
+        } catch (e) { console.error("[email/thesis/step5]", e); }
+      }
+      // After THESIS step 7 (ADMIN upload), send invitation letter email to Advisor + External
+      if (step.stepOrder === 7 && step.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
         try {
           if (sub.advisorId) {
             await sendStepEmail({ role: "ADVISOR", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
@@ -338,6 +361,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
     }
 
+    // Fire invitation emails if admin overrides THESIS step 7 to APPROVED
+    if (decision === "APPROVED" && stepOrder === 7 && targetStep.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
+      try {
+        if (sub.advisorId) await sendStepEmail({ role: "ADVISOR", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
+        if (sub.invitedCommitteeId) await sendStepEmail({ role: "INVITED_EXAM_COMMITTEE", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
+      } catch (e) { console.error("[email/invitation/override]", e); }
+    }
     // Fire finance email if admin overrides PROPOSAL step 3 (PROGRAM_CHAIR) to APPROVED
     if (decision === "APPROVED" && stepOrder === 3 && targetStep.role === "PROGRAM_CHAIR" && sub.submissionType === "PROPOSAL") {
       try {

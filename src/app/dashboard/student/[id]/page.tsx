@@ -17,18 +17,18 @@ import {
 import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
 
-type StepSuggestion = { forms: FormType[]; label: string; multiUpload?: boolean };
+type StepSuggestion = { forms: FormType[]; label: string; multiUpload?: boolean; adminForms?: FormType[] };
 
 // Per-type step suggestions — keyed by submissionType → stepOrder
 const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
   PROPOSAL: {
     1: { forms: ["BW1A", "BW1B"], label: "บ.วศ.1ก (ที่อาจารย์ที่ปรึกษาลงนามแล้ว) + บ.วศ.1ข" },
-    4: { forms: ["B1C", "B1D"],   label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
+    4: { forms: ["B1C", "B1D"], adminForms: ["FINANCE_DOC"], label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
   },
   THESIS_DEFENSE: {
     1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
-    7:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
-    13: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
+    8:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
+    14: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
   },
 };
 
@@ -40,8 +40,8 @@ const SUBMIT_LABEL: Record<string, Record<number, string>> = {
   },
   THESIS_DEFENSE: {
     1:  "ส่งเอกสาร บ.2 + บ.3",
-    7:  "ส่งเอกสารหลังสอบ",
-    13: "ส่ง บ.4 + วิทยานิพนธ์",
+    8:  "ส่งแบบรายงานฯ",
+    14: "ส่ง บ.4 + วิทยานิพนธ์",
   },
 };
 
@@ -97,7 +97,10 @@ export default function StudentSubmissionDetail() {
     : null;
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
   const requiredForms = suggested?.forms ?? [];
-  const allRequiredUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f));
+  const adminRequiredForms = suggested?.adminForms ?? [];
+  const allRequiredUploaded =
+    [...requiredForms, ...adminRequiredForms].length === 0 ||
+    [...requiredForms, ...adminRequiredForms].every((f) => uploadedTypes.has(f));
 
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {
@@ -378,6 +381,22 @@ export default function StudentSubmissionDetail() {
                           {FORM_LABELS[ft]}
                         </span>
                         <span className={`text-xs font-semibold shrink-0 ${done ? "text-green-500" : "text-orange-500"}`}>
+                          {done ? "✓ อัปโหลดแล้ว" : "รอ"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {adminRequiredForms.map((ft) => {
+                    const done = uploadedTypes.has(ft);
+                    return (
+                      <div key={ft} className="flex items-center gap-2">
+                        {done
+                          ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                          : <Clock className="w-4 h-4 text-gray-400 shrink-0" />}
+                        <span className={`text-xs flex-1 ${done ? "text-green-700" : "text-gray-500"}`}>
+                          {FORM_LABELS[ft]} <span className="text-gray-400">(อัปโหลดโดยเจ้าหน้าที่)</span>
+                        </span>
+                        <span className={`text-xs font-semibold shrink-0 ${done ? "text-green-500" : "text-gray-400"}`}>
                           {done ? "✓ อัปโหลดแล้ว" : "รอ"}
                         </span>
                       </div>
