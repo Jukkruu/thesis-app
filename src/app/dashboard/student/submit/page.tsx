@@ -606,7 +606,7 @@ export default function NewSubmissionPage() {
                 : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
-            ตรวจสอบและยืนยัน — {formTitle}
+            ยืนยัน — {formTitle}
           </button>
         ) : (
           <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 space-y-4">
