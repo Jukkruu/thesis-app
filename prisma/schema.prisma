@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   STUDENT
   ADVISOR
+  CO_ADVISOR
   PROGRAM_CHAIR
   HEAD_EXAM_COMMITTEE
   EXAM_COMMITTEE
@@ -100,6 +101,7 @@ model Submission {
 
   headCommitteeId    String?
   committeeIds       String[]
+  coAdvisorIds       String[]
   invitedCommitteeId String?
 
   invitedProfName        String?

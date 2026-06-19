@@ -17,6 +17,7 @@ export interface SubmissionFormData {
   studentPhone?: string;
   headCommitteeId?: string;
   committeeIds?: string[];
+  coAdvisorIds?: string[];
   invitedCommitteeId?: string;
   invitedProfName?: string;
   invitedProfAffiliation?: string;
@@ -178,7 +179,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     const step = sub.workflowSteps.find((s) => s.status === "PENDING");
     if (!step || step.role !== user.role) return false;
-    if (step.role === "EXAM_COMMITTEE") {
+    if (step.role === "EXAM_COMMITTEE" || step.role === "CO_ADVISOR") {
       if (!step.committeeMembers?.includes(user.id)) return false;
       return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
     }
@@ -189,7 +190,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return submissions.filter((sub) => {
       const step = sub.workflowSteps.find((s) => s.status === "PENDING");
       if (step?.role !== role) return false;
-      if (role === "EXAM_COMMITTEE" && user) {
+      if ((role === "EXAM_COMMITTEE" || role === "CO_ADVISOR") && user) {
         if (!step.committeeMembers?.includes(user.id)) return false;
         return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
       }

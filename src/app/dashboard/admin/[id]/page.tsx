@@ -209,8 +209,8 @@ export default function AdminSubmissionDetail() {
 
   const pendingStep$ = sub?.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn = pendingStep$?.role === "ADMIN";
-  const isThesisRelayStep  = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 6;
-  const isThesisUploadStep = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 7;
+  const isThesisRelayStep  = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 7;
+  const isThesisUploadStep = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 8;
   const isProposalFinanceStep = sub?.submissionType === "PROPOSAL" && pendingStep$?.stepOrder === 4;
   const [approveNotes, setApproveNotes] = useState("");
   const [rejectNotes,  setRejectNotes]  = useState("");
@@ -588,13 +588,14 @@ export default function AdminSubmissionDetail() {
                 // Resolve who is assigned to this step
                 let assignedName: string | null = null;
                 if (step.role === "ADVISOR") assignedName = advisor?.name ?? null;
+                else if (step.role === "CO_ADVISOR") assignedName = (sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid).join(", ") || null;
                 else if (step.role === "HEAD_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? null;
                 else if (step.role === "INVITED_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? (sub.invitedProfName ?? null);
                 else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => u.role === "PROGRAM_CHAIR")?.name ?? null;
 
                 // Committee sign breakdown
-                const committeeStatus = step.role === "EXAM_COMMITTEE"
-                  ? (step.committeeMembers?.length ? step.committeeMembers : (sub.committeeIds ?? [])).map((uid) => {
+                const committeeStatus = (step.role === "EXAM_COMMITTEE" || step.role === "CO_ADVISOR")
+                  ? (step.committeeMembers?.length ? step.committeeMembers : (step.role === "CO_ADVISOR" ? (sub.coAdvisorIds ?? []) : (sub.committeeIds ?? []))).map((uid) => {
                       const u = allUsers.find((u) => u.id === uid);
                       const action = step.committeeActions?.find((a) => a.userId === uid);
                       return { name: u?.name ?? uid, signed: !!action, approved: action?.decision === "APPROVED" };

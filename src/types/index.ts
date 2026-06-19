@@ -1,6 +1,7 @@
 export type Role =
   | "STUDENT"
   | "ADVISOR"
+  | "CO_ADVISOR"
   | "PROGRAM_CHAIR"
   | "HEAD_EXAM_COMMITTEE"
   | "EXAM_COMMITTEE"
@@ -88,6 +89,7 @@ export interface MockSubmission {
   // Committee assignment
   headCommitteeId?: string;
   committeeIds?: string[];
+  coAdvisorIds?: string[];
   invitedCommitteeId?: string;
   // External (invited) professor free-text details
   invitedProfName?: string;

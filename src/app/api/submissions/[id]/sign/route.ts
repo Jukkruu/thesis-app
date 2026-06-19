@@ -23,12 +23,12 @@ function mapSub(s: any) {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "EXAM_COMMITTEE")
+  if (!session?.user || !["EXAM_COMMITTEE", "CO_ADVISOR"].includes(session.user.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id: submissionId } = await params;
   const { decision, notes } = await req.json();
-  const { id: userId, name: userName } = session.user;
+  const { id: userId, name: userName, role: userRole } = session.user;
 
   const sub = await prisma.submission.findUnique({
     where: { id: submissionId },
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const step = sub.workflowSteps.find((s: any) => s.status === "PENDING" && s.role === "EXAM_COMMITTEE");
+  const step = sub.workflowSteps.find((s: any) => s.status === "PENDING" && s.role === userRole);
   if (!step) return NextResponse.json({ error: "No pending committee step" }, { status: 400 });
   if (!(step.committeeMembers as string[])?.includes(userId))
     return NextResponse.json({ error: "Not assigned to this submission" }, { status: 403 });
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     (mid) => prevActions.find((a) => a.userId === mid)?.decision !== "APPROVED"
   );
   if (notYetSigned.length > 0) {
-    return NextResponse.json({ error: "รอกรรมการลำดับก่อนหน้าลงนามและอัปโหลดก่อน" }, { status: 400 });
+    return NextResponse.json({ error: "รอลำดับก่อนหน้าลงนามและอัปโหลดก่อน" }, { status: 400 });
   }
 
   const now = new Date();
@@ -125,13 +125,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (nextStep) {
           const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
           const msg = `ถึงคิวของท่าน: ${stepName}`;
-          let recipientId: string | null = nextStep.role === "ADVISOR" ? (sub as any).advisorId : null;
-          if (!recipientId) {
-            const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
-            recipientId = u?.id ?? null;
-          }
-          if (recipientId) {
-            await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
+          if (nextStep.role === "CO_ADVISOR") {
+            const coIds: string[] = (sub as any).coAdvisorIds ?? [];
+            if (coIds.length) {
+              await prisma.notification.createMany({
+                data: coIds.map((uid: string) => ({ recipientId: uid, message: msg, detail: sub.title, submissionId, type: "pending" })),
+              });
+            }
+          } else {
+            let recipientId: string | null = nextStep.role === "ADVISOR" ? (sub as any).advisorId : null;
+            if (!recipientId) {
+              const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
+              recipientId = u?.id ?? null;
+            }
+            if (recipientId) {
+              await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
+            }
           }
           try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
         }

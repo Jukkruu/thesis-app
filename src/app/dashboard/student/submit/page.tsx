@@ -230,6 +230,7 @@ export default function NewSubmissionPage() {
   const { createSubmission, users } = useApp();
 
   const advisors       = users.filter((u) => u.role === "ADVISOR");
+  const coAdvisors     = users.filter((u) => u.role === "CO_ADVISOR");
   const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
   const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
@@ -245,6 +246,7 @@ export default function NewSubmissionPage() {
   const [studentPhone,       setStudentPhone]       = useState("");
   const [headCommitteeId,    setHeadCommitteeId]    = useState("");
   const [committeeIds,       setCommitteeIds]       = useState<string[]>([]);
+  const [coAdvisorIds,       setCoAdvisorIds]       = useState<string[]>([]);
   const [invitedProfName,    setInvitedProfName]    = useState("");
   const [invitedProfAffil,   setInvitedProfAffil]   = useState("");
   const [invitedProfEmail,   setInvitedProfEmail]   = useState("");
@@ -273,12 +275,12 @@ export default function NewSubmissionPage() {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         title, advisorId, studentFullName, studentCode, program, studentEmail, studentPhone,
-        headCommitteeId, committeeIds, invitedProfName, invitedProfAffil, invitedProfEmail,
+        headCommitteeId, committeeIds, coAdvisorIds, invitedProfName, invitedProfAffil, invitedProfEmail,
         invitedProfPhone, examDate, examTime, roomNeeded, parkingNeeded, carPlate,
       }));
     } catch { /* ignore */ }
   }, [title, advisorId, studentFullName, studentCode, program, studentEmail, studentPhone,
-      headCommitteeId, committeeIds, invitedProfName, invitedProfAffil, invitedProfEmail,
+      headCommitteeId, committeeIds, coAdvisorIds, invitedProfName, invitedProfAffil, invitedProfEmail,
       invitedProfPhone, examDate, examTime, roomNeeded, parkingNeeded, carPlate, DRAFT_KEY]);
 
   useEffect(() => {
@@ -299,6 +301,7 @@ export default function NewSubmissionPage() {
       if (d.studentPhone)     setStudentPhone(d.studentPhone);
       if (d.headCommitteeId)  setHeadCommitteeId(d.headCommitteeId);
       if (d.committeeIds)     setCommitteeIds(d.committeeIds);
+      if (d.coAdvisorIds)     setCoAdvisorIds(d.coAdvisorIds);
       if (d.invitedProfName)  setInvitedProfName(d.invitedProfName);
       if (d.invitedProfAffil) setInvitedProfAffil(d.invitedProfAffil);
       if (d.invitedProfEmail) setInvitedProfEmail(d.invitedProfEmail);
@@ -341,6 +344,7 @@ export default function NewSubmissionPage() {
       studentPhone: studentPhone.trim(),
       headCommitteeId:      headCommitteeId || undefined,
       committeeIds:         committeeIds.length ? committeeIds : undefined,
+      coAdvisorIds:         coAdvisorIds.length ? coAdvisorIds : undefined,
       invitedProfName:      invitedProfName.trim() || undefined,
       invitedProfAffiliation: invitedProfAffil.trim() || undefined,
       invitedProfEmail:     invitedProfEmail.trim() || undefined,
@@ -490,6 +494,16 @@ export default function NewSubmissionPage() {
               selected={committeeIds}
               onChange={setCommitteeIds}
               placeholder="ค้นหาและเพิ่มกรรมการสอบ..."
+            />
+          </Field>
+
+          <Field label={`อาจารย์ที่ปรึกษาร่วม${coAdvisorIds.length ? ` (${coAdvisorIds.length} คน)` : ""}`}>
+            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มเฉพาะเมื่อมีอาจารย์ที่ปรึกษาร่วมในระบบ</p>
+            <MultiPicker
+              options={coAdvisors}
+              selected={coAdvisorIds}
+              onChange={setCoAdvisorIds}
+              placeholder="ค้นหาและเพิ่มอาจารย์ที่ปรึกษาร่วม..."
             />
           </Field>
 

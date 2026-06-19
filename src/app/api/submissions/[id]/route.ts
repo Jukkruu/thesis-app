@@ -43,6 +43,15 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
       });
     }
     return;
+  } else if (role === "CO_ADVISOR") {
+    if (sub.coAdvisorIds?.length) {
+      await prisma.notification.createMany({
+        data: sub.coAdvisorIds.map((uid: string) => ({
+          recipientId: uid, message, detail: sub.title, submissionId: sub.id, type,
+        })),
+      });
+    }
+    return;
   } else {
     const user = await prisma.user.findFirst({ where: { role: role as any } });
     recipientId = user?.id ?? null;
@@ -89,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     {
       const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
         PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D", "FINANCE_DOC"] },
-        THESIS_DEFENSE: { 1: ["B2", "B3"], 8: ["SIGNED"], 14: ["B4", "THESIS"] },
+        THESIS_DEFENSE: { 1: ["B2", "B3"], 9: ["SIGNED"], 16: ["B4", "THESIS"] },
       };
       const subType = sub.submissionType ?? "PROPOSAL";
       const required = REQUIRED_UPLOADS[subType]?.[step.stepOrder] ?? [];
@@ -103,8 +112,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    // THESIS step 7 (ADMIN upload step): require at least one SIGNED doc uploaded before approving
-    if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 7 && step.role === "ADMIN") {
+    // THESIS step 8 (ADMIN upload step): require at least one SIGNED doc uploaded before approving
+    if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 8 && step.role === "ADMIN") {
       const hasSigned = sub.uploads.some((u: any) => u.formType === "SIGNED");
       if (!hasSigned) {
         return NextResponse.json(
@@ -145,8 +154,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         await notifyRole(nextStep.role, sub, msg, "pending");
         try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
       }
-      // After THESIS step 5 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
-      if (step.stepOrder === 5 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
+      // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
+      if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
         try {
           const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
           if (adminUser) {
@@ -157,8 +166,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           }
         } catch (e) { console.error("[email/thesis/step5]", e); }
       }
-      // After THESIS step 7 (ADMIN upload), send invitation letter email to Advisor + External
-      if (step.stepOrder === 7 && step.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
+      // After THESIS step 8 (ADMIN upload), send invitation letter email to Advisor + External
+      if (step.stepOrder === 8 && step.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
         try {
           if (sub.advisorId) {
             await sendStepEmail({ role: "ADVISOR", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
@@ -361,8 +370,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
     }
 
-    // Fire invitation emails if admin overrides THESIS step 7 to APPROVED
-    if (decision === "APPROVED" && stepOrder === 7 && targetStep.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
+    // Fire invitation emails if admin overrides THESIS step 8 to APPROVED
+    if (decision === "APPROVED" && stepOrder === 8 && targetStep.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
       try {
         if (sub.advisorId) await sendStepEmail({ role: "ADVISOR", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
         if (sub.invitedCommitteeId) await sendStepEmail({ role: "INVITED_EXAM_COMMITTEE", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });

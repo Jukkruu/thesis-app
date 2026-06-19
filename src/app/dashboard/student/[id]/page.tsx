@@ -27,8 +27,8 @@ const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
   },
   THESIS_DEFENSE: {
     1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
-    8:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
-    14: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
+    9:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
+    16: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
   },
 };
 
@@ -40,8 +40,8 @@ const SUBMIT_LABEL: Record<string, Record<number, string>> = {
   },
   THESIS_DEFENSE: {
     1:  "ส่งเอกสาร บ.2 + บ.3",
-    8:  "ส่งแบบรายงานฯ",
-    14: "ส่ง บ.4 + วิทยานิพนธ์",
+    9:  "ส่งแบบรายงานฯ",
+    16: "ส่ง บ.4 + วิทยานิพนธ์",
   },
 };
 

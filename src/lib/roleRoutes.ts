@@ -3,6 +3,7 @@ import { Role } from "@/types";
 export const ROLE_ROUTES: Record<Role, string> = {
   STUDENT:               "/dashboard/student",
   ADVISOR:               "/dashboard/advisor",
+  CO_ADVISOR:            "/dashboard/co-advisor",
   PROGRAM_CHAIR:         "/dashboard/program-chair",
   HEAD_EXAM_COMMITTEE:   "/dashboard/head-exam-committee",
   EXAM_COMMITTEE:        "/dashboard/exam-committee",

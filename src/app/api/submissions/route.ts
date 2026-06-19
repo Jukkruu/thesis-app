@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// PROPOSAL: 9 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
+// PROPOSAL: 10 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
   "STUDENT",               // 1  upload BW1A + BW1B
   "ADMIN",                 // 2  approve
@@ -10,32 +10,36 @@ const PROPOSAL_ROLES = [
   "STUDENT",               // 4  upload B1C + B1D
   "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
   "ADVISOR",               // 6  sign B1C
-  "EXAM_COMMITTEE",        // 7  sign B1C (all members)
-  "ADMIN",                 // 8  approve
-  "PROGRAM_CHAIR",         // 9  sign B1C + B1D
+  "CO_ADVISOR",            // 7  sign B1C (sequential, skipped if no co-advisors)
+  "EXAM_COMMITTEE",        // 8  sign B1C (all members)
+  "ADMIN",                 // 9  approve
+  "PROGRAM_CHAIR",         // 10 sign B1C + B1D
 ] as const;
 
-// THESIS_DEFENSE: 19 steps — บ.2/3 through thesis cover signing
+// THESIS_DEFENSE: 22 steps — บ.2/3 through thesis cover signing
 const THESIS_ROLES = [
   "STUDENT",               // 1  upload B2 + B3
   "EXAM_COMMITTEE",        // 2  sign B3 (sequential)
   "ADVISOR",               // 3  sign B2
-  "HEAD_EXAM_COMMITTEE",   // 4  sign B2
-  "PROGRAM_CHAIR",         // 5  sign B2 → notify admin
-  "ADMIN",                 // 6  collect + send B2+B3 to Faculty
-  "ADMIN",                 // 7  receive faculty docs + upload + send invitation letters
-  "STUDENT",               // 8  fill + sign แบบรายงานฯ
-  "ADVISOR",               // 9  sign แบบรายงาน + ใบรายงานผล
-  "HEAD_EXAM_COMMITTEE",   // 10 sign ใบรายงานผล
-  "EXAM_COMMITTEE",        // 11 sign ใบรายงานผล (sequential)
-  "INVITED_EXAM_COMMITTEE",// 12 sign ใบรายงานผล
-  "PROGRAM_CHAIR",         // 13 sign ใบรายงานผล
-  "STUDENT",               // 14 upload B4 + THESIS
-  "PROGRAM_CHAIR",         // 15 sign B4
-  "ADVISOR",               // 16 sign thesis (3 points)
-  "HEAD_EXAM_COMMITTEE",   // 17 sign thesis cover
-  "EXAM_COMMITTEE",        // 18 sign thesis cover (sequential)
-  "INVITED_EXAM_COMMITTEE",// 19 sign thesis cover
+  "CO_ADVISOR",            // 4  sign B2 (sequential, skipped if no co-advisors)
+  "HEAD_EXAM_COMMITTEE",   // 5  sign B2
+  "PROGRAM_CHAIR",         // 6  sign B2 → notify admin
+  "ADMIN",                 // 7  collect + send B2+B3 to Faculty
+  "ADMIN",                 // 8  receive faculty docs + upload + send invitation letters
+  "STUDENT",               // 9  fill + sign แบบรายงานฯ
+  "ADVISOR",               // 10 sign แบบรายงาน + ใบรายงานผล
+  "CO_ADVISOR",            // 11 sign แบบรายงาน + ใบรายงานผล (sequential, skipped if none)
+  "HEAD_EXAM_COMMITTEE",   // 12 sign ใบรายงานผล
+  "EXAM_COMMITTEE",        // 13 sign ใบรายงานผล (sequential)
+  "INVITED_EXAM_COMMITTEE",// 14 sign ใบรายงานผล
+  "PROGRAM_CHAIR",         // 15 sign ใบรายงานผล
+  "STUDENT",               // 16 upload B4 + THESIS
+  "PROGRAM_CHAIR",         // 17 sign B4
+  "ADVISOR",               // 18 sign thesis cover
+  "CO_ADVISOR",            // 19 sign thesis cover (sequential, skipped if none)
+  "HEAD_EXAM_COMMITTEE",   // 20 sign thesis cover
+  "EXAM_COMMITTEE",        // 21 sign thesis cover (sequential)
+  "INVITED_EXAM_COMMITTEE",// 22 sign thesis cover
 ] as const;
 
 function mapSub(s: any) {
@@ -65,6 +69,7 @@ export async function GET() {
   let where: any = {};
   if (role === "STUDENT")                     where = { studentId: userId };
   else if (role === "ADVISOR")                where = { advisorId: userId };
+  else if (role === "CO_ADVISOR")             where = { coAdvisorIds: { hasSome: [userId] } };
   else if (role === "HEAD_EXAM_COMMITTEE")    where = { headCommitteeId: userId };
   else if (role === "EXAM_COMMITTEE")         where = { committeeIds: { hasSome: [userId] } };
   else if (role === "INVITED_EXAM_COMMITTEE") where = { invitedCommitteeId: userId };
@@ -101,6 +106,7 @@ export async function POST(req: NextRequest) {
       studentPhone: data.studentPhone,
       headCommitteeId: data.headCommitteeId || null,
       committeeIds: data.committeeIds ?? [],
+      coAdvisorIds: data.coAdvisorIds ?? [],
       invitedCommitteeId: data.invitedCommitteeId || null,
       invitedProfName: data.invitedProfName,
       invitedProfAffiliation: data.invitedProfAffiliation,
@@ -115,8 +121,10 @@ export async function POST(req: NextRequest) {
         create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,
           role,
-          status: "PENDING",
-          committeeMembers: role === "EXAM_COMMITTEE" ? (data.committeeIds ?? []) : [],
+          status: role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length ? "SKIPPED" : "PENDING",
+          committeeMembers:
+            role === "EXAM_COMMITTEE" ? (data.committeeIds ?? []) :
+            role === "CO_ADVISOR"     ? (data.coAdvisorIds ?? []) : [],
         })),
       },
     },

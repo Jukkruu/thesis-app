@@ -39,30 +39,34 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   // Which form types the current role needs to download and physically sign
   const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
     PROPOSAL: {
-      2: ["BW1A", "BW1B"],
-      3: ["BW1A"],
-      5: ["B1C"],
-      6: ["B1C"],
-      7: ["B1C"],
-      8: ["B1C", "B1D"],
-      9: ["B1C", "B1D"],
+      2:  ["BW1A", "BW1B"],
+      3:  ["BW1A"],
+      5:  ["B1C"],
+      6:  ["B1C"],
+      7:  ["B1C"],           // CO_ADVISOR signs B1C
+      8:  ["B1C", "B1D"],    // EXAM_COMMITTEE
+      9:  ["B1C", "B1D"],
+      10: ["B1C", "B1D"],
     },
     THESIS_DEFENSE: {
-      2:  ["B3"],           // EXAM_COMMITTEE signs B3
-      3:  ["B2"],           // ADVISOR signs B2
-      4:  ["B2"],           // HEAD_EXAM_COMMITTEE signs B2
-      5:  ["B2"],           // PROGRAM_CHAIR signs B2
-      6:  ["B2", "B3"],     // ADMIN: relay to Faculty (download B2+B3)
-      9:  ["SIGNED"],       // ADVISOR signs แบบรายงาน + ใบรายงานผล
-      10: ["SIGNED"],       // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
-      11: ["SIGNED"],       // EXAM_COMMITTEE signs ใบรายงานผล
-      12: ["SIGNED"],       // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
-      13: ["SIGNED"],       // PROGRAM_CHAIR signs ใบรายงานผล
-      15: ["B4"],           // PROGRAM_CHAIR signs B4
-      16: ["THESIS"],       // ADVISOR signs thesis
-      17: ["THESIS"],       // HEAD_EXAM_COMMITTEE signs thesis cover
-      18: ["THESIS"],       // EXAM_COMMITTEE signs thesis cover
-      19: ["THESIS"],       // INVITED_EXAM_COMMITTEE signs thesis cover
+      2:  ["B3"],            // EXAM_COMMITTEE signs B3
+      3:  ["B2"],            // ADVISOR signs B2
+      4:  ["B2"],            // CO_ADVISOR signs B2
+      5:  ["B2"],            // HEAD_EXAM_COMMITTEE signs B2
+      6:  ["B2"],            // PROGRAM_CHAIR signs B2
+      7:  ["B2", "B3"],      // ADMIN: relay to Faculty (download B2+B3)
+      10: ["SIGNED"],        // ADVISOR signs แบบรายงาน + ใบรายงานผล
+      11: ["SIGNED"],        // CO_ADVISOR
+      12: ["SIGNED"],        // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
+      13: ["SIGNED"],        // EXAM_COMMITTEE signs ใบรายงานผล
+      14: ["SIGNED"],        // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
+      15: ["SIGNED"],        // PROGRAM_CHAIR signs ใบรายงานผล
+      17: ["B4"],            // PROGRAM_CHAIR signs B4
+      18: ["THESIS"],        // ADVISOR signs thesis
+      19: ["THESIS"],        // CO_ADVISOR signs thesis cover
+      20: ["THESIS"],        // HEAD_EXAM_COMMITTEE signs thesis cover
+      21: ["THESIS"],        // EXAM_COMMITTEE signs thesis cover
+      22: ["THESIS"],        // INVITED_EXAM_COMMITTEE signs thesis cover
     },
   };
   const formsToShow = currentStep
@@ -186,7 +190,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           )}
 
           {/* Action — committee step uses multi-member panel */}
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep && ["EXAM_COMMITTEE", "CO_ADVISOR"].includes(currentStep.role) && (
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
@@ -195,7 +199,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && (!currentStep || !["EXAM_COMMITTEE", "CO_ADVISOR"].includes(currentStep.role)) && (
             <SignatureButton
               submissionId={sub.id}
               formsToShow={formsToShow}
