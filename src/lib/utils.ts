@@ -20,9 +20,9 @@ export const FORM_LABELS: Record<FormType, string> = {
 };
 
 export const PROGRAM_LABELS: Record<string, string> = {
-  PHD:     "ป.เอก สาขาวิศวกรรมเครื่องกล",
-  ME_MECH: "ป.โท สาขาเครื่องกล",
-  ME_CPS:  "ป.โท สาขา CPS",
+  PHD:     "หลักสูตรวิศวกรรมศาสตรดุษฎีบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล",
+  ME_MECH: "หลักสูตรวิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล",
+  ME_CPS:  "หลักสูตรวิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาระบบกายภาพที่เชื่อมประสานด้วยเครือข่ายไซเบอร์",
 };
 
 export const ROLE_LABELS: Record<Role, string> = {

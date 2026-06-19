@@ -513,7 +513,7 @@ export default function NewSubmissionPage() {
           </Field>
 
           <Field label={`อาจารย์ที่ปรึกษาร่วม${coAdvisorIds.length ? ` (${coAdvisorIds.length} คน)` : ""}`}>
-            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มเฉพาะเมื่อมีอาจารย์ที่ปรึกษาร่วมในระบบ</p>
+            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มเฉพาะเมื่อมีอาจารย์ที่ปรึกษาร่วม</p>
             <MultiPicker
               options={coAdvisors}
               selected={coAdvisorIds}
