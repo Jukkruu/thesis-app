@@ -27,7 +27,7 @@ const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
   },
   THESIS_DEFENSE: {
     1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
-    7:  { forms: ["SIGNED"],       label: "invitation letter + แบบรายงานการเสนอผลงานฯ (ลายเซ็นนิสิต)", multiUpload: true },
+    7:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
     13: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
   },
 };

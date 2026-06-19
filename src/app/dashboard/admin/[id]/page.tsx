@@ -207,6 +207,8 @@ export default function AdminSubmissionDetail() {
   const sub = submissions.find((s) => s.id === id);
 
   const isMyTurn = sub?.workflowSteps.find((s) => s.status === "PENDING")?.role === "ADMIN";
+  const isThesisRelayStep = sub?.submissionType === "THESIS_DEFENSE" &&
+    sub?.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder === 6;
   const [approveNotes, setApproveNotes] = useState("");
   const [rejectNotes,  setRejectNotes]  = useState("");
   const [showReject,   setShowReject]   = useState(false);
@@ -271,9 +273,24 @@ export default function AdminSubmissionDetail() {
         <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
-            <h2 className="font-semibold text-blue-800 text-lg">ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร</h2>
+            <h2 className="font-semibold text-blue-800 text-lg">
+              {isThesisRelayStep ? "ถึงคิวของท่าน — นำส่งเอกสารไปยังคณะและรับกลับ" : "ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร"}
+            </h2>
           </div>
-          <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
+          {isThesisRelayStep ? (
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>ขั้นตอนนี้ต้องดำเนินการทางกายภาพ กรุณาทำตามลำดับก่อนกดอนุมัติ:</p>
+              <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
+                <li>นำ บ.2 + บ.3 ส่งไปยังคณะวิศวกรรมศาสตร์</li>
+                <li>รับเอกสารจากคณะกลับ (ใบรายงานผลการสอบ · แบบรายงานฯ · invitation letter)</li>
+                <li>อัปโหลดเอกสารที่ได้รับกลับในช่องเอกสารด้านขวา</li>
+                <li>ส่งต่อเอกสารให้นิสิต</li>
+                <li>กดอนุมัติเพื่อแจ้งให้นิสิตดำเนินขั้นถัดไป</li>
+              </ol>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
+          )}
 
           {!showReject ? (
             <div className="space-y-3">

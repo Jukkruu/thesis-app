@@ -7,7 +7,7 @@ const PROPOSAL_ROLES = [
   "STUDENT",               // 1  upload BW1A + BW1B
   "ADMIN",                 // 2  approve
   "PROGRAM_CHAIR",         // 3  sign BW1A → finance email
-  "STUDENT",               // 4  upload B1C + B1D + (admin uploads FINANCE_DOC anytime)
+  "STUDENT",               // 4  upload B1C + B1D
   "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
   "ADVISOR",               // 6  sign B1C
   "EXAM_COMMITTEE",        // 7  sign B1C (all members)
