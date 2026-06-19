@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Enforce required uploads before certain steps can advance
     {
       const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
-        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D", "FINANCE_DOC"] },
+        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D"] },
         THESIS_DEFENSE: { 1: ["B2", "B3"], 7: ["SIGNED"], 13: ["B4", "THESIS"] },
       };
       const subType = sub.submissionType ?? "PROPOSAL";
@@ -116,6 +116,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await prisma.notification.create({
         data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId: id, type: "approved" },
       });
+      // Notify admin when PROPOSAL fully completes
+      if (sub.submissionType === "PROPOSAL") {
+        const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+        if (adminUser) {
+          await prisma.notification.create({
+            data: { recipientId: adminUser.id, message: "กระบวนการ Proposal เสร็จสมบูรณ์แล้ว", detail: sub.title, submissionId: id, type: "approved" },
+          });
+          try { await sendStepEmail({ role: "ADMIN", sub, stepName: "Proposal เสร็จสมบูรณ์" }); } catch (e) { console.error("[email/proposal-complete]", e); }
+        }
+      }
     } else {
       const nextStep = sub.workflowSteps.find((s: any) => s.stepOrder > step.stepOrder && s.status === "PENDING");
       if (nextStep) {
@@ -123,6 +133,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const msg = `ถึงคิวของท่าน: ${stepName}`;
         await notifyRole(nextStep.role, sub, msg, "pending");
         try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
+      }
+      // After THESIS step 6 (ADMIN relay), send invitation email to Advisor and External committee
+      if (step.stepOrder === 6 && step.role === "ADMIN" && sub.submissionType === "THESIS_DEFENSE") {
+        try {
+          if (sub.advisorId) {
+            await sendStepEmail({ role: "ADVISOR", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
+          }
+          if (sub.invitedCommitteeId) {
+            await sendStepEmail({ role: "INVITED_EXAM_COMMITTEE", sub, stepName: "หนังสือเชิญเข้าร่วมสอบวิทยานิพนธ์" });
+          }
+        } catch (e) { console.error("[email/invitation]", e); }
       }
     }
 
@@ -162,6 +183,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             carPlate: (sub as any).carPlate,
           }),
         });
+        // Notify admin that finance email was sent
+        const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+        if (adminUser) {
+          await prisma.notification.create({
+            data: { recipientId: adminUser.id, message: "ส่งอีเมลแจ้งฝ่ายการเงินแล้ว", detail: sub.title, submissionId: id, type: "info" },
+          });
+        }
       } catch (e) {
         console.error("[email/finance]", e);
       }

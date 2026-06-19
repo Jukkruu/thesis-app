@@ -18,22 +18,22 @@ const PROPOSAL_ROLES = [
 // THESIS_DEFENSE: 18 steps — บ.2/3 through thesis cover signing
 const THESIS_ROLES = [
   "STUDENT",               // 1  upload B2 + B3
-  "EXAM_COMMITTEE",        // 2  sign B3 (all members)
+  "EXAM_COMMITTEE",        // 2  sign B3 (sequential)
   "ADVISOR",               // 3  sign B2
   "HEAD_EXAM_COMMITTEE",   // 4  sign B2
-  "PROGRAM_CHAIR",         // 5  sign B2
-  "ADMIN",                 // 6  relay: send to faculty + receive back
-  "STUDENT",               // 7  upload invitation letter + แบบรายงานฯ
-  "HEAD_EXAM_COMMITTEE",   // 8  sign ใบรายงานผล
-  "ADVISOR",               // 9  sign แบบรายงาน + ใบรายงานผล
-  "EXAM_COMMITTEE",        // 10 sign ใบรายงานผล (all members)
+  "PROGRAM_CHAIR",         // 5  sign B2 → notify admin
+  "ADMIN",                 // 6  upload faculty docs + relay
+  "STUDENT",               // 7  sign แบบรายงานฯ (student fills + signs)
+  "ADVISOR",               // 8  sign แบบรายงาน + ใบรายงานผล
+  "HEAD_EXAM_COMMITTEE",   // 9  sign ใบรายงานผล
+  "EXAM_COMMITTEE",        // 10 sign ใบรายงานผล (sequential)
   "INVITED_EXAM_COMMITTEE",// 11 sign ใบรายงานผล
   "PROGRAM_CHAIR",         // 12 sign ใบรายงานผล
   "STUDENT",               // 13 upload B4 + THESIS
   "PROGRAM_CHAIR",         // 14 sign B4
-  "HEAD_EXAM_COMMITTEE",   // 15 sign thesis cover
-  "ADVISOR",               // 16 sign thesis cover
-  "EXAM_COMMITTEE",        // 17 sign thesis cover (all members)
+  "ADVISOR",               // 15 sign thesis (3 points)
+  "HEAD_EXAM_COMMITTEE",   // 16 sign thesis cover
+  "EXAM_COMMITTEE",        // 17 sign thesis cover (sequential)
   "INVITED_EXAM_COMMITTEE",// 18 sign thesis cover
 ] as const;
 
