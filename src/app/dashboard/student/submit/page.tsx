@@ -613,8 +613,8 @@ export default function NewSubmissionPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">⚠️</span>
               <div>
-                <p className="font-bold text-amber-800 text-lg">ตรวจสอบชื่อวิทยานิพนธ์ก่อนยืนยัน</p>
-                <p className="text-sm text-amber-700 mt-0.5">เมื่อยื่นแล้วชื่อวิทยานิพนธ์ไม่สามารถแก้ไขได้โดยนิสิต — กรุณาตรวจสอบให้ถูกต้อง</p>
+                <p className="font-bold text-amber-800 text-lg">ตรวจสอบข้อมูลให้ถูกต้องก่อนยืนยัน</p>
+                <p className="text-sm text-amber-700 mt-0.5">เมื่อยื่นแล้วข้อมูลไม่สามารถแก้ไขได้โดยนิสิต — กรุณาตรวจสอบให้ถูกต้อง</p>
               </div>
             </div>
             <div className="bg-white border border-amber-300 rounded-xl px-4 py-3">
