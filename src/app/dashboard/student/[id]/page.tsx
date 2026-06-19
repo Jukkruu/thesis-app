@@ -451,10 +451,14 @@ export default function StudentSubmissionDetail() {
                   )}
                   <button
                     disabled={!allRequiredUploaded}
-                    onClick={() => {
-                      approveCurrentStep(sub.id);
-                      const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
-                      showToast(`${lbl} ✓`);
+                    onClick={async () => {
+                      try {
+                        await approveCurrentStep(sub.id);
+                        const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
+                        showToast(`${lbl} ✓`);
+                      } catch {
+                        showToast("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง", "error");
+                      }
                     }}
                     className={`w-full flex items-center justify-center gap-2 py-3.5 text-white rounded-xl font-semibold transition ${
                       allRequiredUploaded

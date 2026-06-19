@@ -31,7 +31,7 @@ FINANCE_EMAIL         # recipient for finance notifications
 ## Key facts
 
 - **All API logic is in `src/app/api/`**. State is server-fetched; client state lives in `AppContext` which polls the API.
-- Two submission types: **PROPOSAL** (9 steps) and **THESIS_DEFENSE** (18 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
+- Two submission types: **PROPOSAL** (9 steps) and **THESIS_DEFENSE** (19 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
 - **Step names**: `PROPOSAL_STEP_NAMES` / `THESIS_STEP_NAMES` in `src/lib/utils.ts`. Always call `getStepName(stepOrder, submissionType)` — never access the maps directly.
 - **EXAM_COMMITTEE steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All members must approve before the step advances.
 - **Required uploads gate**: Before a STUDENT step can advance, the student must upload specific form types. Enforced server-side in `PATCH /api/submissions/[id]` (action `"approve"`) and client-side in the student detail page.
@@ -161,7 +161,7 @@ If rejected → goes back one step (e.g. step 8 → step 7, step 7 → step 6).
 
 ---
 
-### THESIS_DEFENSE (18 steps)
+### THESIS_DEFENSE (19 steps)
 
 #### Phase 3 (Steps 1–5): บ.2 + บ.3
 | Step | Role | Action |

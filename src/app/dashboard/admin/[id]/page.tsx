@@ -320,6 +320,11 @@ export default function AdminSubmissionDetail() {
 
           {!showReject ? (
             <div className="space-y-3">
+              {isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED") && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  ⚠️ กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อนกดอนุมัติ
+                </p>
+              )}
               <textarea
                 value={approveNotes}
                 onChange={(e) => setApproveNotes(e.target.value)}
@@ -328,8 +333,9 @@ export default function AdminSubmissionDetail() {
               />
               <div className="flex gap-2">
                 <button
+                  disabled={isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED")}
                   onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <CheckCircle2 className="w-5 h-5" />
                   อนุมัติและส่งต่อ
