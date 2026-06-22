@@ -222,7 +222,7 @@ export default function AdminSubmissionDetail() {
   const [editTitle,   setEditTitle]   = useState(sub?.title ?? "");
   const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
   const [confirmDel,  setConfirmDel]  = useState(false);
-  const [activeTab,   setActiveTab]   = useState<"steps" | "timeline" | "note">("steps");
+  const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
   const [noteText,      setNoteText]      = useState(sub?.adminNote ?? "");
   const [noteSaved,     setNoteSaved]     = useState(false);
   const [noteSavedAt,   setNoteSavedAt]   = useState<string | null>(null);
@@ -574,19 +574,6 @@ export default function AdminSubmissionDetail() {
             >
               📋 ไทม์ไลน์
             </button>
-            <button
-              onClick={() => setActiveTab("note")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition flex items-center gap-1.5 ${
-                activeTab === "note"
-                  ? "border-yellow-500 text-yellow-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              📝 บันทึก
-              {sub.adminNote && activeTab !== "note" && (
-                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-              )}
-            </button>
           </div>
 
           {activeTab === "steps" ? (
@@ -637,41 +624,9 @@ export default function AdminSubmissionDetail() {
                 );
               })}
             </div>
-          ) : activeTab === "timeline" ? (
+          ) : (
             <div className="bg-white rounded-b-2xl border border-gray-200 border-t-0 p-6">
               <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} />
-            </div>
-          ) : (
-            <div className="bg-white rounded-b-2xl border border-yellow-200 border-t-0 p-5 space-y-3">
-              <div>
-                <h2 className="font-semibold text-yellow-700 flex items-center gap-2">
-                  <StickyNote className="w-5 h-5" />
-                  บันทึกจาก Admin
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">บันทึกนี้จะปรากฏแก่นักศึกษาและทุกฝ่ายที่เกี่ยวข้อง</p>
-              </div>
-              <textarea
-                value={noteText}
-                onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
-                placeholder="เพิ่มบันทึกหรือคำแนะนำ..."
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-36 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-              {noteSaved && noteSavedAt && (
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> บันทึกแล้ว · {noteSavedAt}
-                </p>
-              )}
-              <button
-                onClick={() => {
-                  if (!sub) return;
-                  adminSetNote(sub.id, noteText);
-                  setNoteSaved(true);
-                  setNoteSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
-                }}
-                className="w-full py-2.5 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition text-sm"
-              >
-                บันทึก
-              </button>
             </div>
           )}
         </div>
@@ -709,6 +664,37 @@ export default function AdminSubmissionDetail() {
           {sub.uploads.length > 0 && (
             <FileList uploads={sub.uploads} submissionTitle={sub.title} />
           )}
+
+          {/* Admin note */}
+          <div className="bg-white rounded-2xl border border-yellow-200 p-5 space-y-3">
+            <h2 className="font-semibold text-yellow-700 flex items-center gap-2">
+              <StickyNote className="w-5 h-5" />
+              บันทึกจาก Admin
+            </h2>
+            <p className="text-xs text-gray-500">บันทึกนี้จะปรากฏแก่นักศึกษาและทุกฝ่ายที่เกี่ยวข้อง</p>
+            <textarea
+              value={noteText}
+              onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
+              placeholder="เพิ่มบันทึกหรือคำแนะนำ..."
+              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            {noteSaved && noteSavedAt && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> บันทึกแล้ว · {noteSavedAt}
+              </p>
+            )}
+            <button
+              onClick={() => {
+                if (!sub) return;
+                adminSetNote(sub.id, noteText);
+                setNoteSaved(true);
+                setNoteSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
+              }}
+              className="w-full py-2.5 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition text-sm"
+            >
+              บันทึก
+            </button>
+          </div>
 
           {/* Delete */}
           <div className="bg-white rounded-2xl border border-red-200 p-5 space-y-3">
