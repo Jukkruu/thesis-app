@@ -230,7 +230,7 @@ export default function NewSubmissionPage() {
   const { createSubmission, users } = useApp();
 
   const advisors       = users.filter((u) => u.role === "ADVISOR");
-  const coAdvisors     = users.filter((u) => u.role === "CO_ADVISOR");
+  const coAdvisors     = users.filter((u) => u.role === "CO_ADVISOR" || u.role === "ADVISOR");
   const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
   const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
