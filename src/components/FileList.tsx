@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileText, History, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, Download, FileText, History, ChevronDown, ChevronUp } from "lucide-react";
 import { FORM_LABELS, FORM_SHORT, formatBytes, formatDate, previewFile } from "@/lib/utils";
 import type { MockUpload, FormType } from "@/types";
 
@@ -115,7 +115,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
                   onClick={() => previewFile(latest.fileUrl, latest.fileName)}
                   className="shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5" />
                   ดูเอกสาร
                 </button>
               </div>
@@ -141,7 +141,7 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
                             <p className="text-xs text-gray-400">{formatDate(u.uploadedAt)}</p>
                           </div>
                           <button onClick={() => previewFile(u.fileUrl, u.fileName)}>
-                            <Download className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
+                            <Eye className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
                           </button>
                         </div>
                       ))}
