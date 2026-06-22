@@ -79,7 +79,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
   const { action } = body;
-  const { id: userId, role, name: userName } = session.user;
+  const { id: userId, name: userName } = session.user;
+
+  // Always look up role from DB — JWT role can be stale after a role change
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  const role: string = dbUser?.role ?? (session.user.role as string);
 
   const sub = await getSub(id);
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });

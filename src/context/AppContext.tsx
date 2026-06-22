@@ -81,7 +81,10 @@ async function api<T>(path: string, method = "GET", body?: object): Promise<T> {
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? `API error ${res.status}`);
+  }
   return res.json();
 }
 
