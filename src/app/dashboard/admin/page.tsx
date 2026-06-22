@@ -9,7 +9,7 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle, Bell, BarChart2, BookOpen, GraduationCap,
+  Trash2, Search, AlertCircle, Bell, BarChart2, BookOpen, GraduationCap, User,
 } from "lucide-react";
 import type { MockSubmission, MockWorkflowStep } from "@/types";
 
@@ -25,7 +25,7 @@ function getStuckDays(sub: MockSubmission): number {
   return last?.actedAt ? daysSince(last.actedAt) : daysSince(sub.createdAt);
 }
 
-function resolvePendingInfo(
+function resolvePendingName(
   sub: MockSubmission,
   step: MockWorkflowStep,
   users: { id: string; name: string; role: string }[],
@@ -57,8 +57,8 @@ export default function AdminDashboard() {
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
   const [search,        setSearch]        = useState("");
 
-  const inProgress        = submissions.filter((s) => s.status === "IN_PROGRESS");
-  const needsMe           = inProgress.filter((s) => s.workflowSteps.find((w) => w.status === "PENDING")?.role === "ADMIN");
+  const inProgress         = submissions.filter((s) => s.status === "IN_PROGRESS");
+  const needsMe            = inProgress.filter((s) => s.workflowSteps.find((w) => w.status === "PENDING")?.role === "ADMIN");
   const proposalInProgress = inProgress.filter((s) => s.submissionType === "PROPOSAL");
   const thesisInProgress   = inProgress.filter((s) => s.submissionType === "THESIS_DEFENSE");
 
@@ -96,51 +96,62 @@ export default function AdminDashboard() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <SummaryCard icon={<FileText className="w-6 h-6 text-gray-500" />}      label="ทั้งหมด"         value={counts.ALL}         color="bg-gray-50 border-gray-200" />
-        <SummaryCard icon={<Clock className="w-6 h-6 text-blue-500" />}         label="กำลังดำเนินการ"  value={counts.IN_PROGRESS} color="bg-blue-50 border-blue-200" />
-        <SummaryCard icon={<CheckCircle2 className="w-6 h-6 text-green-500" />} label="เสร็จสิ้น"       value={counts.COMPLETED}   color="bg-green-50 border-green-200" />
-        <SummaryCard icon={<XCircle className="w-6 h-6 text-red-400" />}        label="ถูกปฏิเสธ"       value={counts.REJECTED}    color="bg-red-50 border-red-200" />
+        <SummaryCard icon={<FileText className="w-5 h-5 text-gray-500" />}      label="ทั้งหมด"         value={counts.ALL}         color="bg-gray-50 border-gray-200"   textColor="text-gray-900" />
+        <SummaryCard icon={<Clock className="w-5 h-5 text-blue-500" />}         label="กำลังดำเนินการ"  value={counts.IN_PROGRESS} color="bg-blue-50 border-blue-200"   textColor="text-blue-700" />
+        <SummaryCard icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} label="เสร็จสิ้น"       value={counts.COMPLETED}   color="bg-green-50 border-green-200" textColor="text-green-700" />
+        <SummaryCard icon={<XCircle className="w-5 h-5 text-red-400" />}        label="ถูกปฏิเสธ"       value={counts.REJECTED}    color="bg-red-50 border-red-200"     textColor="text-red-700" />
       </div>
 
-      {/* Step distribution dashboard */}
-      {inProgress.length > 0 && (
-        <StepDistributionDashboard
-          proposalSubs={proposalInProgress}
-          thesisSubs={thesisInProgress}
-        />
-      )}
-
-      {/* My pending approvals */}
+      {/* My pending tasks — most actionable section */}
       {needsMe.length > 0 && (
         <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-orange-500" />
-            <h2 className="font-semibold text-orange-800 text-lg">
-              รออนุมัติจากท่าน ({needsMe.length})
-            </h2>
+            <h2 className="font-semibold text-orange-800 text-lg">รออนุมัติจากท่าน</h2>
+            <span className="ml-auto text-sm font-bold text-orange-700 bg-orange-100 px-2.5 py-0.5 rounded-full">
+              {needsMe.length} รายการ
+            </span>
           </div>
           <div className="space-y-2">
             {needsMe.map((sub) => {
-              const student = users.find((u) => u.id === sub.studentId);
-              const step    = sub.workflowSteps.find((w) => w.status === "PENDING")!;
+              const student  = users.find((u) => u.id === sub.studentId);
+              const step     = sub.workflowSteps.find((w) => w.status === "PENDING")!;
+              const stepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role];
+              const stuckDays = getStuckDays(sub);
               return (
                 <Link
                   key={sub.id}
                   href={`/dashboard/admin/${sub.id}`}
-                  className="flex items-center justify-between gap-3 bg-white rounded-xl px-4 py-3 border border-orange-200 hover:border-orange-400 hover:shadow-sm transition"
+                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-orange-200 hover:border-orange-400 hover:shadow-sm transition group"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 truncate">{sub.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {student?.name} · {getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role]}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <User className="w-3 h-3" />{student?.name}
+                      </span>
+                      <span className="text-xs text-orange-600 font-medium">ขั้นที่ {step.stepOrder} — {stepName}</span>
+                      {stuckDays > 7 && (
+                        <span className="text-xs text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded-full">
+                          ค้างมา {stuckDays} วัน
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-orange-400 shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-orange-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               );
             })}
           </div>
         </div>
+      )}
+
+      {/* Step distribution */}
+      {inProgress.length > 0 && (
+        <StepDistributionDashboard
+          proposalSubs={proposalInProgress}
+          thesisSubs={thesisInProgress}
+        />
       )}
 
       {/* Search + status tabs */}
@@ -188,100 +199,139 @@ export default function AdminDashboard() {
           {filtered.map((sub) => {
             const student     = users.find((u) => u.id === sub.studentId);
             const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
-            const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-            const totalSteps  = sub.workflowSteps.length;
+            const visibleSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
+            const doneCount   = visibleSteps.filter((s) => s.status === "APPROVED").length;
+            const totalVisible = visibleSteps.length;
             const stuckDays   = getStuckDays(sub);
+            const isMyTurn    = currentStep?.role === "ADMIN";
+            const pendingName = currentStep ? resolvePendingName(sub, currentStep, users) : null;
+            const stepName    = currentStep ? (getStepName(currentStep.stepOrder, sub.submissionType) || ROLE_LABELS[currentStep.role]) : null;
 
             return (
               <div
                 key={sub.id}
-                className={`bg-white rounded-2xl border-2 p-5 space-y-3 ${stuckDays > 7 ? "border-amber-200" : "border-gray-200"}`}
+                className={`bg-white rounded-2xl border-2 overflow-hidden ${
+                  isMyTurn    ? "border-orange-300" :
+                  stuckDays > 7 ? "border-amber-200" :
+                  "border-gray-200"
+                }`}
               >
-                {/* Title + actions */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      {sub.submissionType === "PROPOSAL" && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
-                          <BookOpen className="w-3 h-3" />โครงร่าง
-                        </span>
-                      )}
-                      {sub.submissionType === "THESIS_DEFENSE" && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full shrink-0">
-                          <GraduationCap className="w-3 h-3" />สอบวิทยานิพนธ์
-                        </span>
-                      )}
-                      <p className="font-semibold text-gray-900 text-lg leading-snug truncate">{sub.title}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      {student && (
-                        <Link
-                          href={`/dashboard/admin/users/${student.id}`}
-                          className="font-medium text-blue-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {student.name}
-                        </Link>
-                      )}
-                      {student?.studentId && <span className="text-gray-400"> ({student.studentId})</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {confirmDelete === sub.id ? (
-                      <>
-                        <span className="text-sm text-red-600 font-medium">ยืนยันลบ?</span>
-                        <button onClick={() => { adminDeleteSubmission(sub.id); setConfirmDelete(null); }}
-                          className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">ลบ</button>
-                        <button onClick={() => setConfirmDelete(null)}
-                          className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-lg">ยกเลิก</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => setConfirmDelete(sub.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <Link href={`/dashboard/admin/${sub.id}`}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition">
-                          จัดการ <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                </div>
+                {/* Top accent bar for urgency */}
+                {(isMyTurn || stuckDays > 7) && (
+                  <div className={`h-1 w-full ${isMyTurn ? "bg-orange-400" : "bg-amber-300"}`} />
+                )}
 
-                {/* Status row */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <SubmissionStatusBadge status={sub.status} />
-                  {currentStep && (
-                    <span className="text-sm text-orange-600 font-medium">
-                      ⏳ ขั้นที่ {currentStep.stepOrder}/{totalSteps} — {resolvePendingInfo(sub, currentStep, users)}
-                    </span>
+                <div className="p-5 space-y-3">
+                  {/* Row 1: type + title + actions */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        {sub.submissionType === "PROPOSAL" && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
+                            <BookOpen className="w-3 h-3" />โครงร่าง
+                          </span>
+                        )}
+                        {sub.submissionType === "THESIS_DEFENSE" && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full shrink-0">
+                            <GraduationCap className="w-3 h-3" />สอบวิทยานิพนธ์
+                          </span>
+                        )}
+                        <SubmissionStatusBadge status={sub.status} />
+                        {stuckDays > 7 && (
+                          <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                            <AlertCircle className="w-3.5 h-3.5" />ค้างมา {stuckDays} วัน
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-gray-900 text-base leading-snug">{sub.title}</p>
+                      <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 shrink-0" />
+                        {student ? (
+                          <Link
+                            href={`/dashboard/admin/users/${student.id}`}
+                            className="font-medium text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {student.name}
+                          </Link>
+                        ) : "—"}
+                        {student?.studentId && <span className="text-gray-400">({student.studentId})</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {confirmDelete === sub.id ? (
+                        <>
+                          <span className="text-sm text-red-600 font-medium">ยืนยันลบ?</span>
+                          <button onClick={() => { adminDeleteSubmission(sub.id); setConfirmDelete(null); }}
+                            className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">ลบ</button>
+                          <button onClick={() => setConfirmDelete(null)}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-lg">ยกเลิก</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => setConfirmDelete(sub.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <Link href={`/dashboard/admin/${sub.id}`}
+                            className={`flex items-center gap-1.5 px-4 py-2 text-white text-sm font-semibold rounded-xl transition ${
+                              isMyTurn ? "bg-orange-500 hover:bg-orange-600" : "bg-blue-600 hover:bg-blue-700"
+                            }`}>
+                            {isMyTurn ? "ดำเนินการ" : "จัดการ"} <ChevronRight className="w-4 h-4" />
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 2: current waiting step */}
+                  {currentStep && stepName && (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${
+                      isMyTurn ? "bg-orange-50 border border-orange-200" : "bg-gray-50 border border-gray-100"
+                    }`}>
+                      <Clock className={`w-4 h-4 shrink-0 ${isMyTurn ? "text-orange-500" : "text-gray-400"}`} />
+                      <span className={`font-semibold shrink-0 ${isMyTurn ? "text-orange-700" : "text-gray-600"}`}>
+                        ขั้นที่ {currentStep.stepOrder}
+                      </span>
+                      <span className={`truncate ${isMyTurn ? "text-orange-700" : "text-gray-600"}`}>{stepName}</span>
+                      {pendingName && !isMyTurn && (
+                        <span className="text-gray-400 shrink-0 text-xs">— รอ {pendingName}</span>
+                      )}
+                      {isMyTurn && (
+                        <span className="ml-auto text-xs font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full shrink-0">
+                          รอท่าน
+                        </span>
+                      )}
+                    </div>
                   )}
                   {sub.status === "COMPLETED" && (
-                    <span className="text-sm text-green-600 font-medium">✓ ผ่านครบทุกขั้นตอน</span>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-green-50 border border-green-100">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                      <span className="text-green-700 font-medium">ผ่านครบทุกขั้นตอน</span>
+                    </div>
                   )}
-                  {stuckDays > 7 && (
-                    <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      ค้างมา {stuckDays} วัน
-                    </span>
+                  {sub.status === "REJECTED" && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-red-50 border border-red-100">
+                      <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span className="text-red-600 font-medium">ถูกปฏิเสธ</span>
+                    </div>
                   )}
-                </div>
 
-                {/* Progress + date */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        sub.status === "COMPLETED" ? "bg-green-500" :
-                        sub.status === "REJECTED"  ? "bg-red-400"   : "bg-blue-500"
-                      }`}
-                      style={{ width: `${(doneCount / totalSteps) * 100}%` }}
-                    />
+                  {/* Row 3: progress bar */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          sub.status === "COMPLETED" ? "bg-green-500" :
+                          sub.status === "REJECTED"  ? "bg-red-400"   :
+                          isMyTurn                   ? "bg-orange-400" : "bg-blue-500"
+                        }`}
+                        style={{ width: `${(doneCount / totalVisible) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">{doneCount}/{totalVisible} ขั้น</span>
+                    <span className="text-xs text-gray-400 shrink-0">{formatDate(sub.createdAt)}</span>
                   </div>
-                  <span className="text-xs text-gray-400 shrink-0">{doneCount}/{totalSteps} ขั้น</span>
-                  <span className="text-xs text-gray-400 shrink-0">{formatDate(sub.createdAt)}</span>
                 </div>
               </div>
             );
@@ -292,11 +342,13 @@ export default function AdminDashboard() {
   );
 }
 
-function SummaryCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
+function SummaryCard({ icon, label, value, color, textColor }: {
+  icon: React.ReactNode; label: string; value: number; color: string; textColor: string;
+}) {
   return (
     <div className={`rounded-2xl border p-4 space-y-2 ${color}`}>
       {icon}
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <p className={`text-3xl font-bold ${textColor}`}>{value}</p>
       <p className="text-sm text-gray-600">{label}</p>
     </div>
   );
@@ -320,12 +372,7 @@ function StepDistributionDashboard({
 }) {
   const proposalCounts = buildStepCounts(proposalSubs);
   const thesisCounts   = buildStepCounts(thesisSubs);
-
-  const maxCount = Math.max(
-    1,
-    ...Array.from(proposalCounts.values()),
-    ...Array.from(thesisCounts.values()),
-  );
+  const maxCount = Math.max(1, ...Array.from(proposalCounts.values()), ...Array.from(thesisCounts.values()));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -336,45 +383,23 @@ function StepDistributionDashboard({
           {proposalSubs.length + thesisSubs.length} คำร้องกำลังดำเนินการ
         </span>
       </div>
-
       <div className="divide-y divide-gray-50">
         {proposalSubs.length > 0 && (
           <div className="p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                PROPOSAL
-              </span>
-              <span className="text-xs text-gray-400">
-                เสนอหัวข้อวิทยานิพนธ์ · {proposalSubs.length} คำร้อง
-              </span>
+              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">โครงร่าง</span>
+              <span className="text-xs text-gray-400">{proposalSubs.length} คำร้อง</span>
             </div>
-            <StepBars
-              counts={proposalCounts}
-              totalSteps={9}
-              submissionType="PROPOSAL"
-              maxCount={maxCount}
-              barColor="bg-blue-500"
-            />
+            <StepBars counts={proposalCounts} totalSteps={10} submissionType="PROPOSAL" maxCount={maxCount} barColor="bg-blue-500" />
           </div>
         )}
-
         {thesisSubs.length > 0 && (
           <div className="p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
-                THESIS DEFENSE
-              </span>
-              <span className="text-xs text-gray-400">
-                สอบวิทยานิพนธ์ · {thesisSubs.length} คำร้อง
-              </span>
+              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">สอบวิทยานิพนธ์</span>
+              <span className="text-xs text-gray-400">{thesisSubs.length} คำร้อง</span>
             </div>
-            <StepBars
-              counts={thesisCounts}
-              totalSteps={18}
-              submissionType="THESIS_DEFENSE"
-              maxCount={maxCount}
-              barColor="bg-purple-500"
-            />
+            <StepBars counts={thesisCounts} totalSteps={22} submissionType="THESIS_DEFENSE" maxCount={maxCount} barColor="bg-purple-500" />
           </div>
         )}
       </div>
@@ -383,32 +408,25 @@ function StepDistributionDashboard({
 }
 
 function StepBars({
-  counts,
-  totalSteps,
-  submissionType,
-  maxCount,
-  barColor,
+  counts, totalSteps, submissionType, maxCount, barColor,
 }: {
-  counts: Map<number, number>;
-  totalSteps: number;
-  submissionType: string;
-  maxCount: number;
-  barColor: string;
+  counts: Map<number, number>; totalSteps: number; submissionType: string; maxCount: number; barColor: string;
 }) {
+  const activeSteps = Array.from({ length: totalSteps }, (_, i) => i + 1).filter((s) => (counts.get(s) ?? 0) > 0);
+  const allSteps    = Array.from({ length: totalSteps }, (_, i) => i + 1);
+
   return (
     <div className="space-y-1.5">
-      {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+      {allSteps.map((step) => {
         const count = counts.get(step) ?? 0;
         const pct   = (count / maxCount) * 100;
+        if (count === 0 && activeSteps.length > 0) return null;
         return (
-          <div key={step} className={`flex items-center gap-2 ${count === 0 ? "opacity-30" : ""}`}>
+          <div key={step} className={`flex items-center gap-2 ${count === 0 ? "opacity-25" : ""}`}>
             <span className="text-xs text-gray-500 font-mono w-5 text-right shrink-0">{step}</span>
-            <div className="w-28 h-3.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+            <div className="w-24 h-3 bg-gray-100 rounded-full overflow-hidden shrink-0">
               {count > 0 && (
-                <div
-                  className={`h-full ${barColor} rounded-full`}
-                  style={{ width: `${Math.max(pct, 12)}%` }}
-                />
+                <div className={`h-full ${barColor} rounded-full`} style={{ width: `${Math.max(pct, 12)}%` }} />
               )}
             </div>
             <span className={`text-xs font-bold w-4 shrink-0 ${count > 0 ? "text-gray-700" : "text-gray-300"}`}>

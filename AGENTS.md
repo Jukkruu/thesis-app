@@ -93,6 +93,33 @@ Layout (top to bottom):
 ### admin_override_step status priority
 When admin overrides individual steps via `action: "admin_override_step"`, submission status is computed as: **`hasPending → IN_PROGRESS`** (takes priority), then `hasRejected → REJECTED`, then `COMPLETED`. This ensures overriding a step to REJECTED does not lock the submission if later steps are still PENDING.
 
+### CO_ADVISOR step visibility in UI
+SKIPPED CO_ADVISOR steps are **completely hidden** from all step lists — never rendered, remaining steps renumbered sequentially from 1.
+
+Applies to:
+- `WorkflowTimeline` (`src/components/WorkflowTimeline.tsx`): filter `steps.filter(s => s.status !== "SKIPPED")` before rendering; use `index + 1` for display number.
+- Admin detail step list (`src/app/dashboard/admin/[id]/page.tsx`): filter `sub.workflowSteps.filter(s => s.status !== "SKIPPED")` before mapping `StepCard`; pass `displayOrder={i + 1}` prop.
+
+### File download vs preview
+Two distinct behaviors for file buttons:
+
+| Context | Function | Behavior |
+|---|---|---|
+| "ดาวน์โหลดเอกสารเพื่อลงนาม" in `SignatureButton` / `CommitteeSignPanel` | `downloadFile()` | `fetch()` → blob URL → `<a download>` — forces real download even for cross-origin Supabase URLs |
+| All other file clicks (`FileList`, admin StepCard) | `previewFile()` | `window.open(url, "_blank")` — opens in new tab for preview |
+
+Both helpers are in `src/lib/utils.ts`. Cross-origin `<a download>` is silently ignored by browsers — that is why `downloadFile` uses fetch→blob instead of a plain link.
+
+### Admin detail — hide files on future steps
+In the admin "จัดการแต่ละขั้นตอน" tab (`src/app/dashboard/admin/[id]/page.tsx`), steps that are still PENDING and have not been reached yet receive an empty `stepUploads` array so no files are shown prematurely.
+
+```typescript
+const isFutureStep = step.status === "PENDING" && step.stepOrder !== currentOrd;
+stepUploads={isFutureStep ? [] : stepUploads}
+```
+
+`currentOrd` is the `stepOrder` of the currently active PENDING step (lowest PENDING stepOrder).
+
 ---
 
 ## Conventions
