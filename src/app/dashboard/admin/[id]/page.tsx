@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, StickyNote, User, Upload,
+  CheckCircle2, XCircle, Clock, User, Upload,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
@@ -219,7 +219,7 @@ function StepCard({
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, adminSetNote, approveCurrentStep, rejectCurrentStep } = useApp();
+  const { submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, approveCurrentStep, rejectCurrentStep } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -237,9 +237,6 @@ export default function AdminSubmissionDetail() {
   const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
-  const [noteText,      setNoteText]      = useState(sub?.adminNote ?? "");
-  const [noteSaved,     setNoteSaved]     = useState(false);
-  const [noteSavedAt,   setNoteSavedAt]   = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   if (!sub) {
@@ -543,37 +540,6 @@ export default function AdminSubmissionDetail() {
           </div>
           <span className="text-sm font-medium text-gray-600 shrink-0">{doneCount}/{totalSteps} ขั้น</span>
         </div>
-      </div>
-
-      {/* Admin note — full width, always visible */}
-      <div className="bg-white rounded-2xl border border-yellow-200 p-5 space-y-3">
-        <h2 className="font-semibold text-yellow-700 flex items-center gap-2">
-          <StickyNote className="w-5 h-5" />
-          บันทึกจาก Admin
-        </h2>
-        <p className="text-xs text-gray-500">บันทึกนี้จะปรากฏแก่นักศึกษาและทุกฝ่ายที่เกี่ยวข้อง</p>
-        <textarea
-          value={noteText}
-          onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
-          placeholder="เพิ่มบันทึกหรือคำแนะนำ..."
-          className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        />
-        {noteSaved && noteSavedAt && (
-          <p className="text-xs text-green-600 flex items-center gap-1">
-            <Check className="w-3.5 h-3.5" /> บันทึกแล้ว · {noteSavedAt}
-          </p>
-        )}
-        <button
-          onClick={() => {
-            if (!sub) return;
-            adminSetNote(sub.id, noteText);
-            setNoteSaved(true);
-            setNoteSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
-          }}
-          className="w-full py-2.5 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition text-sm"
-        >
-          บันทึก
-        </button>
       </div>
 
       {/* Main content */}
