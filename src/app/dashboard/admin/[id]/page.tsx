@@ -602,11 +602,13 @@ export default function AdminSubmissionDetail() {
                     })
                   : undefined;
 
+                const isFutureStep = step.status === "PENDING" && step.stepOrder !== currentOrd;
+
                 return (
                   <StepCard
                     key={step.id}
                     step={step}
-                    stepUploads={stepUploads}
+                    stepUploads={isFutureStep ? [] : stepUploads}
                     isCurrentStep={step.stepOrder === currentOrd}
                     assignedName={assignedName}
                     committeeStatus={committeeStatus}
