@@ -184,10 +184,15 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
 
         {/* Sidebar — first on mobile */}
         <div className="order-1 lg:order-none space-y-4">
-          {/* Documents — grouped by form type, latest first */}
-          {sub.uploads.length > 0 && (
-            <FileList uploads={sub.uploads} submissionTitle={sub.title} />
-          )}
+          {/* Documents — filtered to the forms relevant to the current step */}
+          {(() => {
+            const relevantUploads = formsToShow.length > 0
+              ? sub.uploads.filter((u) => formsToShow.includes(u.formType))
+              : sub.uploads;
+            return relevantUploads.length > 0 ? (
+              <FileList uploads={relevantUploads} submissionTitle={sub.title} />
+            ) : null;
+          })()}
 
           {/* Action — committee step uses multi-member panel */}
           {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
