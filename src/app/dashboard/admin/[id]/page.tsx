@@ -30,16 +30,18 @@ function StepCard({
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
-  onOverride: (stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => void;
+  onOverride: (stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => Promise<void>;
   stepUploads: MockUpload[];
   assignedName?: string | null;
   committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
   submissionType?: string | null;
   displayOrder: number;
 }) {
-  const [open,   setOpen]   = useState(false);
-  const [action, setAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
-  const [notes,  setNotes]  = useState("");
+  const [open,    setOpen]    = useState(false);
+  const [action,  setAction]  = useState<"APPROVED" | "REJECTED">("APPROVED");
+  const [notes,   setNotes]   = useState("");
+  const [saving,  setSaving]  = useState(false);
+  const [errMsg,  setErrMsg]  = useState<string | null>(null);
 
   const borderColor =
     step.status === "APPROVED" ? "border-green-200 bg-green-50"
@@ -82,7 +84,7 @@ function StepCard({
         <div className="flex items-center gap-2 shrink-0">
           <StepStatusBadge status={step.status} />
           <button
-            onClick={() => setOpen(!open)}
+            onClick={() => { setOpen(!open); setErrMsg(null); }}
             className="flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition"
           >
             <ShieldCheck className="w-4 h-4" />
@@ -176,19 +178,31 @@ function StepCard({
             className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
 
+          {errMsg && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{errMsg}</p>
+          )}
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                onOverride(step.stepOrder, action, notes || undefined);
-                setOpen(false);
-                setNotes("");
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                setErrMsg(null);
+                try {
+                  await onOverride(step.stepOrder, action, notes || undefined);
+                  setOpen(false);
+                  setNotes("");
+                } catch (e) {
+                  setErrMsg(e instanceof Error ? e.message : "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+                } finally {
+                  setSaving(false);
+                }
               }}
-              className="flex-1 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm"
+              className="flex-1 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ยืนยันการแก้ไข
+              {saving ? "กำลังบันทึก..." : "ยืนยันการแก้ไข"}
             </button>
             <button
-              onClick={() => { setOpen(false); setNotes(""); }}
+              onClick={() => { setOpen(false); setNotes(""); setErrMsg(null); }}
               className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition text-sm"
             >
               ยกเลิก
