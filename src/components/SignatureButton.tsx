@@ -14,7 +14,7 @@ interface Props {
   formsToShow?: string[];
 }
 
-export function SignatureButton({ submissionId, label = "อัปโหลด", onSuccess, formsToShow }: Props) {
+export function SignatureButton({ submissionId, label = "ส่งต่อ", onSuccess, formsToShow }: Props) {
   const { approveCurrentStep, rejectCurrentStep, submissions } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");

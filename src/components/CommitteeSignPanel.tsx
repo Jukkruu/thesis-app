@@ -261,7 +261,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-60 transition"
                 >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                  {loading ? "กำลังบันทึก..." : "อัปโหลด"}
+                  {loading ? "กำลังบันทึก..." : "ส่งต่อ"}
                 </button>
                 <button
                   onClick={() => setReject(true)}
