@@ -512,13 +512,13 @@ export default function NewSubmissionPage() {
             />
           </Field>
 
-          <Field label={`อาจารย์ที่ปรึกษาร่วม${coAdvisorIds.length ? ` (${coAdvisorIds.length} คน)` : ""}`}>
+          <Field label="อาจารย์ที่ปรึกษาร่วม">
             <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มเฉพาะเมื่อมีอาจารย์ที่ปรึกษาร่วม</p>
-            <MultiPicker
+            <SearchableSelect
               options={coAdvisors}
-              selected={coAdvisorIds}
-              onChange={setCoAdvisorIds}
-              placeholder="ค้นหาและเพิ่มอาจารย์ที่ปรึกษาร่วม..."
+              value={coAdvisorIds[0] ?? ""}
+              onChange={(id) => setCoAdvisorIds(id ? [id] : [])}
+              placeholder="ค้นหาอาจารย์ที่ปรึกษาร่วม..."
             />
           </Field>
 
