@@ -35,20 +35,20 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
   else if (role === "HEAD_EXAM_COMMITTEE") recipientId = sub.headCommitteeId;
   else if (role === "INVITED_EXAM_COMMITTEE") recipientId = sub.invitedCommitteeId;
   else if (role === "EXAM_COMMITTEE") {
-    if (sub.committeeIds?.length) {
-      await prisma.notification.createMany({
-        data: sub.committeeIds.map((uid: string) => ({
-          recipientId: uid, message, detail: sub.title, submissionId: sub.id, type,
-        })),
+    // Sequential signing: only notify the FIRST member; the sign route chains to the next.
+    const firstId: string | undefined = sub.committeeIds?.[0];
+    if (firstId) {
+      await prisma.notification.create({
+        data: { recipientId: firstId, message, detail: sub.title, submissionId: sub.id, type },
       });
     }
     return;
   } else if (role === "CO_ADVISOR") {
-    if (sub.coAdvisorIds?.length) {
-      await prisma.notification.createMany({
-        data: sub.coAdvisorIds.map((uid: string) => ({
-          recipientId: uid, message, detail: sub.title, submissionId: sub.id, type,
-        })),
+    // Sequential signing: only notify the FIRST co-advisor.
+    const firstId: string | undefined = sub.coAdvisorIds?.[0];
+    if (firstId) {
+      await prisma.notification.create({
+        data: { recipientId: firstId, message, detail: sub.title, submissionId: sub.id, type },
       });
     }
     return;
@@ -166,7 +166,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
         const msg = `ถึงคิวของท่าน: ${stepName}`;
         await notifyRole(nextStep.role, sub, msg, "pending");
-        try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
+        try {
+          const specificMemberId = nextStep.role === "EXAM_COMMITTEE" ? (sub.committeeIds as string[])?.[0]
+            : nextStep.role === "CO_ADVISOR" ? (sub.coAdvisorIds as string[])?.[0]
+            : undefined;
+          await sendStepEmail({ role: nextStep.role, sub, stepName, specificMemberId });
+        } catch (e) { console.error("[email/step]", e); }
       }
       // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
       if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
@@ -407,7 +412,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           ? `ถึงคิวของท่าน: ${stepName}`
           : `กรุณาดำเนินการอีกครั้ง: ${stepName}`;
         await notifyRole(nextPending.role, sub, msg, decision === "APPROVED" ? "pending" : "rejected");
-        try { await sendStepEmail({ role: nextPending.role, sub, stepName }); } catch (e) { console.error("[email/override-next]", e); }
+        try {
+          const specificMemberId = nextPending.role === "EXAM_COMMITTEE" ? (sub.committeeIds as string[])?.[0]
+            : nextPending.role === "CO_ADVISOR" ? (sub.coAdvisorIds as string[])?.[0]
+            : undefined;
+          await sendStepEmail({ role: nextPending.role, sub, stepName, specificMemberId });
+        } catch (e) { console.error("[email/override-next]", e); }
       }
     }
 

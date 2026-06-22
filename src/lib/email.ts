@@ -62,13 +62,17 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
     } else if (role === "HEAD_EXAM_COMMITTEE" && sub.headCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.headCommitteeId } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
-    } else if (role === "EXAM_COMMITTEE") {
+    } else if (role === "EXAM_COMMITTEE" || role === "CO_ADVISOR") {
       if (options.specificMemberId) {
         const u = await prisma.user.findUnique({ where: { id: options.specificMemberId } });
         if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
-      } else if (sub.committeeIds?.length) {
-        const users = await prisma.user.findMany({ where: { id: { in: sub.committeeIds } } });
-        recipients = users.map((u) => ({ id: u.id, name: u.name, email: u.email }));
+      } else {
+        // Fallback: first member only
+        const ids: string[] = role === "EXAM_COMMITTEE" ? (sub.committeeIds ?? []) : ((sub as any).coAdvisorIds ?? []);
+        if (ids[0]) {
+          const u = await prisma.user.findUnique({ where: { id: ids[0] } });
+          if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
+        }
       }
     } else if (role === "INVITED_EXAM_COMMITTEE" && sub.invitedCommitteeId) {
       const u = await prisma.user.findUnique({ where: { id: sub.invitedCommitteeId } });

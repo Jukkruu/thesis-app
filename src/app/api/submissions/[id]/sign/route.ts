@@ -107,6 +107,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (!allApproved) {
       await prisma.workflowStep.update({ where: { id: step.id }, data: { committeeActions: newActions } });
+
+      // Chain: notify + email only the next unsigned member in sequence
+      const members = step.committeeMembers as string[];
+      const nextMemberId = members.find(
+        (mid) => !newActions.find((a: any) => a.userId === mid && a.decision === "APPROVED")
+      );
+      if (nextMemberId) {
+        const currentStepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role as keyof typeof ROLE_LABELS];
+        await prisma.notification.create({
+          data: { recipientId: nextMemberId, message: `ถึงคิวของท่าน: ${currentStepName}`, detail: sub.title, submissionId, type: "pending" },
+        });
+        try {
+          await sendStepEmail({ role: userRole, sub, stepName: currentStepName, specificMemberId: nextMemberId });
+        } catch (e) { console.error("[email/committee-chain]", e); }
+      }
     } else {
       await prisma.workflowStep.update({
         where: { id: step.id },
