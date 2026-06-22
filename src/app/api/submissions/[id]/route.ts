@@ -359,35 +359,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const targetStep = sub.workflowSteps.find((s: any) => s.stepOrder === stepOrder);
     if (!targetStep) return NextResponse.json({ error: "Step not found" }, { status: 404 });
 
-    // Rejecting a currently PENDING step → go back one step (same as action: "reject")
-    if (decision === "REJECTED" && targetStep.status === "PENDING") {
-      const prevStep = [...sub.workflowSteps]
-        .filter((s: any) => s.stepOrder < stepOrder)
-        .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
-      const idsToReset = prevStep ? [targetStep.id, prevStep.id] : [targetStep.id];
-      await prisma.workflowStep.updateMany({
-        where: { id: { in: idsToReset } },
-        data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
-      });
-      if (prevStep) {
-        const rejectionNote = notes ? `ส่งกลับเพื่อแก้ไข — "${notes}"` : `ส่งกลับโดย Admin`;
-        await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
-        try {
-          const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
-          await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
-        } catch (e) { console.error("[email/reject/admin]", e); }
-        if (prevStep.role !== "STUDENT") {
-          await prisma.notification.create({
-            data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId: id, type: "rejected" },
-          });
-        }
+    if (decision === "APPROVED") {
+      // Approve target + all non-SKIPPED steps before it that aren't already APPROVED
+      const toApprove = sub.workflowSteps
+        .filter((s: any) => s.stepOrder <= stepOrder && s.status !== "SKIPPED" && s.status !== "APPROVED")
+        .map((s: any) => s.id);
+      if (toApprove.length > 0) {
+        await prisma.workflowStep.updateMany({
+          where: { id: { in: toApprove } },
+          data: { status: "APPROVED", actedAt: now, actedByName: userName, actedById: userId, notes: notes ?? null },
+        });
       }
-    } else {
-      // Direct override — set the step status exactly as requested
-      await prisma.workflowStep.update({
-        where: { submissionId_stepOrder: { submissionId: id, stepOrder } },
-        data: { status: decision, actedAt: now, actedByName: userName, actedById: userId, notes: notes ?? null },
-      });
+    } else if (decision === "REJECTED") {
+      // Reset target + all non-SKIPPED steps after it to PENDING
+      const toReset = sub.workflowSteps
+        .filter((s: any) => s.stepOrder >= stepOrder && s.status !== "SKIPPED")
+        .map((s: any) => s.id);
+      if (toReset.length > 0) {
+        await prisma.workflowStep.updateMany({
+          where: { id: { in: toReset } },
+          data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+        });
+      }
     }
 
     const updatedSub = await getSub(id);
