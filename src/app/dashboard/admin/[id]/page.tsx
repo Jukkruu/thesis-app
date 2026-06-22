@@ -593,7 +593,9 @@ export default function AdminSubmissionDetail() {
 
                 // Resolve who is assigned to this step
                 let assignedName: string | null = null;
-                if (step.role === "ADVISOR") assignedName = advisor?.name ?? null;
+                if (step.role === "STUDENT") assignedName = student?.name ?? null;
+                else if (step.role === "ADMIN") assignedName = allUsers.find((u) => u.role === "ADMIN")?.name ?? null;
+                else if (step.role === "ADVISOR") assignedName = advisor?.name ?? null;
                 else if (step.role === "CO_ADVISOR") assignedName = (sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid).join(", ") || null;
                 else if (step.role === "HEAD_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? null;
                 else if (step.role === "INVITED_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? (sub.invitedProfName ?? null);
