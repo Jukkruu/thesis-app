@@ -626,7 +626,7 @@ export default function AdminSubmissionDetail() {
             </div>
           ) : (
             <div className="bg-white rounded-b-2xl border border-gray-200 border-t-0 p-6">
-              <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} />
+              <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} submission={sub} />
             </div>
           )}
         </div>

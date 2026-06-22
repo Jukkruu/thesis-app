@@ -1,25 +1,88 @@
 "use client";
 
-import { MockUser, MockWorkflowStep } from "@/types";
+import { MockUser, MockWorkflowStep, MockSubmission } from "@/types";
 import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { StepStatusBadge } from "./StatusBadge";
 import { CheckCircle2, Clock, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type SubInfo = Pick<MockSubmission,
+  "studentId" | "advisorId" | "headCommitteeId" | "coAdvisorIds" |
+  "committeeIds" | "invitedCommitteeId" | "invitedProfName"
+>;
+
+/** Resolve the list of people assigned to a step: [{ id, name }] */
+function resolveAssignees(
+  step: MockWorkflowStep,
+  sub: SubInfo | undefined,
+  users: MockUser[]
+): { id: string; name: string }[] {
+  if (!sub) return [];
+
+  const find = (id?: string | null) => users.find((u) => u.id === id);
+
+  switch (step.role) {
+    case "STUDENT": {
+      const u = find(sub.studentId);
+      return u ? [{ id: u.id, name: u.name }] : [];
+    }
+    case "ADVISOR": {
+      const u = find(sub.advisorId);
+      return u ? [{ id: u.id, name: u.name }] : [];
+    }
+    case "HEAD_EXAM_COMMITTEE": {
+      const u = find(sub.headCommitteeId);
+      return u ? [{ id: u.id, name: u.name }] : [];
+    }
+    case "INVITED_EXAM_COMMITTEE": {
+      const u = find(sub.invitedCommitteeId);
+      const name = u?.name ?? sub.invitedProfName;
+      return name ? [{ id: sub.invitedCommitteeId ?? "ext", name }] : [];
+    }
+    case "PROGRAM_CHAIR": {
+      const u = users.find((u) => u.role === "PROGRAM_CHAIR");
+      return u ? [{ id: u.id, name: u.name }] : [];
+    }
+    case "ADMIN": {
+      const u = users.find((u) => u.role === "ADMIN");
+      return u ? [{ id: u.id, name: u.name }] : [];
+    }
+    case "CO_ADVISOR": {
+      const ids: string[] = (step.committeeMembers?.length
+        ? step.committeeMembers
+        : (sub.coAdvisorIds ?? [])) as string[];
+      return ids.map((id) => ({ id, name: find(id)?.name ?? id }));
+    }
+    case "EXAM_COMMITTEE": {
+      const ids: string[] = (step.committeeMembers?.length
+        ? step.committeeMembers
+        : (sub.committeeIds ?? [])) as string[];
+      return ids.map((id) => ({ id, name: find(id)?.name ?? id }));
+    }
+    default:
+      return [];
+  }
+}
+
 export function WorkflowTimeline({
   steps,
   users = [],
   submissionType,
+  submission,
 }: {
   steps: MockWorkflowStep[];
   users?: MockUser[];
   submissionType?: string | null;
+  submission?: SubInfo;
 }) {
   const visibleSteps = steps.filter((s) => s.status !== "SKIPPED");
   const currentOrder = visibleSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const remainingCount = currentOrder !== null
     ? visibleSteps.filter((s) => s.status === "PENDING" && s.stepOrder > currentOrder).length
     : 0;
+
+  const isCommitteeRole = (role: string) =>
+    role === "EXAM_COMMITTEE" || role === "CO_ADVISOR";
 
   return (
     <>
@@ -32,14 +95,16 @@ export function WorkflowTimeline({
         {visibleSteps.map((step, index) => {
           const isCurrent = step.stepOrder === currentOrder;
           const isFuture  = step.status === "PENDING" && !isCurrent;
+          const assignees = resolveAssignees(step, submission, users);
+          const isCommittee = isCommitteeRole(step.role);
+
+          // For committee steps use committeeActions for per-member status
+          const actions: any[] = (step.committeeActions ?? []) as any[];
 
           return (
             <li
               key={step.id}
-              className={cn(
-                "ml-6 pb-7 last:pb-0",
-                isFuture && "opacity-40"
-              )}
+              className={cn("ml-6 pb-7 last:pb-0", isFuture && "opacity-40")}
             >
               {/* Timeline dot */}
               <span
@@ -58,12 +123,7 @@ export function WorkflowTimeline({
               </span>
 
               {/* Content */}
-              <div
-                className={cn(
-                  "rounded-xl p-3",
-                  isCurrent && "bg-blue-50 border border-blue-200"
-                )}
-              >
+              <div className={cn("rounded-xl p-3", isCurrent && "bg-blue-50 border border-blue-200")}>
                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
                   <span className="text-xs text-gray-400 font-medium">ขั้นที่ {index + 1}</span>
                   <span className={cn("font-semibold", isCurrent ? "text-blue-800" : "text-gray-800")}>
@@ -77,32 +137,41 @@ export function WorkflowTimeline({
                   )}
                 </div>
 
-                {step.actedByName && (
+                {/* Single-role acted info */}
+                {!isCommittee && step.actedByName && (
                   <p className="text-sm text-gray-500 mt-0.5">
                     {step.actedByName}
                     {step.actedAt && <span className="text-gray-400"> · {formatDate(step.actedAt)}</span>}
                   </p>
                 )}
 
-                {/* Committee signing progress — show each member's status */}
-                {step.committeeMembers && step.committeeMembers.length > 0 && (
+                {/* Assignee bullet list */}
+                {assignees.length > 0 && (
                   <div className="mt-2 space-y-1.5">
-                    <p className="text-xs font-medium text-gray-500">
-                      ลงนามแล้ว{" "}
-                      <span className="font-bold text-gray-700">
-                        {(step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length}
-                        /{step.committeeMembers.length}
-                      </span>
-                      {" "}ท่าน
-                    </p>
-                    {step.committeeMembers.map((memberId) => {
-                      const member = users.find((u) => u.id === memberId);
-                      const action = (step.committeeActions ?? []).find((a) => a.userId === memberId);
-                      const signed   = action?.decision === "APPROVED";
-                      const rejected = action?.decision === "REJECTED";
+                    {isCommittee && (
+                      <p className="text-xs font-medium text-gray-500">
+                        ลงนามแล้ว{" "}
+                        <span className="font-bold text-gray-700">
+                          {actions.filter((a) => a.decision === "APPROVED").length}/{assignees.length}
+                        </span>
+                        {" "}ท่าน
+                      </p>
+                    )}
+                    {assignees.map(({ id, name }) => {
+                      const action = isCommittee
+                        ? actions.find((a) => a.userId === id)
+                        : null;
+                      const done = isCommittee
+                        ? action?.decision === "APPROVED"
+                        : step.status === "APPROVED";
+                      const rejected = isCommittee
+                        ? action?.decision === "REJECTED"
+                        : step.status === "REJECTED";
+                      const actedAt = isCommittee ? action?.actedAt : step.actedAt;
+
                       return (
-                        <div key={memberId} className="flex items-center gap-2 text-xs">
-                          {signed ? (
+                        <div key={id} className="flex items-center gap-2 text-xs">
+                          {done ? (
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                           ) : rejected ? (
                             <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
@@ -110,17 +179,18 @@ export function WorkflowTimeline({
                             <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                           )}
                           <span className={cn(
-                            signed ? "text-green-700 font-medium" :
-                            rejected ? "text-red-700 font-medium" :
-                            "text-gray-400"
+                            "flex-1",
+                            done     ? "text-green-700 font-medium" :
+                            rejected ? "text-red-700 font-medium"   :
+                                       "text-gray-600"
                           )}>
-                            {member?.name ?? memberId}
+                            {name}
                           </span>
-                          {action?.actedAt && (
-                            <span className="text-gray-400">· {formatDate(action.actedAt)}</span>
+                          {actedAt && (
+                            <span className="text-gray-400 shrink-0">{formatDate(actedAt)}</span>
                           )}
-                          {!action && (
-                            <span className="text-gray-300 italic">ยังไม่ได้ลงนาม</span>
+                          {!done && !rejected && (
+                            <span className="text-gray-300 italic shrink-0">ยังไม่ได้ดำเนินการ</span>
                           )}
                         </div>
                       );

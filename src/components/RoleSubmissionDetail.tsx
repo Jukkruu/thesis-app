@@ -179,7 +179,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         {/* Timeline — second on mobile so the action panel is reachable first */}
         <div className="order-2 lg:order-none lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
-          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} />
+          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} submission={sub} />
         </div>
 
         {/* Sidebar — first on mobile */}

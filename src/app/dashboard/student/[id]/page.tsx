@@ -332,7 +332,7 @@ export default function StudentSubmissionDetail() {
         {/* Timeline — second on mobile so upload/action is reachable first */}
         <div className="order-2 md:order-none md:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">ขั้นตอนทั้งหมด</h2>
-          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} />
+          <WorkflowTimeline steps={sub.workflowSteps} users={allUsers} submissionType={sub.submissionType} submission={sub} />
         </div>
 
         {/* Right: files + upload — first on mobile */}
