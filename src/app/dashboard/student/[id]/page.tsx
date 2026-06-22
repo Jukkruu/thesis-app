@@ -99,8 +99,8 @@ export default function StudentSubmissionDetail() {
   const requiredForms = suggested?.forms ?? [];
   const adminRequiredForms = suggested?.adminForms ?? [];
   const allRequiredUploaded =
-    [...requiredForms, ...adminRequiredForms].length === 0 ||
-    [...requiredForms, ...adminRequiredForms].every((f) => uploadedTypes.has(f));
+    requiredForms.length === 0 ||
+    requiredForms.every((f) => uploadedTypes.has(f));
 
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {
@@ -407,35 +407,40 @@ export default function StudentSubmissionDetail() {
 
               {/* Uploaders for required forms — always show when it's the student's turn
                   so they can re-upload after a rejection without being blocked */}
-              {suggested?.forms
-                .filter((f) => suggested.multiUpload || isMyTurn || !uploadedTypes.has(f))
-                .map((ft, idx) => (
-                  <div key={`${ft}-${idx}`} className="space-y-1">
-                    {isMyTurn && uploadedTypes.has(ft) && !suggested.multiUpload && (
-                      <p className="text-xs text-gray-400">อัปโหลดใหม่เพื่อแทนที่ไฟล์เดิม (ถ้าต้องการแก้ไข)</p>
-                    )}
+              {suggested?.forms.map((ft, idx) => {
+                  const existing = sub.uploads
+                    .filter((u) => u.formType === ft)
+                    .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
+                  return (
+                    <div key={`${ft}-${idx}`} className="space-y-1">
+                      {FORM_UPLOAD_WARNINGS[ft] && (
+                        <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          {FORM_UPLOAD_WARNINGS[ft]}
+                        </p>
+                      )}
+                      <FileUploader submissionId={sub.id} formType={ft} existingUpload={existing} />
+                    </div>
+                  );
+                })}
+
+              {/* Optional remaining forms (not required for this step) */}
+              {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => {
+                const existing = sub.uploads
+                  .filter((u) => u.formType === ft)
+                  .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
+                return (
+                  <div key={ft} className="space-y-1">
                     {FORM_UPLOAD_WARNINGS[ft] && (
                       <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                         {FORM_UPLOAD_WARNINGS[ft]}
                       </p>
                     )}
-                    <FileUploader submissionId={sub.id} formType={ft} />
+                    <FileUploader submissionId={sub.id} formType={ft} existingUpload={existing} />
                   </div>
-                ))}
-
-              {/* Optional remaining forms (not required for this step) */}
-              {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => (
-                <div key={ft} className="space-y-1">
-                  {FORM_UPLOAD_WARNINGS[ft] && (
-                    <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      {FORM_UPLOAD_WARNINGS[ft]}
-                    </p>
-                  )}
-                  <FileUploader submissionId={sub.id} formType={ft} />
-                </div>
-              ))}
+                );
+              })}
 
               {/* Submit button */}
               {isMyTurn && currentStep && (

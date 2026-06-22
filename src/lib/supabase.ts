@@ -24,6 +24,11 @@ export async function uploadFile(file: File, path: string): Promise<string> {
   return path
 }
 
+export async function deleteFile(path: string): Promise<void> {
+  const { error } = await adminClient().storage.from(BUCKET).remove([path])
+  if (error) throw error
+}
+
 export async function getSignedUrl(path: string): Promise<string> {
   const { data, error } = await adminClient().storage
     .from(BUCKET)
