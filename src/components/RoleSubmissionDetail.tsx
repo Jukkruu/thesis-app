@@ -184,10 +184,11 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
 
         {/* Sidebar — first on mobile */}
         <div className="order-1 lg:order-none space-y-4">
-          {/* Documents — filtered to the forms relevant to the current step */}
+          {/* Documents — latest version of each required form for this submission type */}
           {(() => {
-            const relevantUploads = formsToShow.length > 0
-              ? sub.uploads.filter((u) => formsToShow.includes(u.formType))
+            const PROPOSAL_FORMS = ["BW1A", "BW1B", "B1C", "B1D"];
+            const relevantUploads = (sub.submissionType ?? "PROPOSAL") === "PROPOSAL"
+              ? sub.uploads.filter((u) => PROPOSAL_FORMS.includes(u.formType))
               : sub.uploads;
             return relevantUploads.length > 0 ? (
               <FileList uploads={relevantUploads} submissionTitle={sub.title} />
