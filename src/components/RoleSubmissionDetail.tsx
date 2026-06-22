@@ -190,7 +190,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           )}
 
           {/* Action — committee step uses multi-member panel */}
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep && ["EXAM_COMMITTEE", "CO_ADVISOR"].includes(currentStep.role) && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
@@ -199,7 +199,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && (!currentStep || !["EXAM_COMMITTEE", "CO_ADVISOR"].includes(currentStep.role)) && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && (
             <SignatureButton
               submissionId={sub.id}
               formsToShow={formsToShow}
