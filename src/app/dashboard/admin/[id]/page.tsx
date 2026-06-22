@@ -26,6 +26,7 @@ function StepCard({
   assignedName,
   committeeStatus,
   submissionType,
+  displayOrder,
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
@@ -34,6 +35,7 @@ function StepCard({
   assignedName?: string | null;
   committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
   submissionType?: string | null;
+  displayOrder: number;
 }) {
   const [open,   setOpen]   = useState(false);
   const [action, setAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
@@ -51,7 +53,7 @@ function StepCard({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="space-y-0.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-gray-400 uppercase">ขั้นที่ {step.stepOrder}</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase">ขั้นที่ {displayOrder}</span>
             <span className="font-semibold text-gray-800">{getStepName(step.stepOrder, submissionType) || ROLE_LABELS[step.role]}</span>
             {isCurrentStep && (
               <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
@@ -576,8 +578,9 @@ export default function AdminSubmissionDetail() {
 
           {activeTab === "steps" ? (
             <div className="space-y-3">
-              {sub.workflowSteps.map((step, i) => {
-                const prevActedAt = i > 0 ? sub.workflowSteps[i - 1].actedAt : null;
+              {sub.workflowSteps.filter((s) => s.status !== "SKIPPED").map((step, i, visible) => {
+                const allIdx = sub.workflowSteps.indexOf(step);
+                const prevActedAt = allIdx > 0 ? sub.workflowSteps[allIdx - 1].actedAt : null;
                 const stepUploads = sub.uploads.filter((u) => {
                   const t = new Date(u.uploadedAt).getTime();
                   const from = prevActedAt ? new Date(prevActedAt).getTime() : 0;
@@ -613,6 +616,7 @@ export default function AdminSubmissionDetail() {
                     assignedName={assignedName}
                     committeeStatus={committeeStatus}
                     submissionType={sub.submissionType}
+                    displayOrder={i + 1}
                     onOverride={(stepOrder, action, notes) =>
                       adminOverrideStep(sub.id, stepOrder, action, notes)
                     }
