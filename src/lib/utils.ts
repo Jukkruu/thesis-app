@@ -200,13 +200,24 @@ export function downloadMockFile(fileName: string, formLabel: string, submission
 
 export function downloadFile(uploadId: string, fileName: string, formLabel: string, submissionTitle: string, fileUrl?: string | null) {
   if (fileUrl) {
-    const a = document.createElement("a");
-    a.href = fileUrl;
-    a.download = fileName;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Fetch then blob-URL so the browser respects the download attribute
+    // even for cross-origin Supabase Storage URLs.
+    fetch(fileUrl)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(() => {
+        // Fallback: open in new tab if fetch fails (e.g. auth-gated URL)
+        window.open(fileUrl, "_blank");
+      });
     return;
   }
   downloadMockFile(fileName, formLabel, submissionTitle);
