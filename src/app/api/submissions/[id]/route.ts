@@ -399,14 +399,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const hasRejected = updatedSub.workflowSteps.some((s: any) => s.status === "REJECTED");
       await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
 
-      // Notify + email the next PENDING step's responsible person
-      if (decision === "APPROVED") {
-        const nextStep = updatedSub.workflowSteps.find((s: any) => s.status === "PENDING");
-        if (nextStep) {
-          const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
-          await notifyRole(nextStep.role, sub, `ถึงคิวของท่าน: ${stepName}`, "pending");
-          try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/override-next]", e); }
-        }
+      // Notify + email the responsible person of the first PENDING step after the override
+      const nextPending = updatedSub.workflowSteps.find((s: any) => s.status === "PENDING");
+      if (nextPending) {
+        const stepName = getStepName(nextPending.stepOrder, sub.submissionType) || ROLE_LABELS[nextPending.role as keyof typeof ROLE_LABELS];
+        const msg = decision === "APPROVED"
+          ? `ถึงคิวของท่าน: ${stepName}`
+          : `กรุณาดำเนินการอีกครั้ง: ${stepName}`;
+        await notifyRole(nextPending.role, sub, msg, decision === "APPROVED" ? "pending" : "rejected");
+        try { await sendStepEmail({ role: nextPending.role, sub, stepName }); } catch (e) { console.error("[email/override-next]", e); }
       }
     }
 
