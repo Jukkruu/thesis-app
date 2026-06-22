@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, BUCKET } from "@/lib/supabase";
-import { FORM_SHORT } from "@/lib/utils";
+import { FORM_SHORT, getStepName, ROLE_LABELS } from "@/lib/utils";
+import { sendStepEmail } from "@/lib/email";
 import type { FormType } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -50,6 +51,54 @@ export async function POST(req: NextRequest) {
       uploadedById: session.user.id,
     },
   });
+
+  // Auto-advance PROPOSAL step 4 when FINANCE_DOC completes the parallel requirement
+  if (formType === "FINANCE_DOC") {
+    const subWithUploads = await prisma.submission.findUnique({
+      where: { id: submissionId },
+      include: { workflowSteps: { orderBy: { stepOrder: "asc" } }, uploads: true },
+    });
+    if (subWithUploads?.submissionType === "PROPOSAL") {
+      const step4 = subWithUploads.workflowSteps.find(
+        (s: any) => s.stepOrder === 4 && s.status === "PENDING" && s.role === "STUDENT"
+      );
+      if (step4) {
+        const types = new Set(subWithUploads.uploads.map((u: any) => u.formType));
+        if (types.has("B1C") && types.has("B1D") && types.has("FINANCE_DOC")) {
+          const now = new Date();
+          await prisma.workflowStep.update({
+            where: { id: step4.id },
+            data: { status: "APPROVED", actedAt: now, actedByName: session.user.name, actedById: session.user.id },
+          });
+          const nextStep = subWithUploads.workflowSteps.find(
+            (s: any) => s.stepOrder > 4 && s.status === "PENDING"
+          );
+          await prisma.submission.update({
+            where: { id: submissionId },
+            data: { status: nextStep ? "IN_PROGRESS" : "COMPLETED" },
+          });
+          if (nextStep) {
+            let recipientId: string | null = null;
+            if (nextStep.role === "HEAD_EXAM_COMMITTEE") {
+              recipientId = (subWithUploads as any).headCommitteeId ?? null;
+            } else if (nextStep.role === "ADVISOR") {
+              recipientId = (subWithUploads as any).advisorId ?? null;
+            } else {
+              const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
+              recipientId = u?.id ?? null;
+            }
+            if (recipientId) {
+              const stepName = getStepName(nextStep.stepOrder, "PROPOSAL") || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
+              await prisma.notification.create({
+                data: { recipientId, message: `ถึงคิวของท่าน: ${stepName}`, detail: subWithUploads.title, submissionId, type: "pending" },
+              });
+              try { await sendStepEmail({ role: nextStep.role, sub: subWithUploads, stepName }); } catch (e) { console.error("[email/step4-auto]", e); }
+            }
+          }
+        }
+      }
+    }
+  }
 
   return NextResponse.json({ ...upload, uploadedAt: upload.uploadedAt.toISOString() });
 }

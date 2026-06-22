@@ -66,7 +66,7 @@ const FORM_UPLOAD_WARNINGS: Partial<Record<FormType, string>> = {
 
 export default function StudentSubmissionDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission } = useApp();
+  const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission, refresh } = useApp();
   const { showToast } = useToast();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelNote, setCancelNote] = useState("");
@@ -477,7 +477,7 @@ export default function StudentSubmissionDetail() {
                     )}
                   </div>
                   <button
-                    disabled={!allRequiredUploaded || submitting}
+                    disabled={!studentUploaded || submitting}
                     onClick={async () => {
                       setSubmitting(true);
                       try {
@@ -491,17 +491,28 @@ export default function StudentSubmissionDetail() {
                           if (!res.ok) throw new Error(`upload failed: ${ft}`);
                         }
                         setSelectedFiles({});
-                        await approveCurrentStep(sub.id);
-                        const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
-                        showToast(`${lbl} ✓`);
-                      } catch {
-                        showToast("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง", "error");
+                        const res = await fetch(`/api/submissions/${sub.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "approve" }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error ?? "เกิดข้อผิดพลาด");
+                        await refresh();
+                        if (data.waitingForFinance) {
+                          showToast("ส่งเอกสารแล้ว รอเจ้าหน้าที่อัปโหลดเอกสารการเงิน", "info");
+                        } else {
+                          const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
+                          showToast(`${lbl} ✓`);
+                        }
+                      } catch (err: any) {
+                        showToast(err.message ?? "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง", "error");
                       } finally {
                         setSubmitting(false);
                       }
                     }}
                     className={`w-full flex items-center justify-center gap-2 py-3.5 text-white rounded-xl font-semibold transition ${
-                      allRequiredUploaded && !submitting
+                      studentUploaded && !submitting
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-300 cursor-not-allowed"
                     }`}

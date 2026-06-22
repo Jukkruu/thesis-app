@@ -100,8 +100,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Enforce required uploads before certain steps can advance
     {
+      // PROPOSAL step 4: student and admin upload in parallel — only student docs required here;
+      // FINANCE_DOC is checked separately and auto-advances the step when both sides are ready.
       const REQUIRED_UPLOADS: Record<string, Record<number, string[]>> = {
-        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D", "FINANCE_DOC"] },
+        PROPOSAL:       { 1: ["BW1A", "BW1B"], 4: ["B1C", "B1D"] },
         THESIS_DEFENSE: { 1: ["B2", "B3"], 9: ["SIGNED"], 16: ["B4", "THESIS"] },
       };
       const subType = sub.submissionType ?? "PROPOSAL";
@@ -113,6 +115,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           { error: `กรุณาอัปโหลดเอกสารให้ครบก่อน: ${missing.join(", ")}` },
           { status: 400 }
         );
+      }
+      // PROPOSAL step 4 parallel gate: student docs are ready — check if FINANCE_DOC is also done.
+      // If not, acknowledge the student's submission but keep the step PENDING until admin uploads.
+      if ((sub.submissionType ?? "PROPOSAL") === "PROPOSAL" && step.stepOrder === 4) {
+        if (!uploaded.has("FINANCE_DOC")) {
+          const result = await getSub(id);
+          return NextResponse.json({ ...mapSub(result!), waitingForFinance: true });
+        }
       }
     }
 
