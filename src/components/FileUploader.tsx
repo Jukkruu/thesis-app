@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { FormType } from "@/types";
 import { FORM_LABELS, formatBytes, cn } from "@/lib/utils";
-import { Upload, FileText, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { Upload, FileText, CheckCircle2, Loader2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import type { MockUpload } from "@/types";
 
@@ -18,7 +18,6 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
   const { refresh } = useApp();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,22 +47,7 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
     }
   }
 
-  async function handleRemove() {
-    if (!existingUpload) return;
-    setRemoving(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/upload/${existingUpload.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("delete failed");
-      await refresh();
-    } catch {
-      setError("ลบไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
-    } finally {
-      setRemoving(false);
-    }
-  }
-
-  // Already has an uploaded file — show it with remove + re-upload option
+  // Already has an uploaded file — show it with re-upload option
   if (existingUpload && !file) {
     return (
       <div className="border-2 border-green-200 rounded-xl p-4 space-y-3 bg-green-50">
@@ -74,14 +58,6 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
             <p className="text-sm font-medium text-green-800 truncate">{existingUpload.fileName}</p>
             <p className="text-xs text-green-600">{formatBytes(existingUpload.fileSize)}</p>
           </div>
-          <button
-            onClick={handleRemove}
-            disabled={removing}
-            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-          >
-            {removing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            ลบ
-          </button>
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         <button
