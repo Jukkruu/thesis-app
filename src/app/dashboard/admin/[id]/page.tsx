@@ -351,35 +351,19 @@ export default function AdminSubmissionDetail() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              <textarea
-                value={rejectNotes}
-                onChange={(e) => setRejectNotes(e.target.value)}
-                placeholder="เหตุผลการปฏิเสธ (จำเป็น)..."
-                className="w-full border border-red-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (!rejectNotes.trim()) return;
-                    rejectCurrentStep(sub.id, rejectNotes);
-                    setRejectNotes("");
-                    setShowReject(false);
-                  }}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition"
-                >
-                  ยืนยันปฏิเสธ
-                </button>
-                <button
-                  onClick={() => setShowReject(false)}
-                  className="px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition"
-                >
-                  ยกเลิก
-                </button>
-              </div>
-            </div>
+            <RejectForm
+              onConfirm={(notes) => { rejectCurrentStep(sub.id, notes); setShowReject(false); }}
+              onCancel={() => setShowReject(false)}
+            />
           )}
         </div>
+      )}
+
+      {/* Admin can reject at ANY step — shown when it's not admin's own turn */}
+      {!isMyTurn && sub.status === "IN_PROGRESS" && (
+        <AdminRejectAnyStep
+          onConfirm={(notes) => rejectCurrentStep(sub.id, notes)}
+        />
       )}
 
       {/* PROPOSAL step 4: admin must upload FINANCE_DOC while student uploads B1C+B1D */}
@@ -748,6 +732,67 @@ function AdminInfoItem({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs text-gray-400">{label}</p>
       <p className="font-medium text-gray-800 text-sm">{value}</p>
+    </div>
+  );
+}
+
+function RejectForm({ onConfirm, onCancel }: { onConfirm: (notes: string) => void; onCancel: () => void }) {
+  const [notes, setNotes] = useState("");
+  return (
+    <div className="space-y-3">
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="เหตุผลการปฏิเสธ..."
+        autoFocus
+        className="w-full border border-red-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
+      />
+      <div className="flex gap-2">
+        <button
+          disabled={!notes.trim()}
+          onClick={() => onConfirm(notes.trim())}
+          className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          ยืนยันปฏิเสธ
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition"
+        >
+          ยกเลิก
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminRejectAnyStep({ onConfirm }: { onConfirm: (notes: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+          <div>
+            <p className="font-semibold text-red-700">ปฏิเสธคำร้อง</p>
+            <p className="text-xs text-red-500">รีเซ็ตทุกขั้นตอนกลับไปที่ขั้นที่ 1</p>
+          </div>
+        </div>
+        {!open && (
+          <button
+            onClick={() => setOpen(true)}
+            className="px-4 py-2 border-2 border-red-300 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition text-sm"
+          >
+            ปฏิเสธ
+          </button>
+        )}
+      </div>
+      {open && (
+        <RejectForm
+          onConfirm={(notes) => { onConfirm(notes); setOpen(false); }}
+          onCancel={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }
