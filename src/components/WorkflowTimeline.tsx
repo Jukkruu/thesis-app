@@ -101,12 +101,15 @@ export function WorkflowTimeline({
           // For committee steps use committeeActions for per-member status
           const actions: any[] = (step.committeeActions ?? []) as any[];
 
-          // PROPOSAL step 4: admin also uploads FINANCE_DOC
+          // PROPOSAL step 4: parallel uploads — check each party independently
           const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
           const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.role === "ADMIN") ?? null : null;
-          const financeUploaded = showAdminFinanceRow
-            ? (submission?.uploads ?? []).some((u) => u.formType === "FINANCE_DOC")
-            : false;
+          const uploads4 = showAdminFinanceRow ? (submission?.uploads ?? []) : [];
+          const financeUploaded = showAdminFinanceRow && uploads4.some((u) => u.formType === "FINANCE_DOC");
+          // Student's part of step 4 done = B1C + B1D both uploaded (independent of step status)
+          const studentStep4Done = showAdminFinanceRow &&
+            uploads4.some((u) => u.formType === "B1C") &&
+            uploads4.some((u) => u.formType === "B1D");
 
           return (
             <li
@@ -170,6 +173,8 @@ export function WorkflowTimeline({
                         : null;
                       const done = isCommittee
                         ? action?.decision === "APPROVED"
+                        : showAdminFinanceRow
+                        ? studentStep4Done
                         : step.status === "APPROVED";
                       const rejected = isCommittee
                         ? action?.decision === "REJECTED"
@@ -212,11 +217,11 @@ export function WorkflowTimeline({
                 )}
 
                 {showAdminFinanceRow && adminFinanceUser && (
-                  <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-xs">
+                  <div className="mt-1.5 flex items-center gap-2 text-xs">
                     {financeUploaded
                       ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                      : <Clock className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
-                    <span className={`flex-1 ${financeUploaded ? "text-green-700 font-medium" : "text-gray-500"}`}>
+                      : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                    <span className={`flex-1 ${financeUploaded ? "text-green-700 font-medium" : "text-gray-600"}`}>
                       {adminFinanceUser.name}{" "}
                       <span className="text-gray-400 font-normal">(อัปโหลดเอกสารการเงิน)</span>
                     </span>
