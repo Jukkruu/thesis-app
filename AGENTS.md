@@ -31,13 +31,13 @@ FINANCE_EMAIL         # recipient for finance notifications
 ## Key facts
 
 - **All API logic is in `src/app/api/`**. State is server-fetched; client state lives in `AppContext` which polls the API.
-- Two submission types: **PROPOSAL** (9 steps) and **THESIS_DEFENSE** (19 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
+- Two submission types: **PROPOSAL** (10 steps) and **THESIS_DEFENSE** (22 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
 - **Step names**: `PROPOSAL_STEP_NAMES` / `THESIS_STEP_NAMES` in `src/lib/utils.ts`. Always call `getStepName(stepOrder, submissionType)` — never access the maps directly.
-- **EXAM_COMMITTEE steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All members must approve before the step advances.
+- **EXAM_COMMITTEE and CO_ADVISOR steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All assigned members must approve before the step advances. CO_ADVISOR steps are auto-SKIPPED at creation when `coAdvisorIds` is empty.
 - **Required uploads gate**: Before a STUDENT step can advance, the student must upload specific form types. Enforced server-side in `PATCH /api/submissions/[id]` (action `"approve"`) and client-side in the student detail page.
   ```
   PROPOSAL:       step 1 → [BW1A, BW1B],  step 4 → [B1C, B1D, FINANCE_DOC]
-  THESIS_DEFENSE: step 1 → [B2, B3],      step 8 → [SIGNED],   step 14 → [B4, THESIS]
+  THESIS_DEFENSE: step 1 → [B2, B3],      step 9 → [SIGNED],   step 16 → [B4, THESIS]
   ```
   PROPOSAL step 4 requires both student docs AND admin FINANCE_DOC upload before student can advance. Admin uploads FINANCE_DOC via a yellow card shown on the admin panel whenever PROPOSAL step 4 is pending.
 - **Tailwind class names in lookup maps must be whole static strings** (no interpolation).
@@ -75,10 +75,10 @@ Each of the 4 form types (BW1A, BW1B, B1C, B1D) has a single display slot in `Fi
 `RoleSubmissionDetail` computes `formsToShow` from `STEP_SIGN_FORMS` so each role sees only the documents relevant to their step. Passed to both `SignatureButton` and `CommitteeSignPanel`.
 
 ```
-PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]
-THESIS_DEFENSE: 2→[B3]  3→[B2]  4→[B2]  5→[B2]  6→[B2,B3]
-                9→[SIGNED]  10→[SIGNED]  11→[SIGNED]  12→[SIGNED]  13→[SIGNED]
-                15→[B4]  16→[THESIS]  17→[THESIS]  18→[THESIS]  19→[THESIS]
+PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]  10→[B1C,B1D]
+THESIS_DEFENSE: 2→[B3]  3→[B2]  4→[B2]  5→[B2]  6→[B2]  7→[B2,B3]
+                10→[SIGNED]  11→[SIGNED]  12→[SIGNED]  13→[SIGNED]  14→[SIGNED]  15→[SIGNED]
+                17→[B4]  18→[THESIS]  19→[THESIS]  20→[THESIS]  21→[THESIS]  22→[THESIS]
 ```
 
 ### Admin dashboard (`src/app/dashboard/admin/page.tsx`)
@@ -112,6 +112,7 @@ When admin overrides individual steps via `action: "admin_override_step"`, submi
 | Admin | เจ้าหน้าที่ภาควิชา (พี่โบ้) | Approve submissions, relay documents to Faculty, forward docs to Student |
 | Student | นิสิต | Upload documents, assign committee members, track status |
 | Advisor | อาจารย์ที่ปรึกษา | Sign forms, monitor assigned students |
+| Co-Advisor | อาจารย์ที่ปรึกษาร่วม | Signs immediately after Advisor at every Advisor step — **optional**, step auto-SKIPPED when no co-advisors assigned; multiple allowed (sequential like EXAM_COMMITTEE) |
 | Program Chair | ประธานหลักสูตร | Sign at multiple phases |
 | Head Exam Committee | ประธานกรรมการสอบ | Signs before regular committee — assigned per submission by Student |
 | Exam Committee | กรรมการสอบ | Multiple members, sign separately in order — assigned per submission by Student |
@@ -128,9 +129,11 @@ When admin overrides individual steps via `action: "admin_override_step"`, submi
 
 ## Submission fields (from Google Form — source of truth)
 
-**Student info:** ชื่อ-นามสกุล, รหัสนิสิต, หลักสูตร (ป.เอก / ป.โท เครื่องกล / ป.โท CPS), อีเมล์, เบอร์โทร
+**Student info:** ชื่อ-นามสกุล, รหัสนิสิต, หลักสูตร (PHD=วิศวกรรมศาสตรดุษฎีบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_MECH=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_CPS=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาระบบกายภาพที่เชื่อมประสานด้วยเครือข่ายไซเบอร์), อีเมล์, เบอร์โทร
 
-**Committee (all assigned per submission by Student):** Advisor, Head Exam Committee, Exam Committee member/s, Invited Exam Committee
+**Committee (all assigned per submission by Student):** Advisor, Co-Advisor (optional, multiple), Head Exam Committee (**required**), Exam Committee member/s (**required**, at least one), Invited Exam Committee
+
+**Student submit form validation:** ประธานกรรมการสอบ (required), กรรมการสอบ (required ≥1), เบอร์โทรกรรมการภายนอก (NOT required), วันที่สอบ (required), เวลาสอบ (required). A title-confirmation warning box appears before final submit so the student can verify the thesis title is correct.
 
 **Exam logistics:** วันที่สอบ + เวลา, ห้องประชุม (yes/no), ที่จอดรถ (yes/no), เลขทะเบียนรถ
 
@@ -138,7 +141,7 @@ When admin overrides individual steps via `action: "admin_override_step"`, submi
 
 ## Workflow — source of truth
 
-### PROPOSAL (9 steps)
+### PROPOSAL (10 steps)
 
 #### Phase 1 (Steps 1–3): บ.วศ.1ก + บ.วศ.1ข
 | Step | Role | Action |
@@ -147,58 +150,62 @@ When admin overrides individual steps via `action: "admin_override_step"`, submi
 | 2 | ADMIN | Review and approve |
 | 3 | PROGRAM_CHAIR | Sign บ.วศ.1ก → **triggers finance email** |
 
-#### Phase 2 (Steps 4–9): บ.วศ.1ค + บ.วศ.1ง
+#### Phase 2 (Steps 4–10): บ.วศ.1ค + บ.วศ.1ง
 | Step | Role | Action |
 |------|------|--------|
-| 4 | STUDENT | Upload B1C (บ.วศ.1ค) + B1D (บ.วศ.1ง) |
-| 5 | HEAD_EXAM_COMMITTEE | Sign บ.วศ.1ค |
-| 6 | ADVISOR | Sign บ.วศ.1ค |
-| 7 | EXAM_COMMITTEE | All members sign บ.วศ.1ค (all must approve before advancing) |
-| 8 | ADMIN | Verify and approve |
-| 9 | PROGRAM_CHAIR | Sign บ.วศ.1ค + บ.วศ.1ง |
+| 4  | STUDENT | Upload B1C (บ.วศ.1ค) + B1D (บ.วศ.1ง) |
+| 5  | HEAD_EXAM_COMMITTEE | Sign บ.วศ.1ค |
+| 6  | ADVISOR | Sign บ.วศ.1ค |
+| 7  | CO_ADVISOR | Sign บ.วศ.1ค — **auto-SKIPPED if no co-advisors assigned** |
+| 8  | EXAM_COMMITTEE | All members sign บ.วศ.1ค + บ.วศ.1ง (sequential) |
+| 9  | ADMIN | Verify and approve |
+| 10 | PROGRAM_CHAIR | Sign บ.วศ.1ค + บ.วศ.1ง |
 
-If rejected → goes back one step (e.g. step 8 → step 7, step 7 → step 6).
+If rejected → goes back one step (e.g. step 9 → step 8, step 8 → step 7).
 
 ---
 
-### THESIS_DEFENSE (19 steps)
+### THESIS_DEFENSE (22 steps)
 
-#### Phase 3 (Steps 1–5): บ.2 + บ.3
+#### Phase 3 (Steps 1–6): บ.2 + บ.3
 | Step | Role | Action |
 |------|------|--------|
 | 1 | STUDENT | Upload B2 (บ.2) + B3 (บ.3) — **starts PENDING, student must submit** |
 | 2 | EXAM_COMMITTEE | All members sign บ.3 (sequential) |
 | 3 | ADVISOR | Sign บ.2 |
-| 4 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
-| 5 | PROGRAM_CHAIR | Sign บ.2 |
+| 4 | CO_ADVISOR | Sign บ.2 — **auto-SKIPPED if no co-advisors assigned** |
+| 5 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
+| 6 | PROGRAM_CHAIR | Sign บ.2 |
 
-#### Phase 4 (Steps 6–7): Faculty relay
+#### Phase 4 (Steps 7–8): Faculty relay
 | Step | Role | Action |
 |------|------|--------|
-| 6 | ADMIN | Collect B2+B3, send to Faculty, approve to confirm delivery → triggers notify admin for step 7 |
-| 7 | ADMIN | Receive docs back from Faculty, upload (formType: SIGNED × multiple + FINANCE_DOC), forward to Student, then approve → triggers invitation emails |
+| 7 | ADMIN | Collect B2+B3, send to Faculty, approve to confirm delivery → triggers notify admin for step 8 |
+| 8 | ADMIN | Receive docs back from Faculty, upload (formType: SIGNED × multiple), forward to Student, then approve → triggers invitation emails |
 
-Faculty returns: ใบรายงานผลการสอบ, แบบรายงานฯ, invitation letter, แบบประเมิน "วิทยานิพนธ์ดีมาก" (Very Good only). Step 7 requires at least 1 SIGNED upload before admin can approve (server-gated).
+Faculty returns: ใบรายงานผลการสอบ, แบบรายงานฯ, invitation letter, แบบประเมิน "วิทยานิพนธ์ดีมาก" (Very Good only). Step 8 requires at least 1 SIGNED upload before admin can approve (server-gated).
 
-#### Phase 5 (Steps 8–13): Post-defense signing
+#### Phase 5 (Steps 9–15): Post-defense signing
 | Step | Role | Action |
 |------|------|--------|
-| 8  | STUDENT | Fill info and sign แบบรายงานการเสนอผลงานฯ then upload (formType: SIGNED) |
-| 9  | ADVISOR | Sign แบบรายงานฯ + ใบรายงานผลการสอบ |
-| 10 | HEAD_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
-| 11 | EXAM_COMMITTEE | All members sign ใบรายงานผลการสอบ (sequential) |
-| 12 | INVITED_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
-| 13 | PROGRAM_CHAIR | Sign ใบรายงานผลการสอบ |
+| 9  | STUDENT | Fill info and sign แบบรายงานการเสนอผลงานฯ then upload (formType: SIGNED) |
+| 10 | ADVISOR | Sign แบบรายงานฯ + ใบรายงานผลการสอบ |
+| 11 | CO_ADVISOR | Sign ใบรายงานผลการสอบ — **auto-SKIPPED if no co-advisors assigned** |
+| 12 | HEAD_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 13 | EXAM_COMMITTEE | All members sign ใบรายงานผลการสอบ (sequential) |
+| 14 | INVITED_EXAM_COMMITTEE | Sign ใบรายงานผลการสอบ |
+| 15 | PROGRAM_CHAIR | Sign ใบรายงานผลการสอบ |
 
-#### Phase 6 (Steps 14–19): Thesis submission + cover signing
+#### Phase 6 (Steps 16–22): Thesis submission + cover signing
 | Step | Role | Action |
 |------|------|--------|
-| 14 | STUDENT | Upload B4 + THESIS (from e-thesis system, with barcode) |
-| 15 | PROGRAM_CHAIR | Sign บ.4 |
-| 16 | ADVISOR | Sign thesis cover (3 points) |
-| 17 | HEAD_EXAM_COMMITTEE | Sign thesis cover |
-| 18 | EXAM_COMMITTEE | All members sign thesis cover (sequential) |
-| 19 | INVITED_EXAM_COMMITTEE | Sign thesis cover |
+| 16 | STUDENT | Upload B4 + THESIS (from e-thesis system, with barcode) |
+| 17 | PROGRAM_CHAIR | Sign บ.4 |
+| 18 | ADVISOR | Sign thesis cover (3 points) |
+| 19 | CO_ADVISOR | Sign thesis cover — **auto-SKIPPED if no co-advisors assigned** |
+| 20 | HEAD_EXAM_COMMITTEE | Sign thesis cover |
+| 21 | EXAM_COMMITTEE | All members sign thesis cover (sequential) |
+| 22 | INVITED_EXAM_COMMITTEE | Sign thesis cover |
 
 If rejected at any step → goes back one step.
 
@@ -206,8 +213,9 @@ If rejected at any step → goes back one step.
 
 ## Key rules
 - **Sequential only** — no parallel signing
-- **EXAM_COMMITTEE** steps: all `committeeIds` members must approve (tracked via `committeeActions` JSON on `WorkflowStep`)
+- **EXAM_COMMITTEE and CO_ADVISOR** steps: all assigned members must approve (tracked via `committeeActions` JSON on `WorkflowStep`). CO_ADVISOR uses `coAdvisorIds` (DB field `String[]`) the same way EXAM_COMMITTEE uses `committeeIds`.
+- **CO_ADVISOR auto-skip**: when `coAdvisorIds` is empty at submission creation, all CO_ADVISOR steps are created with `status: "SKIPPED"` so they are transparently bypassed.
 - **Finance email** fires at PROPOSAL step 3 (PROGRAM_CHAIR approval) via `POST /api/email/finance`
-- **Admin (พี่โบ้)** relays at THESIS_DEFENSE step 6 — collects B2+B3 from Faculty, receives back (ใบรายงานผล, แบบรายงานฯ, invitation letter), uploads received docs, forwards to student, then approves. Admin panel shows a step-6-specific checklist banner (not generic "ตรวจรับและอนุมัติ").
+- **Admin (พี่โบ้)** relays at THESIS_DEFENSE steps 7–8 — step 7: send B2+B3 to Faculty; step 8: receive back docs (ใบรายงานผล, แบบรายงานฯ, invitation letter), upload, forward to student, then approve → triggers invitation emails. Admin panel shows step-7-specific checklist banner.
 - **Student upload steps** start PENDING; student uploads required files then clicks submit to advance
 - **Rejection** goes back exactly one step — any role can reject, no role restriction

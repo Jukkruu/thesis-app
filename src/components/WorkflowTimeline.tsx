@@ -15,9 +15,10 @@ export function WorkflowTimeline({
   users?: MockUser[];
   submissionType?: string | null;
 }) {
-  const currentOrder = steps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
+  const visibleSteps = steps.filter((s) => s.status !== "SKIPPED");
+  const currentOrder = visibleSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const remainingCount = currentOrder !== null
-    ? steps.filter((s) => s.status === "PENDING" && s.stepOrder > currentOrder).length
+    ? visibleSteps.filter((s) => s.status === "PENDING" && s.stepOrder > currentOrder).length
     : 0;
 
   return (
@@ -28,7 +29,7 @@ export function WorkflowTimeline({
         </p>
       )}
       <ol className="relative border-l-2 border-gray-100 ml-3 space-y-0">
-        {steps.map((step) => {
+        {visibleSteps.map((step, index) => {
           const isCurrent = step.stepOrder === currentOrder;
           const isFuture  = step.status === "PENDING" && !isCurrent;
 
@@ -64,7 +65,7 @@ export function WorkflowTimeline({
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                  <span className="text-xs text-gray-400 font-medium">ขั้นที่ {step.stepOrder}</span>
+                  <span className="text-xs text-gray-400 font-medium">ขั้นที่ {index + 1}</span>
                   <span className={cn("font-semibold", isCurrent ? "text-blue-800" : "text-gray-800")}>
                     {getStepName(step.stepOrder, submissionType) || ROLE_LABELS[step.role]}
                   </span>
