@@ -27,6 +27,7 @@ function StepCard({
   committeeStatus,
   submissionType,
   displayOrder,
+  financeAdminName,
 }: {
   step: MockWorkflowStep;
   isCurrentStep: boolean;
@@ -36,6 +37,7 @@ function StepCard({
   committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
   submissionType?: string | null;
   displayOrder: number;
+  financeAdminName?: string | null;
 }) {
   const [open,    setOpen]    = useState(false);
   const [action,  setAction]  = useState<"APPROVED" | "REJECTED">("APPROVED");
@@ -68,6 +70,12 @@ function StepCard({
             <p className="text-sm text-blue-600 flex items-center gap-1">
               <User className="w-3.5 h-3.5" />
               {assignedName}
+            </p>
+          )}
+          {financeAdminName && (
+            <p className="text-sm text-yellow-700 flex items-center gap-1">
+              <User className="w-3.5 h-3.5" />
+              {financeAdminName} <span className="text-gray-400 text-xs">(อัปโหลดเอกสารการเงิน)</span>
             </p>
           )}
           {step.actedByName && (
@@ -602,6 +610,11 @@ export default function AdminSubmissionDetail() {
 
                 const isFutureStep = step.status === "PENDING" && step.stepOrder !== currentOrd;
 
+                const financeAdminName =
+                  sub.submissionType === "PROPOSAL" && step.stepOrder === 4
+                    ? allUsers.find((u) => u.role === "ADMIN")?.name ?? null
+                    : null;
+
                 return (
                   <StepCard
                     key={step.id}
@@ -612,6 +625,7 @@ export default function AdminSubmissionDetail() {
                     committeeStatus={committeeStatus}
                     submissionType={sub.submissionType}
                     displayOrder={i + 1}
+                    financeAdminName={financeAdminName}
                     onOverride={(stepOrder, action, notes) =>
                       adminOverrideStep(sub.id, stepOrder, action, notes)
                     }
