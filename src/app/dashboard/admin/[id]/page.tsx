@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, downloadFile } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, previewFile } from "@/lib/utils";
 import { MockWorkflowStep, MockUpload } from "@/types";
 import Link from "next/link";
 import {
@@ -100,7 +100,7 @@ function StepCard({
               <FileText className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               <span className="text-xs text-gray-600 truncate flex-1">{FORM_LABELS[u.formType]} — {u.fileName} <span className="text-gray-400">({formatBytes(u.fileSize)})</span></span>
               <button
-                onClick={() => downloadFile(u.id, u.fileName, FORM_LABELS[u.formType], "", u.fileUrl)}
+                onClick={() => previewFile(u.fileUrl, u.fileName)}
                 className="shrink-0 text-xs text-blue-600 hover:underline flex items-center gap-0.5"
               >
                 <Download className="w-3 h-3" />

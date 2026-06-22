@@ -198,6 +198,12 @@ export function downloadMockFile(fileName: string, formLabel: string, submission
   URL.revokeObjectURL(url);
 }
 
+export function previewFile(fileUrl?: string | null, fileName?: string) {
+  if (fileUrl) {
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  }
+}
+
 export function downloadFile(uploadId: string, fileName: string, formLabel: string, submissionTitle: string, fileUrl?: string | null) {
   if (fileUrl) {
     // Fetch then blob-URL so the browser respects the download attribute
