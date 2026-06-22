@@ -609,38 +609,38 @@ export default function NewSubmissionPage() {
             ยืนยัน — {formTitle}
           </button>
         ) : (
-          <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 space-y-4">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl shrink-0">⚠️</span>
-              <div>
-                <p className="font-bold text-amber-800 text-lg">ตรวจสอบข้อมูลให้ถูกต้องก่อนยืนยัน</p>
-                <p className="text-sm text-amber-700 mt-0.5">เมื่อยื่นแล้วข้อมูลไม่สามารถแก้ไขได้โดยนิสิต — กรุณาตรวจสอบให้ถูกต้อง</p>
+          <div className="space-y-3">
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">⚠️</span>
+                <div>
+                  <p className="font-bold text-amber-800 text-lg">ตรวจสอบข้อมูลให้ถูกต้องก่อนยืนยัน</p>
+                  <p className="text-sm text-amber-700 mt-0.5">เมื่อยื่นแล้วข้อมูลไม่สามารถแก้ไขได้โดยนิสิต — กรุณาตรวจสอบให้ถูกต้อง</p>
+                </div>
               </div>
-            </div>
-            <div className="bg-white border border-amber-300 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-400 mb-1">ชื่อวิทยานิพนธ์ที่จะยื่น</p>
-              <p className="font-semibold text-gray-900 text-base leading-snug">{title.trim()}</p>
-            </div>
-            <div className="flex gap-3">
+              <div className="bg-white border border-amber-300 rounded-xl px-4 py-3">
+                <p className="text-xs text-gray-400 mb-1">ชื่อวิทยานิพนธ์ที่จะยื่น</p>
+                <p className="font-semibold text-gray-900 text-base leading-snug">{title.trim()}</p>
+              </div>
               <button
                 type="button"
                 onClick={doSubmit}
                 disabled={submitting}
-                className={`flex-1 py-3 text-white font-semibold rounded-xl transition disabled:opacity-60 ${
+                className={`w-full py-3 text-white font-semibold rounded-xl transition disabled:opacity-60 ${
                   isProposal ? "bg-blue-600 hover:bg-blue-700" : "bg-indigo-600 hover:bg-indigo-700"
                 }`}
               >
                 {submitting ? "กำลังยื่น..." : "ยืนยันยื่นคำร้อง"}
               </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirm(false)}
-                disabled={submitting}
-                className="flex-1 py-3 bg-white border-2 border-amber-300 text-amber-700 font-semibold rounded-xl hover:bg-amber-50 transition disabled:opacity-60"
-              >
-                กลับแก้ไข
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={submitting}
+              className="w-full py-3 bg-white border-2 border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition disabled:opacity-60"
+            >
+              กลับไปแก้ไข
+            </button>
           </div>
         )}
       </form>
