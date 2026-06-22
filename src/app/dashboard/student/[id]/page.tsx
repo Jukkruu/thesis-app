@@ -70,6 +70,8 @@ export default function StudentSubmissionDetail() {
   const { showToast } = useToast();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelNote, setCancelNote] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<Partial<Record<FormType, File>>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -98,7 +100,7 @@ export default function StudentSubmissionDetail() {
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
   const requiredForms = suggested?.forms ?? [];
   const adminRequiredForms = suggested?.adminForms ?? [];
-  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f));
+  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f) || !!selectedFiles[f]);
   const adminUploaded   = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
   const allRequiredUploaded = studentUploaded && adminUploaded;
 
@@ -358,7 +360,7 @@ export default function StudentSubmissionDetail() {
                 </div>
                 <div>
                   <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
-                  <p className="text-xs text-gray-400">เลือกไฟล์ PDF แล้วกดปุ่มอัปโหลด</p>
+                  <p className="text-xs text-gray-400">เลือกไฟล์ PDF แล้วกดปุ่มส่ง</p>
                 </div>
               </div>
 
@@ -371,7 +373,9 @@ export default function StudentSubmissionDetail() {
                     {suggested.multiUpload && <span className="font-normal">(อัปโหลดได้หลายไฟล์)</span>}
                   </p>
                   {suggested.forms.map((ft) => {
-                    const done = uploadedTypes.has(ft);
+                    const alreadyUploaded = uploadedTypes.has(ft);
+                    const fileSelected = !!selectedFiles[ft];
+                    const done = alreadyUploaded || fileSelected;
                     return (
                       <div key={ft} className="flex items-center gap-2">
                         {done
@@ -381,7 +385,7 @@ export default function StudentSubmissionDetail() {
                           {FORM_LABELS[ft]}
                         </span>
                         <span className={`text-xs font-semibold shrink-0 ${done ? "text-green-500" : "text-orange-500"}`}>
-                          {done ? "✓ อัปโหลดแล้ว" : "รอ"}
+                          {alreadyUploaded ? "✓ อัปโหลดแล้ว" : fileSelected ? "✓ เลือกแล้ว" : "รอ"}
                         </span>
                       </div>
                     );
@@ -419,7 +423,22 @@ export default function StudentSubmissionDetail() {
                           {FORM_UPLOAD_WARNINGS[ft]}
                         </p>
                       )}
-                      <FileUploader submissionId={sub.id} formType={ft} existingUpload={existing} />
+                      <FileUploader
+                        submissionId={sub.id}
+                        formType={ft}
+                        existingUpload={existing}
+                        selectedFile={selectedFiles[ft] ?? null}
+                        onFileSelect={(file) =>
+                          setSelectedFiles((prev) => {
+                            if (!file) {
+                              const next = { ...prev };
+                              delete next[ft];
+                              return next;
+                            }
+                            return { ...prev, [ft]: file };
+                          })
+                        }
+                      />
                     </div>
                   );
                 })}
@@ -448,7 +467,7 @@ export default function StudentSubmissionDetail() {
                   <div className="space-y-1.5">
                     <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${studentUploaded ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
                       {studentUploaded ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
-                      {studentUploaded ? "นิสิตอัปโหลดครบแล้ว" : "นิสิตยังอัปโหลดไม่ครบ"}
+                      {studentUploaded ? "เลือกไฟล์ครบแล้ว พร้อมส่ง" : "ยังเลือกไฟล์ไม่ครบ"}
                     </div>
                     {adminRequiredForms.length > 0 && (
                       <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${adminUploaded ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
@@ -458,24 +477,37 @@ export default function StudentSubmissionDetail() {
                     )}
                   </div>
                   <button
-                    disabled={!allRequiredUploaded}
+                    disabled={!allRequiredUploaded || submitting}
                     onClick={async () => {
+                      setSubmitting(true);
                       try {
+                        const toUpload = Object.entries(selectedFiles) as [FormType, File][];
+                        for (const [ft, file] of toUpload) {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("submissionId", sub.id);
+                          formData.append("formType", ft);
+                          const res = await fetch("/api/upload", { method: "POST", body: formData });
+                          if (!res.ok) throw new Error(`upload failed: ${ft}`);
+                        }
+                        setSelectedFiles({});
                         await approveCurrentStep(sub.id);
                         const lbl = SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ส่งเอกสารแล้ว";
                         showToast(`${lbl} ✓`);
                       } catch {
                         showToast("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง", "error");
+                      } finally {
+                        setSubmitting(false);
                       }
                     }}
                     className={`w-full flex items-center justify-center gap-2 py-3.5 text-white rounded-xl font-semibold transition ${
-                      allRequiredUploaded
+                      allRequiredUploaded && !submitting
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-300 cursor-not-allowed"
                     }`}
                   >
-                    <Send className="w-5 h-5" />
-                    {SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร"}
+                    {submitting ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /></> : <Send className="w-5 h-5" />}
+                    {submitting ? "กำลังส่ง..." : (SUBMIT_LABEL[subType]?.[currentStep.stepOrder] ?? "ยืนยันการส่งเอกสาร")}
                   </button>
                 </>
               )}

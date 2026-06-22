@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { FormType } from "@/types";
 import { FORM_LABELS, formatBytes, cn } from "@/lib/utils";
-import { Upload, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileText, CheckCircle2, Loader2, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import type { MockUpload } from "@/types";
 
@@ -12,14 +12,47 @@ interface Props {
   formType: FormType;
   existingUpload?: MockUpload | null;
   onSuccess?: () => void;
+  // Picker mode — parent owns the file, no upload button
+  selectedFile?: File | null;
+  onFileSelect?: (file: File | null) => void;
 }
 
-export function FileUploader({ submissionId, formType, existingUpload, onSuccess }: Props) {
+export function FileUploader({
+  submissionId,
+  formType,
+  existingUpload,
+  onSuccess,
+  selectedFile,
+  onFileSelect,
+}: Props) {
   const { refresh } = useApp();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const pickerMode = onFileSelect !== undefined;
+  const activeFile = pickerMode ? selectedFile : file;
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setError(null);
+    if (pickerMode) {
+      onFileSelect!(f);
+    } else {
+      setFile(f);
+    }
+  }
+
+  function clearFile(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (pickerMode) {
+      onFileSelect!(null);
+    } else {
+      setFile(null);
+    }
+    if (inputRef.current) inputRef.current.value = "";
+  }
 
   async function handleUpload() {
     if (!file) return;
@@ -33,10 +66,8 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
       formData.append("file", file);
       formData.append("submissionId", submissionId);
       formData.append("formType", formType);
-
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error("upload failed");
-
       setFile(null);
       await refresh();
       onSuccess?.();
@@ -47,8 +78,8 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
     }
   }
 
-  // Already has an uploaded file — show it with re-upload option
-  if (existingUpload && !file) {
+  // ── Existing upload (no new file selected) ────────────────────────────────
+  if (existingUpload && !activeFile) {
     return (
       <div className="border-2 border-green-200 rounded-xl p-4 space-y-3 bg-green-50">
         <p className="text-xs font-semibold text-gray-600">{FORM_LABELS[formType]}</p>
@@ -64,20 +95,20 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
           onClick={() => inputRef.current?.click()}
           className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:bg-white transition"
         >
-          อัปโหลดไฟล์ใหม่แทน
+          เปลี่ยนไฟล์
         </button>
         <input
           ref={inputRef}
           type="file"
           accept="application/pdf"
           className="hidden"
-          onChange={(e) => { setFile(e.target.files?.[0] ?? null); setError(null); }}
+          onChange={handleChange}
         />
       </div>
     );
   }
 
-  // No file yet — show uploader
+  // ── Picker / uploader area ────────────────────────────────────────────────
   return (
     <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
       <p className="text-xs font-semibold text-gray-600">{FORM_LABELS[formType]}</p>
@@ -91,7 +122,7 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
       >
         {uploading ? (
           <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
-        ) : file ? (
+        ) : activeFile ? (
           <FileText className="w-7 h-7 text-blue-400" />
         ) : (
           <Upload className="w-7 h-7 text-gray-300" />
@@ -99,30 +130,42 @@ export function FileUploader({ submissionId, formType, existingUpload, onSuccess
         <span className="text-xs text-gray-500 text-center px-2">
           {uploading
             ? "กำลังอัปโหลด..."
-            : file
-            ? `${file.name} (${formatBytes(file.size)})`
+            : activeFile
+            ? `${activeFile.name} (${formatBytes(activeFile.size)})`
             : "คลิกเพื่อเลือกไฟล์ PDF"}
         </span>
       </div>
+
+      {activeFile && (
+        <button
+          onClick={clearFile}
+          className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
+        >
+          <X className="w-3 h-3" /> เลือกไฟล์ใหม่
+        </button>
+      )}
 
       <input
         ref={inputRef}
         type="file"
         accept="application/pdf"
         className="hidden"
-        onChange={(e) => { setFile(e.target.files?.[0] ?? null); setError(null); }}
+        onChange={handleChange}
       />
 
       {error && <p className="text-xs text-red-500">{error}</p>}
 
-      <button
-        onClick={handleUpload}
-        disabled={!file || uploading}
-        className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium disabled:opacity-40 hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
-      >
-        {uploading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {uploading ? "กำลังอัปโหลด..." : "อัปโหลด"}
-      </button>
+      {/* Upload button — only in immediate mode (admin use) */}
+      {!pickerMode && (
+        <button
+          onClick={handleUpload}
+          disabled={!file || uploading}
+          className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium disabled:opacity-40 hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
+        >
+          {uploading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {uploading ? "กำลังอัปโหลด..." : "อัปโหลด"}
+        </button>
+      )}
     </div>
   );
 }
