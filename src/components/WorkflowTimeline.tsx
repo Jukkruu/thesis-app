@@ -1,6 +1,6 @@
 "use client";
 
-import { MockUser, MockWorkflowStep, MockSubmission } from "@/types";
+import { MockUser, MockWorkflowStep, MockSubmission, MockUpload } from "@/types";
 import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { StepStatusBadge } from "./StatusBadge";
 import { CheckCircle2, Clock, XCircle, Circle } from "lucide-react";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 type SubInfo = Pick<MockSubmission,
   "studentId" | "advisorId" | "headCommitteeId" | "coAdvisorIds" |
   "committeeIds" | "invitedCommitteeId" | "invitedProfName"
->;
+> & { uploads?: MockUpload[] };
 
 /** Resolve the list of people assigned to a step: [{ id, name }] */
 function resolveAssignees(
@@ -100,6 +100,13 @@ export function WorkflowTimeline({
 
           // For committee steps use committeeActions for per-member status
           const actions: any[] = (step.committeeActions ?? []) as any[];
+
+          // PROPOSAL step 4: admin also uploads FINANCE_DOC
+          const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
+          const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.role === "ADMIN") ?? null : null;
+          const financeUploaded = showAdminFinanceRow
+            ? (submission?.uploads ?? []).some((u) => u.formType === "FINANCE_DOC")
+            : false;
 
           return (
             <li
@@ -202,6 +209,21 @@ export function WorkflowTimeline({
                   <p className="mt-1.5 text-sm text-gray-600 bg-white border border-gray-100 rounded-lg px-3 py-2">
                     "{step.notes}"
                   </p>
+                )}
+
+                {showAdminFinanceRow && adminFinanceUser && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-xs">
+                    {financeUploaded
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      : <Clock className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                    <span className={`flex-1 ${financeUploaded ? "text-green-700 font-medium" : "text-gray-500"}`}>
+                      {adminFinanceUser.name}{" "}
+                      <span className="text-gray-400 font-normal">(อัปโหลดเอกสารการเงิน)</span>
+                    </span>
+                    <span className={`font-semibold shrink-0 ${financeUploaded ? "text-green-500" : "text-gray-300 italic"}`}>
+                      {financeUploaded ? "✓ อัปโหลดแล้ว" : "ยังไม่ได้ดำเนินการ"}
+                    </span>
+                  </div>
                 )}
               </div>
             </li>
