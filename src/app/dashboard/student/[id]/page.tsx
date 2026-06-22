@@ -98,9 +98,9 @@ export default function StudentSubmissionDetail() {
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
   const requiredForms = suggested?.forms ?? [];
   const adminRequiredForms = suggested?.adminForms ?? [];
-  const allRequiredUploaded =
-    requiredForms.length === 0 ||
-    requiredForms.every((f) => uploadedTypes.has(f));
+  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f));
+  const adminUploaded   = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
+  const allRequiredUploaded = studentUploaded && adminUploaded;
 
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {
@@ -445,15 +445,18 @@ export default function StudentSubmissionDetail() {
               {/* Submit button */}
               {isMyTurn && currentStep && (
                 <>
-                  {allRequiredUploaded ? (
-                    <p className="text-xs text-green-600 text-center bg-green-50 rounded-lg px-3 py-2 font-medium">
-                      ✓ อัปโหลดครบแล้ว — กดส่งได้เลย
-                    </p>
-                  ) : (
-                    <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">
-                      ⚠️ กรุณาอัปโหลดเอกสารที่ยังรอให้ครบก่อน
-                    </p>
-                  )}
+                  <div className="space-y-1.5">
+                    <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${studentUploaded ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                      {studentUploaded ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+                      {studentUploaded ? "นิสิตอัปโหลดครบแล้ว" : "นิสิตยังอัปโหลดไม่ครบ"}
+                    </div>
+                    {adminRequiredForms.length > 0 && (
+                      <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${adminUploaded ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                        {adminUploaded ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <Clock className="w-4 h-4 shrink-0" />}
+                        {adminUploaded ? "เจ้าหน้าที่อัปโหลดเอกสารการเงินแล้ว" : "รอเจ้าหน้าที่อัปโหลดเอกสารการเงิน"}
+                      </div>
+                    )}
+                  </div>
                   <button
                     disabled={!allRequiredUploaded}
                     onClick={async () => {
