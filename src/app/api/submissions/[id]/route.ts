@@ -398,6 +398,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const hasPending  = updatedSub.workflowSteps.some((s: any) => s.status === "PENDING");
       const hasRejected = updatedSub.workflowSteps.some((s: any) => s.status === "REJECTED");
       await prisma.submission.update({ where: { id }, data: { status: hasPending ? "IN_PROGRESS" : hasRejected ? "REJECTED" : "COMPLETED" } });
+
+      // Notify + email the next PENDING step's responsible person
+      if (decision === "APPROVED") {
+        const nextStep = updatedSub.workflowSteps.find((s: any) => s.status === "PENDING");
+        if (nextStep) {
+          const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
+          await notifyRole(nextStep.role, sub, `ถึงคิวของท่าน: ${stepName}`, "pending");
+          try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/override-next]", e); }
+        }
+      }
     }
 
   }
