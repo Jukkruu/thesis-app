@@ -227,7 +227,7 @@ function StepCard({
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, approveCurrentStep, rejectCurrentStep } = useApp();
+  const { user, submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, approveCurrentStep, rejectCurrentStep } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -246,6 +246,11 @@ export default function AdminSubmissionDetail() {
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    router.replace("/dashboard");
+    return null;
+  }
 
   if (!sub) {
     return (

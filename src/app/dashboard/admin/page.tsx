@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -52,6 +53,7 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
 
 export default function AdminDashboard() {
   const { submissions, adminDeleteSubmission, user, users } = useApp();
+  const router = useRouter();
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
@@ -68,6 +70,11 @@ export default function AdminDashboard() {
     COMPLETED:   submissions.filter((s) => s.status === "COMPLETED").length,
     REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
   };
+
+  if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    router.replace("/dashboard");
+    return null;
+  }
 
   const filtered = submissions
     .filter((sub) => {
