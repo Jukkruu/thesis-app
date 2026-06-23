@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, User, Upload,
+  CheckCircle2, XCircle, Clock, User, Upload, MinusCircle,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
@@ -473,7 +473,7 @@ export default function AdminSubmissionDetail() {
 
         {/* Exam appointment info */}
         {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length) && (
-          <div className="border-t border-gray-100 pt-4 space-y-2">
+          <div className="border-t border-gray-100 pt-4 space-y-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลการสอบ</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               {sub.program && (
@@ -497,10 +497,42 @@ export default function AdminSubmissionDetail() {
               {sub.headCommitteeId && (
                 <AdminInfoItem label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
               )}
-              {sub.committeeIds?.map((id, i) => (
-                <AdminInfoItem key={id} label={`กรรมการสอบ ${i + 1}`} value={allUsers.find((u) => u.id === id)?.name ?? id} />
-              ))}
             </div>
+
+            {/* Co-advisor bullet list */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1.5">อาจารย์ที่ปรึกษาร่วม</p>
+              {(sub.coAdvisorIds ?? []).length > 0 ? (
+                <ul className="space-y-1">
+                  {(sub.coAdvisorIds ?? []).map((uid: string) => (
+                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <MinusCircle className="w-4 h-4 shrink-0" />
+                  ไม่มีอาจารย์ที่ปรึกษาร่วม
+                </p>
+              )}
+            </div>
+
+            {/* Exam committee bullet list */}
+            {(sub.committeeIds ?? []).length > 0 && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">กรรมการสอบ</p>
+                <ul className="space-y-1">
+                  {(sub.committeeIds ?? []).map((uid: string) => (
+                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
