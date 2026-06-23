@@ -162,7 +162,9 @@ export function WorkflowTimeline({
                       <p className="text-xs font-medium text-gray-500">
                         ลงนามแล้ว{" "}
                         <span className="font-bold text-gray-700">
-                          {actions.filter((a) => a.decision === "APPROVED").length}/{assignees.length}
+                          {step.status === "APPROVED"
+                            ? assignees.length
+                            : actions.filter((a) => a.decision === "APPROVED").length}/{assignees.length}
                         </span>
                         {" "}ท่าน
                       </p>
@@ -172,7 +174,7 @@ export function WorkflowTimeline({
                         ? actions.find((a) => a.userId === id)
                         : null;
                       const done = isCommittee
-                        ? action?.decision === "APPROVED"
+                        ? action?.decision === "APPROVED" || step.status === "APPROVED"
                         : showAdminFinanceRow
                         ? studentStep4Done
                         : step.status === "APPROVED";
