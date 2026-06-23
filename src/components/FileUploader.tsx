@@ -159,8 +159,8 @@ export function FileUploader({
 
       {error && <p className="text-xs text-red-500">{error}</p>}
 
-      {/* Upload button — only in immediate mode (admin use) */}
-      {!pickerMode && (
+      {/* Upload button — only in immediate mode and only after a file is chosen */}
+      {!pickerMode && file && (
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
