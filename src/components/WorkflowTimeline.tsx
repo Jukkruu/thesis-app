@@ -105,9 +105,8 @@ export function WorkflowTimeline({
           const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
           const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.role === "ADMIN") ?? null : null;
           const uploads4 = showAdminFinanceRow ? (submission?.uploads ?? []) : [];
-          const financeUploaded = showAdminFinanceRow && uploads4.some((u) => u.formType === "FINANCE_DOC");
-          // Student's part of step 4 done = B1C + B1D both uploaded (independent of step status)
-          const studentStep4Done = showAdminFinanceRow &&
+          const financeUploaded = showAdminFinanceRow && step.status === "APPROVED" && uploads4.some((u) => u.formType === "FINANCE_DOC");
+          const studentStep4Done = showAdminFinanceRow && step.status === "APPROVED" &&
             uploads4.some((u) => u.formType === "B1C") &&
             uploads4.some((u) => u.formType === "B1D");
 
