@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useRouter } from "next/navigation";
 import { WorkflowTimeline } from "./WorkflowTimeline";
@@ -30,11 +31,19 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
+  const [thesisResult, setThesisResult] = useState("");
+
   const allUsers    = users;
   const student     = allUsers.find((u) => u.id === sub.studentId);
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn    = currentStep?.role === user?.role;
+
+  const isThesisAdvisorResultStep =
+    sub.submissionType === "THESIS_DEFENSE" &&
+    currentStep?.stepOrder === 10 &&
+    user?.role === "ADVISOR" &&
+    isMyTurn;
 
   // Which form types the current role needs to download and physically sign
   const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
@@ -195,6 +204,46 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             ) : null;
           })()}
 
+          {/* Thesis result selector — ADVISOR at THESIS_DEFENSE step 10 */}
+          {isThesisAdvisorResultStep && (
+            <div className="bg-white border border-purple-200 rounded-2xl p-5 space-y-3">
+              <p className="font-semibold text-gray-800">ผลการสอบวิทยานิพนธ์ <span className="text-red-500">*</span></p>
+              <p className="text-xs text-gray-500">กรุณาเลือกผลการสอบก่อนลงนาม</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "ดีมาก",  label: "ดีมาก",  color: "purple" },
+                  { value: "ดี",     label: "ดี",     color: "blue"   },
+                  { value: "ผ่าน",   label: "ผ่าน",   color: "green"  },
+                  { value: "ไม่ผ่าน",label: "ไม่ผ่าน",color: "red"    },
+                ].map((opt) => {
+                  const selected = thesisResult === opt.value;
+                  const colorMap: Record<string, string> = {
+                    purple: selected ? "border-purple-500 bg-purple-50 text-purple-800" : "border-gray-200 text-gray-600 hover:border-purple-300",
+                    blue:   selected ? "border-blue-500 bg-blue-50 text-blue-800"       : "border-gray-200 text-gray-600 hover:border-blue-300",
+                    green:  selected ? "border-green-500 bg-green-50 text-green-800"    : "border-gray-200 text-gray-600 hover:border-green-300",
+                    red:    selected ? "border-red-500 bg-red-50 text-red-800"          : "border-gray-200 text-gray-600 hover:border-red-300",
+                  };
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setThesisResult(opt.value)}
+                      className={`py-2.5 rounded-xl border-2 font-semibold text-sm transition ${colorMap[opt.color]}`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {thesisResult === "ดีมาก" && (
+                <div className="rounded-xl border border-purple-200 bg-purple-50 px-3 py-2.5">
+                  <p className="text-xs font-semibold text-purple-700">📋 ผล ดีมาก — ต้องอัปโหลดเพิ่มเติม</p>
+                  <p className="text-xs text-purple-600 mt-0.5">กรุณาอัปโหลดแบบประเมินวิทยานิพนธ์ดีมากด้วย (ในขั้นตอนอัปโหลดด้านล่าง)</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Action — committee step uses multi-member panel */}
           {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
             <CommitteeSignPanel
@@ -210,6 +259,13 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
               submissionId={sub.id}
               formsToShow={formsToShow}
               onSuccess={() => router.push(backPath)}
+              notePrefix={isThesisAdvisorResultStep && thesisResult ? `ผลการสอบ: ${thesisResult}` : undefined}
+              requireNotePrefix={isThesisAdvisorResultStep}
+              extraSlots={
+                isThesisAdvisorResultStep && thesisResult === "ดีมาก"
+                  ? [{ slotKey: "SIGNED_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก", formType: "SIGNED" }]
+                  : undefined
+              }
             />
           )}
 

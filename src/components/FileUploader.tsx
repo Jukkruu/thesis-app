@@ -37,6 +37,10 @@ export function FileUploader({
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
     setError(null);
+    if (f) {
+      if (f.type !== "application/pdf") { setError("รับเฉพาะไฟล์ PDF เท่านั้น"); return; }
+      if (f.size > 20 * 1024 * 1024)   { setError("ไฟล์ใหญ่เกิน 20 MB"); return; }
+    }
     if (pickerMode) {
       onFileSelect!(f);
     } else {
@@ -132,7 +136,7 @@ export function FileUploader({
             ? "กำลังอัปโหลด..."
             : activeFile
             ? `${activeFile.name} (${formatBytes(activeFile.size)})`
-            : "คลิกเพื่อเลือกไฟล์ PDF"}
+            : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
         </span>
       </div>
 

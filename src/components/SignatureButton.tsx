@@ -7,14 +7,23 @@ import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download } from "luci
 import { FORM_LABELS, downloadFile } from "@/lib/utils";
 import type { FormType } from "@/types";
 
+interface ExtraSlot {
+  slotKey: string;
+  label: string;
+  formType: string;
+}
+
 interface Props {
   submissionId: string;
   label?: string;
   onSuccess?: () => void;
   formsToShow?: string[];
+  notePrefix?: string;
+  requireNotePrefix?: boolean;
+  extraSlots?: ExtraSlot[];
 }
 
-export function SignatureButton({ submissionId, label = "ส่งต่อ", onSuccess, formsToShow }: Props) {
+export function SignatureButton({ submissionId, label = "ส่งต่อ", onSuccess, formsToShow, notePrefix, requireNotePrefix, extraSlots }: Props) {
   const { approveCurrentStep, rejectCurrentStep, submissions } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
@@ -34,20 +43,26 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
   // Non-SIGNED types upload with their own formType (versions the original file).
   // SIGNED or no formsToShow → single SIGNED slot.
   const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
-  const uploadTargets: string[] = nonSignedForms.length ? nonSignedForms : ["SIGNED"];
+  const baseTargets: string[] = nonSignedForms.length ? nonSignedForms : ["SIGNED"];
+  const uploadTargets: string[] = [
+    ...baseTargets,
+    ...(extraSlots ?? []).map((s) => s.slotKey),
+  ];
   const allFormsUploaded = uploadTargets.every((ft) => uploadedForms.has(ft));
 
-  async function handleUploadForm(formType: string, file: File) {
-    setUploadingForm(formType);
+  async function handleUploadForm(slotKey: string, file: File) {
+    // Extra slots may have a different actual formType than their slot key
+    const actualFormType = extraSlots?.find((s) => s.slotKey === slotKey)?.formType ?? slotKey;
+    setUploadingForm(slotKey);
     setError(null);
     try {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("submissionId", submissionId);
-      fd.append("formType", formType);
+      fd.append("formType", actualFormType);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error("upload failed");
-      setUploadedForms((prev) => new Set([...prev, formType]));
+      setUploadedForms((prev) => new Set([...prev, slotKey]));
     } catch {
       setError("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง");
     } finally {
@@ -56,6 +71,10 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
   }
 
   async function handleApprove() {
+    if (requireNotePrefix && !notePrefix) {
+      setError("กรุณาเลือกผลการสอบวิทยานิพนธ์ก่อน");
+      return;
+    }
     if (!allFormsUploaded) {
       setError("กรุณาอัปโหลดเอกสารที่ลงนามแล้วให้ครบก่อน");
       return;
@@ -63,7 +82,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
     setLoading(true);
     setError(null);
     try {
-      await approveCurrentStep(submissionId, notes || undefined);
+      const combinedNotes = [notePrefix, notes].filter(Boolean).join("\n") || undefined;
+      await approveCurrentStep(submissionId, combinedNotes);
       showToast("อัปโหลดและอนุมัติเรียบร้อยแล้ว ✓");
       onSuccess?.();
     } catch {
@@ -149,7 +169,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
             const isDone      = uploadedForms.has(ft);
             const isUploading = uploadingForm === ft;
             const selected    = fileByForm[ft] ?? null;
-            const label       = FORM_LABELS[ft as FormType] ?? ft;
+            const extraSlot   = extraSlots?.find((s) => s.slotKey === ft);
+            const label       = extraSlot?.label ?? FORM_LABELS[ft as FormType] ?? ft;
 
             return (
               <div key={ft}>

@@ -72,6 +72,8 @@ export default function StudentSubmissionDetail() {
   const [cancelNote, setCancelNote] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<Partial<Record<FormType, File>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [confirmSigns, setConfirmSigns] = useState(false);
+  const [confirmProgram, setConfirmProgram] = useState(false);
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -102,7 +104,13 @@ export default function StudentSubmissionDetail() {
   const adminRequiredForms = suggested?.adminForms ?? [];
   const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f) || !!selectedFiles[f]);
   const adminUploaded   = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
-  const allRequiredUploaded = studentUploaded && adminUploaded;
+
+  const needsSignConfirm   = subType === "THESIS_DEFENSE" && isMyTurn &&
+    (currentStep?.stepOrder === 9 || currentStep?.stepOrder === 16);
+  const needsProgramConfirm = subType === "THESIS_DEFENSE" && isMyTurn && currentStep?.stepOrder === 16;
+  const preSubmitAllChecked = (!needsSignConfirm || confirmSigns) && (!needsProgramConfirm || confirmProgram);
+
+  const allRequiredUploaded = studentUploaded && adminUploaded && preSubmitAllChecked;
 
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {
@@ -460,6 +468,40 @@ export default function StudentSubmissionDetail() {
                   </div>
                 );
               })}
+
+              {/* Pre-submit confirmation checkboxes for THESIS_DEFENSE signing steps */}
+              {needsSignConfirm && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    กรุณาตรวจสอบก่อนส่ง
+                  </p>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={confirmSigns}
+                      onChange={(e) => setConfirmSigns(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0"
+                    />
+                    <span className="text-xs text-amber-800">
+                      ลงนามในเอกสารครบ <strong>3 จุด</strong> เรียบร้อยแล้ว
+                    </span>
+                  </label>
+                  {needsProgramConfirm && (
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={confirmProgram}
+                        onChange={(e) => setConfirmProgram(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0"
+                      />
+                      <span className="text-xs text-amber-800">
+                        ตรวจสอบ<strong>ชื่อหลักสูตร</strong>ในเอกสารถูกต้องแล้ว
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
 
               {/* Submit button */}
               {isMyTurn && currentStep && (
