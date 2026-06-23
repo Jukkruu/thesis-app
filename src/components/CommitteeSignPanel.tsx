@@ -4,8 +4,8 @@ import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
-import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download } from "lucide-react";
-import { FORM_LABELS, FORM_SHORT, downloadFile } from "@/lib/utils";
+import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download, X } from "lucide-react";
+import { FORM_LABELS, FORM_SHORT, downloadFile, formatBytes } from "@/lib/utils";
 import type { FormType } from "@/types";
 
 interface Props {
@@ -200,31 +200,29 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
                 <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
                 อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
               </p>
-              <div
-                onClick={() => fileRef.current?.click()}
-                className={cn(
-                  "flex items-center gap-3 p-3.5 border-2 border-dashed rounded-xl cursor-pointer transition",
-                  signedFile
-                    ? "border-green-300 bg-green-50"
-                    : "border-gray-200 hover:border-blue-400 hover:bg-blue-50"
-                )}
-              >
-                {signedFile ? (
-                  <>
-                    <FileText className="w-5 h-5 text-green-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-green-700 truncate">{signedFile.name}</p>
-                      <p className="text-xs text-green-600">เลือกแล้ว — คลิกเพื่อเปลี่ยน</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5 text-gray-400 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
-                      <p className="text-xs text-gray-400">เอกสารที่ลงนามแล้วเท่านั้น</p>
-                    </div>
-                  </>
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="flex flex-col items-center gap-2 py-5 rounded-lg transition cursor-pointer hover:bg-gray-50"
+                >
+                  {signedFile ? (
+                    <FileText className="w-7 h-7 text-blue-400" />
+                  ) : (
+                    <Upload className="w-7 h-7 text-gray-300" />
+                  )}
+                  <span className="text-xs text-gray-500 text-center px-2">
+                    {signedFile
+                      ? `${signedFile.name} (${formatBytes(signedFile.size)})`
+                      : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
+                  </span>
+                </div>
+                {signedFile && (
+                  <button
+                    onClick={() => { setSignedFile(null); if (fileRef.current) fileRef.current.value = ""; }}
+                    className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> เลือกไฟล์ใหม่
+                  </button>
                 )}
               </div>
               <input

@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
-import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download } from "lucide-react";
-import { FORM_LABELS, downloadFile } from "@/lib/utils";
+import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download, X } from "lucide-react";
+import { FORM_LABELS, downloadFile, formatBytes } from "@/lib/utils";
 import type { FormType } from "@/types";
 
 interface ExtraSlot {
@@ -178,44 +178,45 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
                   <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>
                 )}
 
-                <div
-                  onClick={() => !isDone && !isUploading && fileRefs.current[ft]?.click()}
-                  className={cn(
-                    "flex items-center gap-3 p-4 border-2 border-dashed rounded-xl transition",
-                    isDone
-                      ? "border-green-300 bg-green-50 cursor-default"
-                      : selected
-                      ? "border-blue-300 bg-blue-50 cursor-pointer"
-                      : "border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer"
-                  )}
-                >
-                  {isDone ? (
+                {isDone ? (
+                  <div className="border-2 border-green-200 rounded-xl p-4 bg-green-50 flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                  ) : isUploading ? (
-                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin shrink-0" />
-                  ) : selected ? (
-                    <FileText className="w-5 h-5 text-blue-400 shrink-0" />
-                  ) : (
-                    <Upload className="w-5 h-5 text-gray-400 shrink-0" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    {isDone ? (
-                      <p className="text-sm font-medium text-green-700">อัปโหลดสำเร็จแล้ว</p>
-                    ) : isUploading ? (
-                      <p className="text-sm text-blue-600">กำลังอัปโหลด...</p>
-                    ) : selected ? (
-                      <>
-                        <p className="text-sm font-medium text-gray-700 truncate">{selected.name}</p>
-                        <p className="text-xs text-gray-400">คลิกเพื่อเปลี่ยน</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm font-medium text-gray-600">คลิกเพื่อเลือกไฟล์ PDF</p>
-                        <p className="text-xs text-gray-400">เอกสารที่ลงนามแล้วเท่านั้น</p>
-                      </>
+                    <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จแล้ว</p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
+                    <div
+                      onClick={() => !isUploading && fileRefs.current[ft]?.click()}
+                      className={cn(
+                        "flex flex-col items-center gap-2 py-5 rounded-lg transition",
+                        isUploading ? "bg-gray-50 cursor-wait" : "cursor-pointer hover:bg-gray-50"
+                      )}
+                    >
+                      {isUploading ? (
+                        <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
+                      ) : selected ? (
+                        <FileText className="w-7 h-7 text-blue-400" />
+                      ) : (
+                        <Upload className="w-7 h-7 text-gray-300" />
+                      )}
+                      <span className="text-xs text-gray-500 text-center px-2">
+                        {isUploading
+                          ? "กำลังอัปโหลด..."
+                          : selected
+                          ? `${selected.name} (${formatBytes(selected.size)})`
+                          : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
+                      </span>
+                    </div>
+                    {selected && !isUploading && (
+                      <button
+                        onClick={() => { setFileByForm((prev) => ({ ...prev, [ft]: null })); if (fileRefs.current[ft]) fileRefs.current[ft]!.value = ""; }}
+                        className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
+                      >
+                        <X className="w-3 h-3" /> เลือกไฟล์ใหม่
+                      </button>
                     )}
                   </div>
-                </div>
+                )}
 
                 <input
                   ref={(el) => { fileRefs.current[ft] = el; }}
@@ -229,11 +230,10 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
                   }}
                 />
 
-                {/* Upload button shown when a file is selected and not yet uploaded */}
                 {selected && !isDone && !isUploading && (
                   <button
                     onClick={() => handleUploadForm(ft, selected)}
-                    className="mt-2 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     อัปโหลด{uploadTargets.length > 1 ? ` ${label}` : ""}
