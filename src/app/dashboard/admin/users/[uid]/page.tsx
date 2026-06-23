@@ -129,7 +129,7 @@ export default function AdminUserProfilePage() {
               const advisor     = users.find((u) => u.id === sub.advisorId);
               const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
               const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-              const totalSteps  = sub.workflowSteps.length;
+              const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
 
               // For non-student roles: show which step they are at for this submission
               const myStep = user.role !== "STUDENT" && user.role !== "ADMIN"

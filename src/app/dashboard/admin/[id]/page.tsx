@@ -267,7 +267,7 @@ export default function AdminSubmissionDetail() {
   const advisors   = allUsers.filter((u) => u.role === "ADVISOR");
   const currentOrd = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const doneCount  = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps = sub.workflowSteps.length;
+  const totalSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
 
   function saveEdit() {
     if (!sub || !editTitle.trim()) return;

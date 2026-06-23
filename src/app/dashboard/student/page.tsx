@@ -115,7 +115,7 @@ export default function StudentDashboard() {
             const isMyTurn    = currentStep?.role === "STUDENT";
             const advisor     = users.find((u) => u.id === sub.advisorId);
             const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-            const totalSteps  = sub.workflowSteps.length;
+            const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
 
             const accent =
               sub.status === "COMPLETED"  ? "bg-green-400"

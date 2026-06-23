@@ -73,7 +73,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     ? (STEP_SIGN_FORMS[sub.submissionType ?? "PROPOSAL"]?.[currentStep.stepOrder] ?? [])
     : [];
   const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps  = sub.workflowSteps.length;
+  const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
 
   return (
     <div className="max-w-4xl space-y-6">

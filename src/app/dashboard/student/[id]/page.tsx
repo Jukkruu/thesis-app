@@ -89,7 +89,7 @@ export default function StudentSubmissionDetail() {
   const currentStep  = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn     = currentStep?.role === "STUDENT";
   const doneCount    = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps   = sub.workflowSteps.length;
+  const totalSteps   = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
   const subStatus    = sub.status;
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
