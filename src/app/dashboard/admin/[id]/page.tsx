@@ -611,7 +611,8 @@ export default function AdminSubmissionDetail() {
                   ? (step.committeeMembers?.length ? step.committeeMembers : (step.role === "CO_ADVISOR" ? (sub.coAdvisorIds ?? []) : (sub.committeeIds ?? []))).map((uid) => {
                       const u = allUsers.find((u) => u.id === uid);
                       const action = step.committeeActions?.find((a) => a.userId === uid);
-                      return { name: u?.name ?? uid, signed: !!action, approved: action?.decision === "APPROVED" };
+                      const stepApproved = step.status === "APPROVED";
+                      return { name: u?.name ?? uid, signed: stepApproved || !!action, approved: stepApproved || action?.decision === "APPROVED" };
                     })
                   : undefined;
 
