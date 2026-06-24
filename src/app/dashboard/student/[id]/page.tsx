@@ -12,7 +12,7 @@ import { FormType } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Send, Upload,
-  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2, User, Users,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
@@ -298,7 +298,7 @@ export default function StudentSubmissionDetail() {
           {/* ข้อมูลนิสิต */}
           {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">ข้อมูลนิสิต</p>
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><User className="w-3.5 h-3.5" />ข้อมูลนิสิต</div>
               <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
                 {sub.studentFullName && <InfoField label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
                 {sub.studentCode && <InfoField label="รหัสนิสิต" value={sub.studentCode} />}
@@ -312,7 +312,7 @@ export default function StudentSubmissionDetail() {
           {/* คณะกรรมการ */}
           {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">คณะกรรมการ</p>
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการ</div>
               <div className="space-y-2">
                 {advisor && (
                   <InfoRow label="อาจารย์ที่ปรึกษา" value={advisor.name} />
@@ -356,7 +356,7 @@ export default function StudentSubmissionDetail() {
           {/* กำหนดการสอบ */}
           {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">กำหนดการสอบ</p>
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><CalendarDays className="w-3.5 h-3.5" />กำหนดการสอบ</div>
               <div className="space-y-2">
                 {sub.examDate && (
                   <InfoRow

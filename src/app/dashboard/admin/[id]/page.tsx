@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, User, Upload,
+  CheckCircle2, XCircle, Clock, User, Users, CalendarDays, Upload,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
@@ -478,6 +478,8 @@ export default function AdminSubmissionDetail() {
 
             {/* Student info */}
             {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
+              <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><User className="w-3.5 h-3.5" />ข้อมูลนิสิต</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
                 {sub.studentFullName && <AdminInfoItem label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
                 {sub.studentCode && <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />}
@@ -485,10 +487,13 @@ export default function AdminSubmissionDetail() {
                 {sub.studentEmail && <AdminInfoItem label="อีเมล" value={sub.studentEmail} />}
                 {sub.studentPhone && <AdminInfoItem label="เบอร์โทร" value={sub.studentPhone} />}
               </div>
+              </div>
             )}
 
             {/* Committee */}
             {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
+              <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการ</div>
               <div className="space-y-2">
                 {advisor && <AdminInfoRow label="อาจารย์ที่ปรึกษา" value={advisor.name} />}
                 {sub.headCommitteeId && (
@@ -524,14 +529,18 @@ export default function AdminSubmissionDetail() {
                   </div>
                 )}
               </div>
+              </div>
             )}
 
             {/* Schedule */}
             {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
               <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><CalendarDays className="w-3.5 h-3.5" />กำหนดการสอบ</div>
+              <div className="space-y-2">
                 {sub.examDate && <AdminInfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />}
                 {sub.roomNeeded && <AdminInfoRow label="ห้องประชุม" value="ต้องการ" />}
                 {sub.parkingNeeded && sub.carPlate && <AdminInfoRow label="ทะเบียนรถ" value={sub.carPlate} />}
+              </div>
               </div>
             )}
           </div>
