@@ -293,7 +293,6 @@ export default function StudentSubmissionDetail() {
       {/* Exam / committee info */}
       {(sub.studentFullName || sub.examDate || sub.program || sub.headCommitteeId) && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-5">
-          <h2 className="font-semibold text-gray-700">ข้อมูลการสอบ</h2>
 
           {/* ข้อมูลนิสิต */}
           {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (

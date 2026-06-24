@@ -474,7 +474,6 @@ export default function AdminSubmissionDetail() {
         {/* Exam appointment info */}
         {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentFullName) && (
           <div className="border-t border-gray-100 pt-4 space-y-4">
-            <p className="text-sm text-gray-400">ข้อมูลการสอบ</p>
 
             {/* Student info */}
             {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
