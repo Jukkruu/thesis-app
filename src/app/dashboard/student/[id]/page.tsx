@@ -291,73 +291,39 @@ export default function StudentSubmissionDetail() {
       )}
 
       {/* Exam / committee info */}
-      {(sub.examDate || sub.program || sub.headCommitteeId || sub.studentEmail || sub.studentPhone) && (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
-          <div className="px-5 py-3 bg-gray-50">
-            <h2 className="font-semibold text-gray-800 text-sm">ข้อมูลการสอบ</h2>
+      {(sub.examDate || sub.program || sub.headCommitteeId) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+          <h2 className="font-semibold text-gray-800 text-sm">ข้อมูลการสอบ</h2>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            {sub.program && (
+              <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
+            )}
+            {sub.examDate && (
+              <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
+            )}
+            {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
+            {sub.parkingNeeded && sub.carPlate && (
+              <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
+            )}
+            {sub.headCommitteeId && (
+              <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+            )}
+            {(sub.invitedProfName || sub.invitedCommitteeId) && (
+              <InfoRow
+                label="กรรมการภายนอก"
+                value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
+              />
+            )}
+            {sub.invitedProfAffiliation && (
+              <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />
+            )}
+            {sub.invitedProfEmail && (
+              <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />
+            )}
+            {sub.invitedProfPhone && (
+              <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />
+            )}
           </div>
-
-          {/* Student contact */}
-          {(sub.program || sub.studentEmail || sub.studentPhone) && (
-            <div className="px-5 py-4">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">ข้อมูลนิสิต</p>
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-                {sub.program && <InfoField label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} wide />}
-                {sub.studentPhone && <InfoField label="เบอร์โทร" value={sub.studentPhone} />}
-                {sub.studentEmail && <InfoField label="อีเมล" value={sub.studentEmail} />}
-              </div>
-            </div>
-          )}
-
-          {/* Exam logistics */}
-          {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
-            <div className="px-5 py-4">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">กำหนดการ</p>
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-                {sub.examDate && (
-                  <InfoField
-                    label="วันที่สอบ"
-                    value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`}
-                    highlight
-                  />
-                )}
-                {sub.roomNeeded && <InfoField label="ห้องประชุม" value="ต้องการ" />}
-                {sub.parkingNeeded && sub.carPlate && <InfoField label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />}
-              </div>
-            </div>
-          )}
-
-          {/* Committee */}
-          {(sub.headCommitteeId || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
-            <div className="px-5 py-4">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">คณะกรรมการ</p>
-              <div className="space-y-4">
-                {sub.headCommitteeId && (
-                  <CommitteeRow
-                    label="ประธานกรรมการสอบ"
-                    names={[allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId!]}
-                  />
-                )}
-                {(sub.committeeIds?.length ?? 0) > 0 && (
-                  <CommitteeRow
-                    label="กรรมการสอบ"
-                    names={(sub.committeeIds ?? []).map((id) => allUsers.find((u) => u.id === id)?.name ?? id)}
-                  />
-                )}
-                {(sub.invitedProfName || sub.invitedCommitteeId) && (
-                  <CommitteeRow
-                    label="กรรมการภายนอก"
-                    names={[sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId!]}
-                    meta={[
-                      sub.invitedProfAffiliation ? `สังกัด: ${sub.invitedProfAffiliation}` : null,
-                      sub.invitedProfEmail ? `อีเมล: ${sub.invitedProfEmail}` : null,
-                      sub.invitedProfPhone ? `เบอร์โทร: ${sub.invitedProfPhone}` : null,
-                    ].filter(Boolean) as string[]}
-                  />
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -486,7 +452,7 @@ export default function StudentSubmissionDetail() {
                 })}
 
               {/* Optional remaining forms (not required for this step) */}
-              {isMyTurn && remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => {
+              {remaining.filter((f) => !suggested?.forms.includes(f)).map((ft) => {
                 const existing = sub.uploads
                   .filter((u) => u.formType === ft)
                   .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
@@ -498,22 +464,7 @@ export default function StudentSubmissionDetail() {
                         {FORM_UPLOAD_WARNINGS[ft]}
                       </p>
                     )}
-                    <FileUploader
-                      submissionId={sub.id}
-                      formType={ft}
-                      existingUpload={existing}
-                      selectedFile={selectedFiles[ft] ?? null}
-                      onFileSelect={(file) =>
-                        setSelectedFiles((prev) => {
-                          if (!file) {
-                            const next = { ...prev };
-                            delete next[ft];
-                            return next;
-                          }
-                          return { ...prev, [ft]: file };
-                        })
-                      }
-                    />
+                    <FileUploader submissionId={sub.id} formType={ft} existingUpload={existing} />
                   </div>
                 );
               })}
@@ -670,29 +621,13 @@ export default function StudentSubmissionDetail() {
   );
 }
 
-function InfoField({ label, value, highlight, wide }: { label: string; value: string; highlight?: boolean; wide?: boolean }) {
+function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
-    <div className={wide ? "sm:col-span-2" : ""}>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className={`text-sm font-medium ${highlight ? "text-blue-700" : "text-gray-900"}`}>{value}</p>
-    </div>
-  );
-}
-
-function CommitteeRow({ label, names, meta }: { label: string; names: string[]; meta?: string[] }) {
-  return (
-    <div className="flex gap-4">
-      <p className="text-xs text-gray-400 w-36 shrink-0 pt-0.5 leading-snug">{label}</p>
-      <div className="flex-1 space-y-1">
-        {names.map((name, i) => (
-          <div key={i} className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-1.5" />
-            <span className="text-sm font-medium text-gray-900">{name}</span>
-          </div>
-        ))}
-        {meta?.map((m, i) => (
-          <p key={i} className="text-xs text-gray-500 pl-3.5">{m}</p>
-        ))}
+    <div className="flex items-start gap-2">
+      {icon ?? <span className="w-4 h-4 shrink-0" />}
+      <div>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="font-medium text-gray-800">{value}</p>
       </div>
     </div>
   );

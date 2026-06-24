@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, User, Upload,
+  CheckCircle2, XCircle, Clock, User, Upload, MinusCircle,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
@@ -471,78 +471,104 @@ export default function AdminSubmissionDetail() {
           </div>
         </div>
 
-        {/* Exam / committee info */}
-        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentEmail || sub.studentPhone) && (
-          <div className="border-t border-gray-100 pt-4">
-            <div className="rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
-              <div className="px-4 py-2.5 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ข้อมูลการสอบ</p>
+        {/* Exam appointment info */}
+        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length) && (
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลการสอบ</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              {sub.program && (
+                <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
+              )}
+              {sub.examDate && (
+                <AdminInfoItem label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />
+              )}
+              {sub.studentEmail && (
+                <AdminInfoItem label="อีเมลนิสิต" value={sub.studentEmail} />
+              )}
+              {sub.studentPhone && (
+                <AdminInfoItem label="เบอร์โทรนิสิต" value={sub.studentPhone} />
+              )}
+              {sub.roomNeeded && (
+                <AdminInfoItem label="ห้องประชุม" value="ต้องการ" />
+              )}
+              {sub.parkingNeeded && sub.carPlate && (
+                <AdminInfoItem label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />
+              )}
+              {sub.headCommitteeId && (
+                <AdminInfoItem label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+              )}
+            </div>
+
+            {/* Co-advisor bullet list */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1.5">อาจารย์ที่ปรึกษาร่วม</p>
+              {(sub.coAdvisorIds ?? []).length > 0 ? (
+                <ul className="space-y-1">
+                  {(sub.coAdvisorIds ?? []).map((uid: string) => (
+                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <MinusCircle className="w-4 h-4 shrink-0" />
+                  ไม่มีอาจารย์ที่ปรึกษาร่วม
+                </p>
+              )}
+            </div>
+
+            {/* Exam committee bullet list */}
+            {(sub.committeeIds ?? []).length > 0 && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">กรรมการสอบ</p>
+                <ul className="space-y-1">
+                  {(sub.committeeIds ?? []).map((uid: string) => (
+                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                    </li>
+                  ))}
+                </ul>
               </div>
+            )}
+          </div>
+        )}
 
-              {/* Student contact */}
-              {(sub.program || sub.studentEmail || sub.studentPhone) && (
-                <div className="px-4 py-3">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">ข้อมูลนิสิต</p>
-                  <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
-                    {sub.program && <AdminInfoField label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} wide />}
-                    {sub.studentPhone && <AdminInfoField label="เบอร์โทร" value={sub.studentPhone} />}
-                    {sub.studentEmail && <AdminInfoField label="อีเมล" value={sub.studentEmail} />}
-                  </div>
+        {/* External professor info */}
+        {(sub.invitedProfName || sub.invitedCommitteeId) && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-semibold text-purple-600 uppercase">กรรมการภายนอก (External Committee)</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              {sub.invitedProfName && (
+                <div>
+                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfName}</p>
                 </div>
               )}
-
-              {/* Exam logistics */}
-              {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
-                <div className="px-4 py-3">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">กำหนดการ</p>
-                  <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
-                    {sub.examDate && (
-                      <AdminInfoField
-                        label="วันที่สอบ"
-                        value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`}
-                        highlight
-                      />
-                    )}
-                    {sub.roomNeeded && <AdminInfoField label="ห้องประชุม" value="ต้องการ" />}
-                    {sub.parkingNeeded && sub.carPlate && <AdminInfoField label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />}
-                  </div>
+              {sub.invitedProfAffiliation && (
+                <div>
+                  <p className="text-xs text-purple-400">สังกัด</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfAffiliation}</p>
                 </div>
               )}
-
-              {/* Committee */}
-              {(sub.headCommitteeId || (sub.committeeIds?.length ?? 0) > 0 || (sub.coAdvisorIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
-                <div className="px-4 py-3">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">คณะกรรมการ</p>
-                  <div className="space-y-3.5">
-                    {sub.headCommitteeId && (
-                      <AdminCommitteeRow
-                        label="ประธานกรรมการสอบ"
-                        names={[allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId!]}
-                      />
-                    )}
-                    {(sub.committeeIds?.length ?? 0) > 0 && (
-                      <AdminCommitteeRow
-                        label="กรรมการสอบ"
-                        names={(sub.committeeIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid)}
-                      />
-                    )}
-                    <AdminCommitteeRow
-                      label="อาจารย์ที่ปรึกษาร่วม"
-                      names={(sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid)}
-                      empty="ไม่มี"
-                    />
-                    {(sub.invitedProfName || sub.invitedCommitteeId) && (
-                      <AdminCommitteeRow
-                        label="กรรมการภายนอก"
-                        names={[sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId!]}
-                        meta={[
-                          sub.invitedProfAffiliation ? `สังกัด: ${sub.invitedProfAffiliation}` : null,
-                          sub.invitedProfEmail ? `อีเมล: ${sub.invitedProfEmail}` : null,
-                          sub.invitedProfPhone ? `เบอร์โทร: ${sub.invitedProfPhone}` : null,
-                        ].filter(Boolean) as string[]}
-                      />
-                    )}
-                  </div>
+              {sub.invitedProfEmail && (
+                <div>
+                  <p className="text-xs text-purple-400">อีเมล</p>
+                  <p className="font-medium text-purple-900 break-all">{sub.invitedProfEmail}</p>
+                </div>
+              )}
+              {sub.invitedProfPhone && (
+                <div>
+                  <p className="text-xs text-purple-400">เบอร์โทร</p>
+                  <p className="font-medium text-purple-900">{sub.invitedProfPhone}</p>
+                </div>
+              )}
+              {!sub.invitedProfName && sub.invitedCommitteeId && (
+                <div>
+                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
+                  <p className="font-medium text-purple-900">{allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}</p>
                 </div>
               )}
             </div>
@@ -735,32 +761,11 @@ export default function AdminSubmissionDetail() {
   );
 }
 
-function AdminInfoField({ label, value, highlight, wide }: { label: string; value: string; highlight?: boolean; wide?: boolean }) {
+function AdminInfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className={wide ? "sm:col-span-2" : ""}>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className={`text-sm font-medium ${highlight ? "text-blue-700" : "text-gray-900"}`}>{value}</p>
-    </div>
-  );
-}
-
-function AdminCommitteeRow({ label, names, meta, empty }: { label: string; names: string[]; meta?: string[]; empty?: string }) {
-  return (
-    <div className="flex gap-4">
-      <p className="text-xs text-gray-400 w-36 shrink-0 pt-0.5 leading-snug">{label}</p>
-      <div className="flex-1 space-y-1">
-        {names.length > 0 ? names.map((name, i) => (
-          <div key={i} className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-1.5" />
-            <span className="text-sm font-medium text-gray-900">{name}</span>
-          </div>
-        )) : empty ? (
-          <span className="text-sm text-gray-400">{empty}</span>
-        ) : null}
-        {meta?.map((m, i) => (
-          <p key={i} className="text-xs text-gray-500 pl-3.5">{m}</p>
-        ))}
-      </div>
+    <div>
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="font-medium text-gray-800 text-sm">{value}</p>
     </div>
   );
 }
