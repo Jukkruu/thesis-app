@@ -291,39 +291,89 @@ export default function StudentSubmissionDetail() {
       )}
 
       {/* Exam / committee info */}
-      {(sub.examDate || sub.program || sub.headCommitteeId) && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+      {(sub.studentFullName || sub.examDate || sub.program || sub.headCommitteeId) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
           <h2 className="font-semibold text-gray-800 text-sm">ข้อมูลการสอบ</h2>
-          <div className="grid sm:grid-cols-2 gap-3 text-sm">
-            {sub.program && (
-              <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
-            )}
-            {sub.examDate && (
-              <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
-            )}
-            {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
-            {sub.parkingNeeded && sub.carPlate && (
-              <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
-            )}
-            {sub.headCommitteeId && (
-              <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
-            )}
-            {(sub.invitedProfName || sub.invitedCommitteeId) && (
-              <InfoRow
-                label="กรรมการภายนอก"
-                value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
-              />
-            )}
-            {sub.invitedProfAffiliation && (
-              <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />
-            )}
-            {sub.invitedProfEmail && (
-              <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />
-            )}
-            {sub.invitedProfPhone && (
-              <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />
-            )}
-          </div>
+
+          {/* Student info */}
+          {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลนิสิต</p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                {sub.studentFullName && <InfoRow label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
+                {sub.studentCode && <InfoRow label="รหัสนิสิต" value={sub.studentCode} />}
+                {sub.program && <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
+                {sub.studentEmail && <InfoRow label="อีเมล" value={sub.studentEmail} />}
+                {sub.studentPhone && <InfoRow label="เบอร์โทร" value={sub.studentPhone} />}
+              </div>
+            </div>
+          )}
+
+          {/* Committee */}
+          {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">คณะกรรมการ</p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                {advisor && <InfoRow label="อาจารย์ที่ปรึกษา" value={advisor.name} />}
+                {sub.headCommitteeId && (
+                  <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+                )}
+              </div>
+              {(sub.coAdvisorIds?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">อาจารย์ที่ปรึกษาร่วม</p>
+                  <ul className="space-y-0.5">
+                    {(sub.coAdvisorIds ?? []).map((uid) => (
+                      <li key={uid} className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                        {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {(sub.committeeIds?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">กรรมการสอบ</p>
+                  <ul className="space-y-0.5">
+                    {(sub.committeeIds ?? []).map((uid) => (
+                      <li key={uid} className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                        {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {(sub.invitedProfName || sub.invitedCommitteeId) && (
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <InfoRow
+                    label="กรรมการภายนอก"
+                    value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
+                  />
+                  {sub.invitedProfAffiliation && <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />}
+                  {sub.invitedProfEmail && <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />}
+                  {sub.invitedProfPhone && <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Exam logistics */}
+          {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">กำหนดการสอบ</p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                {sub.examDate && (
+                  <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
+                )}
+                {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
+                {sub.parkingNeeded && sub.carPlate && (
+                  <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

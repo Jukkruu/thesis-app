@@ -472,21 +472,27 @@ export default function AdminSubmissionDetail() {
         </div>
 
         {/* Exam appointment info */}
-        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length) && (
+        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentFullName) && (
           <div className="border-t border-gray-100 pt-4 space-y-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลการสอบ</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              {sub.studentFullName && (
+                <AdminInfoItem label="ชื่อ-นามสกุลนิสิต" value={sub.studentFullName} />
+              )}
+              {sub.studentCode && (
+                <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />
+              )}
               {sub.program && (
                 <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
-              )}
-              {sub.examDate && (
-                <AdminInfoItem label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />
               )}
               {sub.studentEmail && (
                 <AdminInfoItem label="อีเมลนิสิต" value={sub.studentEmail} />
               )}
               {sub.studentPhone && (
                 <AdminInfoItem label="เบอร์โทรนิสิต" value={sub.studentPhone} />
+              )}
+              {sub.examDate && (
+                <AdminInfoItem label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />
               )}
               {sub.roomNeeded && (
                 <AdminInfoItem label="ห้องประชุม" value="ต้องการ" />
