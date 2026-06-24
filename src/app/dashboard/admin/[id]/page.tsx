@@ -11,7 +11,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, User, Upload, MinusCircle,
+  CheckCircle2, XCircle, Clock, User, Upload, CalendarDays,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
@@ -473,110 +473,134 @@ export default function AdminSubmissionDetail() {
 
         {/* Exam appointment info */}
         {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentFullName) && (
-          <div className="border-t border-gray-100 pt-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลการสอบ</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-              {sub.studentFullName && (
-                <AdminInfoItem label="ชื่อ-นามสกุลนิสิต" value={sub.studentFullName} />
-              )}
-              {sub.studentCode && (
-                <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />
-              )}
-              {sub.program && (
-                <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />
-              )}
-              {sub.studentEmail && (
-                <AdminInfoItem label="อีเมลนิสิต" value={sub.studentEmail} />
-              )}
-              {sub.studentPhone && (
-                <AdminInfoItem label="เบอร์โทรนิสิต" value={sub.studentPhone} />
-              )}
-              {sub.examDate && (
-                <AdminInfoItem label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />
-              )}
-              {sub.roomNeeded && (
-                <AdminInfoItem label="ห้องประชุม" value="ต้องการ" />
-              )}
-              {sub.parkingNeeded && sub.carPlate && (
-                <AdminInfoItem label="ที่จอดรถ (ทะเบียน)" value={sub.carPlate} />
-              )}
-              {sub.headCommitteeId && (
-                <AdminInfoItem label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
-              )}
-            </div>
-
-            {/* Co-advisor bullet list */}
-            <div>
-              <p className="text-xs text-gray-400 mb-1.5">อาจารย์ที่ปรึกษาร่วม</p>
-              {(sub.coAdvisorIds ?? []).length > 0 ? (
-                <ul className="space-y-1">
-                  {(sub.coAdvisorIds ?? []).map((uid: string) => (
-                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                      <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="flex items-center gap-1.5 text-sm text-gray-400">
-                  <MinusCircle className="w-4 h-4 shrink-0" />
-                  ไม่มีอาจารย์ที่ปรึกษาร่วม
-                </p>
-              )}
-            </div>
-
-            {/* Exam committee bullet list */}
-            {(sub.committeeIds ?? []).length > 0 && (
-              <div>
-                <p className="text-xs text-gray-400 mb-1.5">กรรมการสอบ</p>
-                <ul className="space-y-1">
-                  {(sub.committeeIds ?? []).map((uid: string) => (
-                    <li key={uid} className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                      <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
-                      {allUsers.find((u) => u.id === uid)?.name ?? uid}
-                    </li>
-                  ))}
-                </ul>
+          <div className="border-t border-gray-100 pt-4">
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-2.5 bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">ข้อมูลการสอบ</p>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* External professor info */}
-        {(sub.invitedProfName || sub.invitedCommitteeId) && (
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
-            <p className="text-xs font-semibold text-purple-600 uppercase">กรรมการภายนอก (External Committee)</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              {sub.invitedProfName && (
-                <div>
-                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
-                  <p className="font-medium text-purple-900">{sub.invitedProfName}</p>
-                </div>
-              )}
-              {sub.invitedProfAffiliation && (
-                <div>
-                  <p className="text-xs text-purple-400">สังกัด</p>
-                  <p className="font-medium text-purple-900">{sub.invitedProfAffiliation}</p>
-                </div>
-              )}
-              {sub.invitedProfEmail && (
-                <div>
-                  <p className="text-xs text-purple-400">อีเมล</p>
-                  <p className="font-medium text-purple-900 break-all">{sub.invitedProfEmail}</p>
-                </div>
-              )}
-              {sub.invitedProfPhone && (
-                <div>
-                  <p className="text-xs text-purple-400">เบอร์โทร</p>
-                  <p className="font-medium text-purple-900">{sub.invitedProfPhone}</p>
-                </div>
-              )}
-              {!sub.invitedProfName && sub.invitedCommitteeId && (
-                <div>
-                  <p className="text-xs text-purple-400">ชื่อ-นามสกุล</p>
-                  <p className="font-medium text-purple-900">{allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}</p>
-                </div>
-              )}
+              <div className="divide-y divide-gray-100">
+                {/* Student info */}
+                {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
+                  <div className="px-4 py-3 space-y-2.5">
+                    <AdminSectionLabel dot="bg-blue-400" label="ข้อมูลนิสิต" />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
+                      {sub.studentFullName && <AdminInfoItem label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
+                      {sub.studentCode && <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />}
+                      {sub.program && <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
+                      {sub.studentEmail && <AdminInfoItem label="อีเมล" value={sub.studentEmail} />}
+                      {sub.studentPhone && <AdminInfoItem label="เบอร์โทร" value={sub.studentPhone} />}
+                    </div>
+                  </div>
+                )}
+
+                {/* Committee */}
+                {(sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0) && (
+                  <div className="px-4 py-3 space-y-2.5">
+                    <AdminSectionLabel dot="bg-purple-400" label="คณะกรรมการ" />
+
+                    {/* Advisor + Head */}
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {advisor && (
+                        <div className="flex items-center gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                          <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center shrink-0 text-blue-700 text-xs font-bold">{advisor.name.slice(-1)}</div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-blue-500 font-medium">อาจารย์ที่ปรึกษา</p>
+                            <p className="text-xs font-semibold text-blue-900 truncate">{advisor.name}</p>
+                          </div>
+                        </div>
+                      )}
+                      {sub.headCommitteeId && (() => {
+                        const name = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId!;
+                        return (
+                          <div className="flex items-center gap-2.5 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2">
+                            <div className="w-7 h-7 rounded-full bg-indigo-200 flex items-center justify-center shrink-0 text-indigo-700 text-xs font-bold">{name.slice(-1)}</div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] text-indigo-500 font-medium">ประธานกรรมการสอบ</p>
+                              <p className="text-xs font-semibold text-indigo-900 truncate">{name}</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Co-advisors chips */}
+                    {(sub.coAdvisorIds?.length ?? 0) > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-400">อาจารย์ที่ปรึกษาร่วม</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(sub.coAdvisorIds ?? []).map((uid: string) => (
+                            <span key={uid} className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                              {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Committee chips */}
+                    {(sub.committeeIds?.length ?? 0) > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-400">กรรมการสอบ <span className="text-gray-300">({sub.committeeIds!.length} คน)</span></p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(sub.committeeIds ?? []).map((uid: string) => (
+                            <span key={uid} className="inline-flex items-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                              {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* External professor */}
+                {(sub.invitedProfName || sub.invitedCommitteeId) && (
+                  <div className="px-4 py-3">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                      <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide">กรรมการภายนอก</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs text-gray-600">
+                        {sub.invitedProfAffiliation && <div><span className="text-gray-400">สังกัด </span><span className="font-medium text-gray-800">{sub.invitedProfAffiliation}</span></div>}
+                        {sub.invitedProfEmail && <div><span className="text-gray-400">อีเมล </span><span className="font-medium text-gray-800">{sub.invitedProfEmail}</span></div>}
+                        {sub.invitedProfPhone && <div><span className="text-gray-400">เบอร์โทร </span><span className="font-medium text-gray-800">{sub.invitedProfPhone}</span></div>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Schedule */}
+                {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
+                  <div className="px-4 py-3 space-y-2.5">
+                    <AdminSectionLabel dot="bg-green-400" label="กำหนดการสอบ" />
+                    {sub.examDate && (
+                      <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-3.5 py-2.5">
+                        <CalendarDays className="w-4 h-4 text-blue-500 shrink-0" />
+                        <div>
+                          <p className="text-[10px] text-blue-500 font-medium">วันที่สอบ</p>
+                          <p className="text-sm font-semibold text-blue-900">{sub.examDate}{sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {sub.roomNeeded && (
+                        <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />ต้องการห้องประชุม
+                        </span>
+                      )}
+                      {sub.parkingNeeded && sub.carPlate && (
+                        <span className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                          ทะเบียนรถ: {sub.carPlate}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -767,11 +791,20 @@ export default function AdminSubmissionDetail() {
   );
 }
 
+function AdminSectionLabel({ dot, label }: { dot: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${dot}`} />
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
 function AdminInfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="font-medium text-gray-800 text-sm">{value}</p>
+      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-gray-900">{value}</p>
     </div>
   );
 }

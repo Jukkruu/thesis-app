@@ -292,88 +292,146 @@ export default function StudentSubmissionDetail() {
 
       {/* Exam / committee info */}
       {(sub.studentFullName || sub.examDate || sub.program || sub.headCommitteeId) && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800 text-sm">ข้อมูลการสอบ</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          {/* Card header */}
+          <div className="px-5 py-4 bg-gradient-to-r from-blue-50 to-white border-b border-gray-100">
+            <h2 className="font-semibold text-gray-800">ข้อมูลการสอบ</h2>
+          </div>
 
-          {/* Student info */}
-          {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ข้อมูลนิสิต</p>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                {sub.studentFullName && <InfoRow label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
-                {sub.studentCode && <InfoRow label="รหัสนิสิต" value={sub.studentCode} />}
-                {sub.program && <InfoRow label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
-                {sub.studentEmail && <InfoRow label="อีเมล" value={sub.studentEmail} />}
-                {sub.studentPhone && <InfoRow label="เบอร์โทร" value={sub.studentPhone} />}
+          <div className="divide-y divide-gray-100">
+            {/* ── ข้อมูลนิสิต ── */}
+            {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
+              <div className="p-5 space-y-3">
+                <InfoSectionLabel dot="bg-blue-400" label="ข้อมูลนิสิต" />
+                <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                  {sub.studentFullName && <InfoField label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
+                  {sub.studentCode && <InfoField label="รหัสนิสิต" value={sub.studentCode} mono />}
+                  {sub.program && <InfoField label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} wide />}
+                  {sub.studentEmail && <InfoField label="อีเมล" value={sub.studentEmail} />}
+                  {sub.studentPhone && <InfoField label="เบอร์โทร" value={sub.studentPhone} />}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Committee */}
-          {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">คณะกรรมการ</p>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                {advisor && <InfoRow label="อาจารย์ที่ปรึกษา" value={advisor.name} />}
-                {sub.headCommitteeId && (
-                  <InfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId} />
+            {/* ── คณะกรรมการ ── */}
+            {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
+              <div className="p-5 space-y-3">
+                <InfoSectionLabel dot="bg-purple-400" label="คณะกรรมการ" />
+
+                {/* Advisor + Head — card style */}
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {advisor && (
+                    <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl px-3.5 py-2.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center shrink-0 text-blue-700 text-xs font-bold">
+                        {advisor.name.slice(-1)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-blue-500 font-medium">อาจารย์ที่ปรึกษา</p>
+                        <p className="text-sm font-semibold text-blue-900 truncate">{advisor.name}</p>
+                      </div>
+                    </div>
+                  )}
+                  {sub.headCommitteeId && (() => {
+                    const name = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId!;
+                    return (
+                      <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-3.5 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center shrink-0 text-indigo-700 text-xs font-bold">
+                          {name.slice(-1)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-indigo-500 font-medium">ประธานกรรมการสอบ</p>
+                          <p className="text-sm font-semibold text-indigo-900 truncate">{name}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Co-advisors */}
+                {(sub.coAdvisorIds?.length ?? 0) > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-gray-400">อาจารย์ที่ปรึกษาร่วม</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(sub.coAdvisorIds ?? []).map((uid) => (
+                        <span key={uid} className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                          {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Committee members */}
+                {(sub.committeeIds?.length ?? 0) > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-gray-400">กรรมการสอบ <span className="text-gray-300">({sub.committeeIds!.length} คน)</span></p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(sub.committeeIds ?? []).map((uid) => (
+                        <span key={uid} className="inline-flex items-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                          {allUsers.find((u) => u.id === uid)?.name ?? uid}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* External committee */}
+                {(sub.invitedProfName || sub.invitedCommitteeId) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2">
+                    <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide">กรรมการภายนอก</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-600">
+                      {sub.invitedProfAffiliation && (
+                        <div><span className="text-gray-400">สังกัด </span><span className="font-medium text-gray-800">{sub.invitedProfAffiliation}</span></div>
+                      )}
+                      {sub.invitedProfEmail && (
+                        <div><span className="text-gray-400">อีเมล </span><span className="font-medium text-gray-800">{sub.invitedProfEmail}</span></div>
+                      )}
+                      {sub.invitedProfPhone && (
+                        <div><span className="text-gray-400">เบอร์โทร </span><span className="font-medium text-gray-800">{sub.invitedProfPhone}</span></div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-              {(sub.coAdvisorIds?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">อาจารย์ที่ปรึกษาร่วม</p>
-                  <ul className="space-y-0.5">
-                    {(sub.coAdvisorIds ?? []).map((uid) => (
-                      <li key={uid} className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                        {allUsers.find((u) => u.id === uid)?.name ?? uid}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(sub.committeeIds?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">กรรมการสอบ</p>
-                  <ul className="space-y-0.5">
-                    {(sub.committeeIds ?? []).map((uid) => (
-                      <li key={uid} className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-                        {allUsers.find((u) => u.id === uid)?.name ?? uid}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(sub.invitedProfName || sub.invitedCommitteeId) && (
-                <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                  <InfoRow
-                    label="กรรมการภายนอก"
-                    value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId ?? ""}
-                  />
-                  {sub.invitedProfAffiliation && <InfoRow label="สังกัดกรรมการภายนอก" value={sub.invitedProfAffiliation} />}
-                  {sub.invitedProfEmail && <InfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />}
-                  {sub.invitedProfPhone && <InfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />}
-                </div>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* Exam logistics */}
-          {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">กำหนดการสอบ</p>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                {sub.examDate && (
-                  <InfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} icon={<CalendarDays className="w-4 h-4 text-blue-400" />} />
-                )}
-                {sub.roomNeeded && <InfoRow label="ห้องประชุม" value="ต้องการ" />}
-                {sub.parkingNeeded && sub.carPlate && (
-                  <InfoRow label="ที่จอดรถ" value={sub.carPlate} icon={<Car className="w-4 h-4 text-gray-400" />} />
-                )}
+            {/* ── กำหนดการสอบ ── */}
+            {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
+              <div className="p-5 space-y-3">
+                <InfoSectionLabel dot="bg-green-400" label="กำหนดการสอบ" />
+                <div className="space-y-2">
+                  {sub.examDate && (
+                    <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                      <CalendarDays className="w-5 h-5 text-blue-500 shrink-0" />
+                      <div>
+                        <p className="text-[11px] text-blue-500 font-medium">วันที่สอบ</p>
+                        <p className="font-semibold text-blue-900 text-sm">{sub.examDate}{sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {sub.roomNeeded && (
+                      <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-800 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                        ต้องการห้องประชุม
+                      </span>
+                    )}
+                    {sub.parkingNeeded && sub.carPlate && (
+                      <span className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <Car className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                        ทะเบียนรถ: {sub.carPlate}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -671,14 +729,20 @@ export default function StudentSubmissionDetail() {
   );
 }
 
-function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function InfoSectionLabel({ dot, label }: { dot: string; label: string }) {
   return (
-    <div className="flex items-start gap-2">
-      {icon ?? <span className="w-4 h-4 shrink-0" />}
-      <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="font-medium text-gray-800">{value}</p>
-      </div>
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${dot}`} />
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+function InfoField({ label, value, mono, wide }: { label: string; value: string; mono?: boolean; wide?: boolean }) {
+  return (
+    <div className={wide ? "sm:col-span-2" : ""}>
+      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+      <p className={`text-sm font-medium text-gray-900 ${mono ? "font-mono tracking-wide" : ""}`}>{value}</p>
     </div>
   );
 }
