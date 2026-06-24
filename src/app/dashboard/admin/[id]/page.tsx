@@ -284,7 +284,7 @@ export default function AdminSubmissionDetail() {
   return (
     <div className="max-w-5xl space-y-5">
       {/* Back */}
-      <Link href="/dashboard/admin" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 font-medium">
+      <Link href="/dashboard/admin" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 font-medium py-2 -my-2">
         <ArrowLeft className="w-5 h-5" />
         ย้อนกลับรายการ
       </Link>
@@ -406,11 +406,11 @@ export default function AdminSubmissionDetail() {
       )}
 
       {/* Header + edit */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-1">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 space-y-4">
+        <div className="flex items-start flex-wrap gap-3">
+          <div className="flex-1 min-w-0 space-y-1">
             {!editMode ? (
-              <h1 className="text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
             ) : (
               <input
                 value={editTitle}
@@ -742,9 +742,9 @@ function AdminInfoItem({ label, value }: { label: string; value: string }) {
 
 function AdminInfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-4">
-      <p className="text-xs text-gray-400 w-32 shrink-0 pt-0.5">{label}</p>
-      <p className="text-sm text-gray-800 flex-1">{value}</p>
+    <div className="flex gap-3">
+      <p className="text-xs text-gray-400 w-24 sm:w-32 shrink-0 pt-0.5">{label}</p>
+      <p className="text-sm text-gray-800 flex-1 break-all">{value}</p>
     </div>
   );
 }

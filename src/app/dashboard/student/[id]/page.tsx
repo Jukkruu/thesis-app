@@ -257,15 +257,15 @@ export default function StudentSubmissionDetail() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <Link href="/dashboard/student" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 font-medium">
+      <Link href="/dashboard/student" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 font-medium py-2 -my-2">
         <ArrowLeft className="w-5 h-5" />
         ย้อนกลับรายการ
       </Link>
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
+        <div className="space-y-1 flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
           {advisor && (
             <p className="text-gray-500 text-sm">
               อาจารย์ที่ปรึกษา: <span className="font-medium text-gray-700">{advisor.name}</span>
@@ -676,9 +676,9 @@ function InfoField({ label, value, wide }: { label: string; value: string; wide?
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-4">
-      <p className="text-xs text-gray-400 w-32 shrink-0 pt-0.5">{label}</p>
-      <p className="text-sm text-gray-800 flex-1">{value}</p>
+    <div className="flex gap-3">
+      <p className="text-xs text-gray-400 w-24 sm:w-32 shrink-0 pt-0.5">{label}</p>
+      <p className="text-sm text-gray-800 flex-1 break-all">{value}</p>
     </div>
   );
 }

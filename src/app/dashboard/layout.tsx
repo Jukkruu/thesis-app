@@ -147,10 +147,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <p className="font-bold text-gray-900 text-sm">ระบบจัดการวิทยานิพนธ์</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-gray-900 text-sm truncate">ระบบจัดการวิทยานิพนธ์</p>
           <p className="text-xs text-blue-600 font-medium">{ROLE_LABELS[user.role]}</p>
         </div>
+        <NotificationBell />
         {pendingCount > 0 && (
           <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
             {pendingCount}
@@ -197,7 +198,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition",
+        "flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition",
         active ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
       )}
     >

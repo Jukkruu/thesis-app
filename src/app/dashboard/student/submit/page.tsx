@@ -373,7 +373,7 @@ export default function NewSubmissionPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Link href="/dashboard/student" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+      <Link href="/dashboard/student" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 py-2 -my-2">
         <ArrowLeft className="w-4 h-4" />
         ย้อนกลับ
       </Link>
@@ -424,7 +424,7 @@ export default function NewSubmissionPage() {
       )}
 
       {/* Form type header */}
-      <div className={`rounded-2xl p-5 flex items-start gap-4 ${isProposal ? "bg-blue-50 border border-blue-200" : "bg-indigo-50 border border-indigo-200"}`}>
+      <div className={`rounded-2xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 ${isProposal ? "bg-blue-50 border border-blue-200" : "bg-indigo-50 border border-indigo-200"}`}>
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isProposal ? "bg-blue-600" : "bg-indigo-600"}`}>
           {isProposal
             ? <BookOpen className="w-5 h-5 text-white" />
@@ -630,7 +630,7 @@ const INPUT = "w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm fo
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 space-y-4">
       <div className="flex items-center gap-2 text-gray-700 font-semibold">
         {icon}
         {title}
