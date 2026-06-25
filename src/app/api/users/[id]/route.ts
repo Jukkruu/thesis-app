@@ -16,14 +16,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const data: any = {};
 
-  if (body.role !== undefined) data.role = body.role;
+  if (body.role !== undefined) {
+    // Only SUPER_ADMIN can grant the SUPER_ADMIN role
+    if (body.role === "SUPER_ADMIN" && session.user.role !== "SUPER_ADMIN")
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    data.role = body.role;
+  }
 
   if (body.password !== undefined) {
     if (session.user.role !== "SUPER_ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (typeof body.password !== "string" || body.password.length < 6)
       return NextResponse.json({ error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, { status: 400 });
-    data.passwordHash = await bcrypt.hash(body.password, 10);
+    data.passwordHash = await bcrypt.hash(body.password, 12);
   }
 
   const user = await prisma.user.update({ where: { id }, data });

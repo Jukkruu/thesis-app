@@ -18,6 +18,38 @@ export async function POST(req: NextRequest) {
   if (!file || !submissionId || !formType)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
+  const ALLOWED_FORM_TYPES = ["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS", "SIGNED", "FINANCE_DOC"];
+  if (!ALLOWED_FORM_TYPES.includes(formType))
+    return NextResponse.json({ error: "Invalid form type" }, { status: 400 });
+
+  const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+  if (file.size > MAX_BYTES)
+    return NextResponse.json({ error: "ไฟล์มีขนาดใหญ่เกิน 20MB" }, { status: 400 });
+
+  // Server-side magic-byte validation — do not trust client-supplied MIME type alone
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const isPdf  = buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46; // %PDF
+  const isJpeg = buffer[0] === 0xFF && buffer[1] === 0xD8;
+  const isPng  = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+  if (!isPdf && !isJpeg && !isPng)
+    return NextResponse.json({ error: "อนุญาตเฉพาะไฟล์ PDF, JPEG หรือ PNG" }, { status: 400 });
+
+  // Verify the caller is involved in this submission (or is an admin/super_admin)
+  const isAdminRole = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  if (!isAdminRole) {
+    const subCheck = await prisma.submission.findUnique({ where: { id: submissionId } });
+    if (!subCheck) return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+    const uid = session.user.id;
+    const involved =
+      subCheck.studentId === uid ||
+      subCheck.advisorId === uid ||
+      (subCheck.coAdvisorIds as string[]).includes(uid) ||
+      (subCheck.committeeIds as string[]).includes(uid) ||
+      subCheck.headCommitteeId === uid ||
+      subCheck.invitedCommitteeId === uid;
+    if (!involved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // SIGNED uploads (committee's own signed copies) keep their original filename — it's already descriptive.
   // All other form types get renamed: e.g. "บ.วศ.1ก_6300001.pdf"
   let displayFileName: string;
@@ -31,7 +63,8 @@ export async function POST(req: NextRequest) {
       : `${shortLabel}.pdf`;
   }
 
-  const path = `${submissionId}/${formType}_${Date.now()}.pdf`;
+  const safeFormType = formType.replace(/[^A-Z0-9_]/g, "");
+  const path = `${submissionId}/${safeFormType}_${Date.now()}.pdf`;
   let fileUrl: string | undefined;
 
   try {

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 503 });
@@ -20,12 +25,17 @@ export async function POST(req: NextRequest) {
 
   const { advisorName, advisorEmail, studentName, studentCode, program, thesisTitle } = body;
 
+  function escapeHtml(s: string | undefined | null): string {
+    if (!s) return "";
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   console.log("[email/advisor] Sending to:", advisorEmail);
 
   const { data, error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
     to: [advisorEmail],
-    subject: `[แจ้งอาจารย์ที่ปรึกษา] ถึงคิวลงนาม — ${thesisTitle}`,
+    subject: `[แจ้งอาจารย์ที่ปรึกษา] ถึงคิวลงนาม — ${escapeHtml(thesisTitle)}`,
     html: `
       <div style="font-family: 'Sarabun', sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <div style="background: linear-gradient(135deg, #7c3aed, #9333ea); border-radius: 12px; padding: 24px; color: white; margin-bottom: 24px;">
@@ -33,25 +43,25 @@ export async function POST(req: NextRequest) {
           <p style="margin: 8px 0 0; opacity: 0.85; font-size: 14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
         </div>
 
-        <p style="color: #374151; font-size: 16px;">เรียน ${advisorName},</p>
+        <p style="color: #374151; font-size: 16px;">เรียน ${escapeHtml(advisorName)},</p>
         <p style="color: #374151;">วิทยานิพนธ์ของนิสิตในความดูแลของท่านผ่านขั้นตอนก่อนหน้าแล้ว กรุณาเข้าสู่ระบบเพื่อตรวจสอบและลงนาม</p>
 
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px;">
           <tr style="background: #f3f4f6;">
             <td style="padding: 10px 14px; font-weight: 600; color: #6b7280; width: 40%;">ชื่อนิสิต</td>
-            <td style="padding: 10px 14px; color: #111827;">${studentName}</td>
+            <td style="padding: 10px 14px; color: #111827;">${escapeHtml(studentName)}</td>
           </tr>
           <tr>
             <td style="padding: 10px 14px; font-weight: 600; color: #6b7280;">รหัสนิสิต</td>
-            <td style="padding: 10px 14px; color: #111827;">${studentCode}</td>
+            <td style="padding: 10px 14px; color: #111827;">${escapeHtml(studentCode)}</td>
           </tr>
           <tr style="background: #f3f4f6;">
             <td style="padding: 10px 14px; font-weight: 600; color: #6b7280;">หลักสูตร</td>
-            <td style="padding: 10px 14px; color: #111827;">${program}</td>
+            <td style="padding: 10px 14px; color: #111827;">${escapeHtml(program)}</td>
           </tr>
           <tr>
             <td style="padding: 10px 14px; font-weight: 600; color: #6b7280;">ชื่อหัวข้อวิทยานิพนธ์</td>
-            <td style="padding: 10px 14px; color: #111827;">${thesisTitle}</td>
+            <td style="padding: 10px 14px; color: #111827;">${escapeHtml(thesisTitle)}</td>
           </tr>
         </table>
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStepName, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
-import { sendStepEmail } from "@/lib/email";
+import { sendStepEmail, sendFinanceEmail } from "@/lib/email";
 
 function mapSub(s: any) {
   return {
@@ -69,6 +69,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const sub = await getSub(id);
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { id: userId, role } = session.user;
+  const isPrivileged = ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(role);
+  const isInvolved =
+    sub.studentId === userId ||
+    sub.advisorId === userId ||
+    (sub.coAdvisorIds as string[]).includes(userId) ||
+    (sub.committeeIds as string[]).includes(userId) ||
+    sub.headCommitteeId === userId ||
+    sub.invitedCommitteeId === userId;
+  if (!isPrivileged && !isInvolved)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   return NextResponse.json(mapSub(sub));
 }
 
@@ -209,30 +222,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             : Promise.resolve([]),
           invitedId ? prisma.user.findUnique({ where: { id: invitedId }, select: { name: true, email: true } }) : null,
         ]);
-        await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/email/finance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            studentName: sub.studentFullName ?? sub.studentId,
-            studentCode: sub.studentCode ?? "-",
-            studentEmail: sub.studentEmail,
-            studentPhone: sub.studentPhone,
-            program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
-            thesisTitle: sub.title,
-            submissionId: id,
-            advisorName: advisorUser?.name,
-            headCommitteeName: headUser?.name,
-            committeeNames: (committeeUsers as { name: string }[]).map((u) => u.name),
-            invitedProfName: (sub as any).invitedProfName ?? invitedUser?.name,
-            invitedProfAffiliation: (sub as any).invitedProfAffiliation,
-            invitedProfEmail: (sub as any).invitedProfEmail ?? invitedUser?.email,
-            invitedProfPhone: (sub as any).invitedProfPhone,
-            examDate: (sub as any).examDate,
-            examTime: (sub as any).examTime,
-            roomNeeded: (sub as any).roomNeeded,
-            parkingNeeded: (sub as any).parkingNeeded,
-            carPlate: (sub as any).carPlate,
-          }),
+        await sendFinanceEmail({
+          studentName: sub.studentFullName ?? sub.studentId ?? "-",
+          studentCode: sub.studentCode ?? "-",
+          studentEmail: sub.studentEmail ?? undefined,
+          studentPhone: sub.studentPhone ?? undefined,
+          program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
+          thesisTitle: sub.title,
+          submissionId: id,
+          advisorName: advisorUser?.name,
+          headCommitteeName: headUser?.name,
+          committeeNames: (committeeUsers as { name: string }[]).map((u) => u.name),
+          invitedProfName: (sub as any).invitedProfName ?? invitedUser?.name,
+          invitedProfAffiliation: (sub as any).invitedProfAffiliation,
+          invitedProfEmail: (sub as any).invitedProfEmail ?? invitedUser?.email,
+          invitedProfPhone: (sub as any).invitedProfPhone,
+          examDate: (sub as any).examDate,
+          examTime: (sub as any).examTime,
+          roomNeeded: (sub as any).roomNeeded,
+          parkingNeeded: (sub as any).parkingNeeded,
+          carPlate: (sub as any).carPlate,
         });
         // Notify admin that finance email was sent
         const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
@@ -257,6 +266,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       : `ส่งกลับโดย ${byLabel}`;
 
     const isAdminReject = role === "ADMIN" || role === "SUPER_ADMIN";
+
+    // Non-admin users must be involved in this submission to reject
+    if (!isAdminReject) {
+      const isInvolved =
+        sub.studentId === userId ||
+        sub.advisorId === userId ||
+        (sub.coAdvisorIds as string[]).includes(userId) ||
+        (sub.committeeIds as string[]).includes(userId) ||
+        sub.headCommitteeId === userId ||
+        sub.invitedCommitteeId === userId;
+      if (!isInvolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     if (isAdminReject) {
       // Admin: reset ALL non-SKIPPED steps from step 1 up to the current pending step

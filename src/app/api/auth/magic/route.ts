@@ -22,11 +22,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // Consume the token — one-time use
+  await prisma.magicToken.delete({ where: { token } }).catch(() => {});
+
   // Build the session JWT matching the NextAuth JWT callback output
   const isSecure = req.url.startsWith("https://");
   const cookieName = isSecure
     ? "__Secure-authjs.session-token"
     : "authjs.session-token";
+
+  const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
   const sessionToken = await encode({
     token: {
@@ -39,10 +44,12 @@ export async function GET(req: NextRequest) {
     },
     secret:  process.env.AUTH_SECRET!,
     salt:    cookieName,
-    maxAge:  30 * 24 * 60 * 60, // 30 days
+    maxAge:  SESSION_MAX_AGE,
   });
 
-  const redirectUrl = new URL(magic.redirectTo, req.url);
+  // Reject absolute redirects to prevent open-redirect attacks
+  const safeRedirect = magic.redirectTo.startsWith("/") ? magic.redirectTo : "/dashboard";
+  const redirectUrl = new URL(safeRedirect, req.url);
   const response = NextResponse.redirect(redirectUrl);
 
   response.cookies.set(cookieName, sessionToken, {
@@ -50,7 +57,7 @@ export async function GET(req: NextRequest) {
     secure:   isSecure,
     sameSite: "lax",
     path:     "/",
-    maxAge:   30 * 24 * 60 * 60,
+    maxAge:   SESSION_MAX_AGE,
   });
 
   return response;
