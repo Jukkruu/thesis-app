@@ -387,19 +387,7 @@ function SummaryCard({ icon, label, value, color, textColor }: {
   );
 }
 
-// Role chip colour map — static Tailwind strings
-const ROLE_CHIP: Partial<Record<Role, string>> = {
-  STUDENT:               "bg-blue-100 text-blue-700",
-  ADMIN:                 "bg-orange-100 text-orange-800",
-  PROGRAM_CHAIR:         "bg-indigo-100 text-indigo-700",
-  ADVISOR:               "bg-violet-100 text-violet-700",
-  CO_ADVISOR:            "bg-fuchsia-100 text-fuchsia-700",
-  HEAD_EXAM_COMMITTEE:   "bg-amber-100 text-amber-700",
-  EXAM_COMMITTEE:        "bg-amber-100 text-amber-700",
-  INVITED_EXAM_COMMITTEE:"bg-pink-100 text-pink-700",
-};
-
-type StepGroup = { stepOrder: number; role: Role; subs: MockSubmission[] };
+type StepGroup = { stepOrder: number; role: Role; count: number };
 
 function buildStepGroups(subs: MockSubmission[]): StepGroup[] {
   const map = new Map<number, StepGroup>();
@@ -407,15 +395,15 @@ function buildStepGroups(subs: MockSubmission[]): StepGroup[] {
     const pending = sub.workflowSteps.find((s) => s.status === "PENDING");
     if (!pending) continue;
     if (!map.has(pending.stepOrder)) {
-      map.set(pending.stepOrder, { stepOrder: pending.stepOrder, role: pending.role as Role, subs: [] });
+      map.set(pending.stepOrder, { stepOrder: pending.stepOrder, role: pending.role as Role, count: 0 });
     }
-    map.get(pending.stepOrder)!.subs.push(sub);
+    map.get(pending.stepOrder)!.count += 1;
   }
   return Array.from(map.values()).sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
 function StepDistributionDashboard({
-  proposalSubs, thesisSubs, users,
+  proposalSubs, thesisSubs,
 }: {
   proposalSubs: MockSubmission[];
   thesisSubs: MockSubmission[];
@@ -429,96 +417,55 @@ function StepDistributionDashboard({
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
         <BarChart2 className="w-5 h-5 text-slate-500" />
-        <h2 className="font-semibold text-gray-800">คำร้องที่รออยู่แต่ละขั้นตอน</h2>
+        <h2 className="font-semibold text-gray-800">สถานะคำร้องตามขั้นตอน</h2>
         <span className="ml-auto text-sm text-gray-400">{total} คำร้องกำลังดำเนินการ</span>
       </div>
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-100">
         {proposalGroups.length > 0 && (
-          <section className="p-5 space-y-2">
-            <div className="flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-blue-500" />
-              <span className="text-sm font-semibold text-blue-700">โครงร่างวิทยานิพนธ์</span>
-              <span className="text-xs text-gray-400 ml-auto">{proposalSubs.length} คำร้อง · 10 ขั้นตอน</span>
-            </div>
+          <div className="px-5 py-4 space-y-2">
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">โครงร่าง · 10 ขั้นตอน</p>
             {proposalGroups.map((g) => (
-              <StepGroupRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" users={users} />
+              <StepRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" />
             ))}
-          </section>
+          </div>
         )}
         {thesisGroups.length > 0 && (
-          <section className="p-5 space-y-2">
-            <div className="flex items-center gap-2 mb-1">
-              <GraduationCap className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-semibold text-purple-700">สอบวิทยานิพนธ์</span>
-              <span className="text-xs text-gray-400 ml-auto">{thesisSubs.length} คำร้อง · 22 ขั้นตอน</span>
-            </div>
+          <div className="px-5 py-4 space-y-2">
+            <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-3">สอบวิทยานิพนธ์ · 22 ขั้นตอน</p>
             {thesisGroups.map((g) => (
-              <StepGroupRow key={g.stepOrder} group={g} totalSteps={22} submissionType="THESIS_DEFENSE" users={users} />
+              <StepRow key={g.stepOrder} group={g} totalSteps={22} submissionType="THESIS_DEFENSE" />
             ))}
-          </section>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function StepGroupRow({ group, totalSteps, submissionType, users }: {
-  group: StepGroup; totalSteps: number; submissionType: string; users: MockUser[];
+function StepRow({ group, totalSteps, submissionType }: {
+  group: StepGroup; totalSteps: number; submissionType: string;
 }) {
   const isAdminStep = group.role === "ADMIN";
-  const chipStyle   = ROLE_CHIP[group.role] ?? "bg-gray-100 text-gray-600";
   const stepName    = getStepName(group.stepOrder, submissionType);
 
   return (
-    <div className={`rounded-xl border px-4 py-3 space-y-2.5 ${
-      isAdminStep ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-gray-50"
+    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${
+      isAdminStep ? "bg-orange-50 border border-orange-200" : "bg-gray-50"
     }`}>
-      {/* Top row: step position + role + admin badge + count */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-mono text-gray-400 shrink-0">
-          ขั้น {group.stepOrder}/{totalSteps}
-        </span>
-        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${chipStyle}`}>
-          {ROLE_EMOJI[group.role]} {ROLE_LABELS[group.role]}
-        </span>
-        {isAdminStep && (
-          <span className="text-xs font-bold text-orange-600 bg-orange-200 px-2 py-0.5 rounded-full shrink-0">
-            รอท่านดำเนินการ
-          </span>
-        )}
-        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-          isAdminStep ? "bg-orange-200 text-orange-800" : "bg-gray-200 text-gray-600"
-        }`}>
-          {group.subs.length} คำร้อง
-        </span>
-      </div>
-
-      {/* Step description */}
-      <p className={`text-sm font-medium leading-snug ${isAdminStep ? "text-orange-900" : "text-gray-700"}`}>
+      <span className={`text-xs font-bold w-14 shrink-0 ${isAdminStep ? "text-orange-500" : "text-gray-400"}`}>
+        ขั้น {group.stepOrder}/{totalSteps}
+      </span>
+      <span className={`flex-1 text-sm truncate ${isAdminStep ? "text-orange-900 font-medium" : "text-gray-700"}`}>
         {stepName}
-      </p>
-
-      {/* Clickable submission chips */}
-      <div className="flex flex-wrap gap-1.5">
-        {group.subs.map((sub) => {
-          const student = users.find((u) => u.id === sub.studentId);
-          return (
-            <Link
-              key={sub.id}
-              href={`/dashboard/admin/${sub.id}`}
-              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition ${
-                isAdminStep
-                  ? "bg-white border-orange-200 text-orange-700 hover:border-orange-400 hover:shadow-sm"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700 hover:shadow-sm"
-              }`}
-            >
-              <User className="w-3 h-3 shrink-0" />
-              <span className="max-w-[160px] truncate">{student?.name ?? "นักศึกษา"}</span>
-              <ChevronRight className="w-3 h-3 shrink-0 opacity-40" />
-            </Link>
-          );
-        })}
-      </div>
+      </span>
+      {isAdminStep && (
+        <span className="text-xs font-semibold text-orange-600 shrink-0">รอท่าน</span>
+      )}
+      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
+        isAdminStep ? "bg-orange-200 text-orange-800" : "bg-gray-200 text-gray-600"
+      }`}>
+        {group.count}
+      </span>
     </div>
   );
 }
