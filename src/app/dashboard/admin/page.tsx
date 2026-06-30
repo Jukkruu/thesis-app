@@ -423,7 +423,10 @@ function StepDistributionDashboard({
       <div className="divide-y divide-gray-100">
         {proposalGroups.length > 0 && (
           <div className="px-5 py-4 space-y-2">
-            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">โครงร่าง · 10 ขั้นตอน</p>
+            <div className="flex items-center mb-1">
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">โครงร่าง · 10 ขั้นตอน</p>
+              <span className="ml-auto text-xs font-semibold text-gray-400">ค้างอยู่</span>
+            </div>
             {proposalGroups.map((g) => (
               <StepRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" />
             ))}
@@ -431,7 +434,10 @@ function StepDistributionDashboard({
         )}
         {thesisGroups.length > 0 && (
           <div className="px-5 py-4 space-y-2">
-            <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-3">สอบวิทยานิพนธ์ · 22 ขั้นตอน</p>
+            <div className="flex items-center mb-1">
+              <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">สอบวิทยานิพนธ์ · 22 ขั้นตอน</p>
+              <span className="ml-auto text-xs font-semibold text-gray-400">ค้างอยู่</span>
+            </div>
             {thesisGroups.map((g) => (
               <StepRow key={g.stepOrder} group={g} totalSteps={22} submissionType="THESIS_DEFENSE" />
             ))}
