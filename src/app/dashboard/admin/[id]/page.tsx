@@ -551,7 +551,7 @@ export default function AdminSubmissionDetail() {
           <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+              style={{ width: `${totalSteps > 0 ? (doneCount / totalSteps) * 100 : 0}%` }}
             />
           </div>
           <span className="text-sm font-medium text-gray-600 shrink-0">{doneCount}/{totalSteps} ขั้น</span>
@@ -591,7 +591,11 @@ export default function AdminSubmissionDetail() {
             <div className="space-y-3">
               {sub.workflowSteps.filter((s) => s.status !== "SKIPPED").map((step, i, visible) => {
                 const allIdx = sub.workflowSteps.indexOf(step);
-                const prevActedAt = allIdx > 0 ? sub.workflowSteps[allIdx - 1].actedAt : null;
+                // Walk backwards skipping SKIPPED steps (which have actedAt: null) to find last real timestamp
+                const prevActedAt = sub.workflowSteps
+                  .slice(0, allIdx)
+                  .reverse()
+                  .find((s) => s.actedAt != null)?.actedAt ?? null;
                 const stepUploads = sub.uploads.filter((u) => {
                   const t = new Date(u.uploadedAt).getTime();
                   const from = prevActedAt ? new Date(prevActedAt).getTime() : 0;
@@ -662,7 +666,7 @@ export default function AdminSubmissionDetail() {
                 <Clock className="w-5 h-5 text-orange-500 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-orange-800">
-                    ขั้นที่ {currentOrd}: {ROLE_LABELS[sub.workflowSteps[currentOrd - 1]?.role]}
+                    ขั้นที่ {currentOrd}: {ROLE_LABELS[sub.workflowSteps.find((s) => s.stepOrder === currentOrd)?.role ?? "ADMIN"]}
                   </p>
                   <p className="text-xs text-orange-600">กำลังรอดำเนินการ</p>
                 </div>

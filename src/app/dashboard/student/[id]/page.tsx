@@ -210,6 +210,18 @@ export default function StudentSubmissionDetail() {
       );
     }
 
+    if (isMyTurn && adminRequiredForms.length > 0 && studentUploaded && !adminUploaded) {
+      return (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 flex items-start gap-4">
+          <Clock className="w-7 h-7 text-orange-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-orange-800 font-bold text-lg">รอเจ้าหน้าที่อัปโหลดเอกสารการเงิน</p>
+            <p className="text-orange-600 text-sm mt-1">ท่านอัปโหลดเอกสารครบแล้ว — กำลังรอเจ้าหน้าที่อัปโหลดเอกสารการเงินก่อนดำเนินการต่อ</p>
+          </div>
+        </div>
+      );
+    }
+
     if (isMyTurn) {
       return (
         <div className="bg-blue-50 border border-blue-300 rounded-2xl p-5 flex items-start gap-4">
@@ -291,7 +303,7 @@ export default function StudentSubmissionDetail() {
       )}
 
       {/* Exam / committee info */}
-      {(sub.studentFullName || sub.examDate || sub.program || sub.headCommitteeId) && (
+      {(sub.studentFullName || sub.examDate || sub.program || sub.headCommitteeId || sub.advisorId || (sub.committeeIds?.length ?? 0) > 0 || (sub.coAdvisorIds?.length ?? 0) > 0 || sub.invitedCommitteeId) && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-5">
 
           {/* ข้อมูลนิสิต */}
@@ -376,7 +388,7 @@ export default function StudentSubmissionDetail() {
         <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all duration-500"
-            style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+            style={{ width: `${totalSteps > 0 ? (doneCount / totalSteps) * 100 : 0}%` }}
           />
         </div>
         <span className="text-sm font-medium text-gray-600 shrink-0">{doneCount}/{totalSteps} ขั้น</span>

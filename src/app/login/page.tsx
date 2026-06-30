@@ -23,11 +23,11 @@ const DEMO_USERS = [
 // ─── Workflow as 5 phases (matches the official process diagram) ───────────────
 
 interface Step { emoji: string; label: string; role: string; }
-interface Phase { no: number; title: string; docs: string[]; steps: Step[]; }
+interface Phase { no: number; title: string; docs: string[]; steps: Step[]; type: "PROPOSAL" | "THESIS"; }
 
 const PHASES: Phase[] = [
   {
-    no: 1, title: "เสนอหัวข้อโครงร่างวิทยานิพนธ์", docs: ["บ.วศ.1ก", "บ.วศ.1ข"],
+    no: 1, title: "เสนอหัวข้อโครงร่างวิทยานิพนธ์", docs: ["บ.วศ.1ก", "บ.วศ.1ข"], type: "PROPOSAL",
     steps: [
       { emoji: "🎓", label: "ยื่นหัวข้อ", role: "นักศึกษา" },
       { emoji: "👨‍🏫", label: "ลงนาม", role: "อาจารย์ที่ปรึกษา" },
@@ -35,7 +35,7 @@ const PHASES: Phase[] = [
     ],
   },
   {
-    no: 2, title: "แต่งตั้งคณะกรรมการสอบ", docs: ["บ.วศ.1ค", "บ.วศ.1ง"],
+    no: 2, title: "แต่งตั้งคณะกรรมการสอบ", docs: ["บ.วศ.1ค", "บ.วศ.1ง"], type: "PROPOSAL",
     steps: [
       { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
       { emoji: "⭐", label: "ลงนาม", role: "ประธานกรรมการสอบ" },
@@ -45,7 +45,7 @@ const PHASES: Phase[] = [
     ],
   },
   {
-    no: 3, title: "ประเมินวิทยานิพนธ์ก่อนสอบ", docs: ["บ.2", "บ.3"],
+    no: 3, title: "ประเมินวิทยานิพนธ์ก่อนสอบ", docs: ["บ.2", "บ.3"], type: "THESIS",
     steps: [
       { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
       { emoji: "📋", label: "ลงนามแยกกัน", role: "กรรมการสอบ" },
@@ -55,14 +55,14 @@ const PHASES: Phase[] = [
     ],
   },
   {
-    no: 4, title: "คณะออกเอกสารสอบ", docs: ["ใบเชิญ", "แบบรายงาน"],
+    no: 4, title: "คณะออกเอกสารสอบ", docs: ["ใบเชิญ", "แบบรายงาน"], type: "THESIS",
     steps: [
       { emoji: "🛡️", label: "รับเอกสารจากคณะ", role: "เจ้าหน้าที่" },
       { emoji: "🎓", label: "รับเอกสาร", role: "นักศึกษา" },
     ],
   },
   {
-    no: 5, title: "ลงนามหลังสอบป้องกัน", docs: ["ใบรายงานผล", "แบบรายงานนำเสนอ"],
+    no: 5, title: "ลงนามหลังสอบป้องกัน", docs: ["ใบรายงานผล", "แบบรายงานนำเสนอ"], type: "THESIS",
     steps: [
       { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
       { emoji: "⭐", label: "ลงนาม", role: "ประธานกรรมการสอบ" },
@@ -229,10 +229,26 @@ export default function LoginPage() {
           </div>
 
           <ol className="relative max-w-2xl mx-auto">
+            {/* PROPOSAL section header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">คำร้องโครงร่าง (PROPOSAL)</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
             {PHASES.map((phase, pi) => {
               const t = PHASE_THEME[pi];
+              const prevType = pi > 0 ? PHASES[pi - 1].type : null;
+              const showDivider = prevType !== null && prevType !== phase.type;
               return (
                 <li key={phase.no} className="relative flex gap-4 sm:gap-6">
+                  {/* Section divider between PROPOSAL and THESIS */}
+                  {showDivider && (
+                    <div className="absolute -top-4 left-0 right-0 flex items-center gap-3">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">คำร้องสอบวิทยานิพนธ์ (THESIS DEFENSE)</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+                  )}
                   {/* Left rail: node + connector */}
                   <div className="flex flex-col items-center">
                     <div className={`relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${t.grad} flex items-center justify-center shadow-lg text-white font-bold text-xl shrink-0`}>
@@ -242,10 +258,13 @@ export default function LoginPage() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 pb-8 min-w-0">
+                  <div className={`flex-1 min-w-0 ${showDivider ? "pt-4 pb-8" : "pb-8"}`}>
                     {/* Eyebrow + doc badges */}
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       <span className={`text-xs font-bold uppercase tracking-wide ${t.text}`}>ระยะที่ {phase.no}</span>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
+                        {phase.type === "PROPOSAL" ? "PROPOSAL" : "THESIS DEFENSE"}
+                      </span>
                       {phase.docs.map((d) => (
                         <span key={d} className={`text-xs font-medium px-2 py-0.5 rounded-md ${t.chip}`}>
                           {d}
