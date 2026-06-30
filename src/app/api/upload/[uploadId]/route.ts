@@ -11,6 +11,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const upload = await prisma.formUpload.findUnique({ where: { id: uploadId } });
   if (!upload) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const { id: userId, role } = session.user;
+  const isPrivileged = ["ADMIN", "SUPER_ADMIN"].includes(role);
+  if (!isPrivileged && upload.uploadedById !== userId)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   if (upload.fileUrl) {
     try {
       const url = new URL(upload.fileUrl);

@@ -58,17 +58,19 @@ export default function AdminDashboard() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [statusFilter,  setStatusFilter]  = useState<SubmissionStatus | "ALL">("ALL");
   const [search,        setSearch]        = useState("");
+  const [typeFilter,    setTypeFilter]    = useState<"ALL" | "PROPOSAL" | "THESIS_DEFENSE">("ALL");
 
-  const inProgress         = submissions.filter((s) => s.status === "IN_PROGRESS");
+  const typeSubs           = typeFilter === "ALL" ? submissions : submissions.filter((s) => s.submissionType === typeFilter);
+  const inProgress         = typeSubs.filter((s) => s.status === "IN_PROGRESS");
   const needsMe            = inProgress.filter((s) => s.workflowSteps.find((w) => w.status === "PENDING")?.role === "ADMIN");
   const proposalInProgress = inProgress.filter((s) => s.submissionType === "PROPOSAL");
   const thesisInProgress   = inProgress.filter((s) => s.submissionType === "THESIS_DEFENSE");
 
   const counts = {
-    ALL:         submissions.length,
+    ALL:         typeSubs.length,
     IN_PROGRESS: inProgress.length,
-    COMPLETED:   submissions.filter((s) => s.status === "COMPLETED").length,
-    REJECTED:    submissions.filter((s) => s.status === "REJECTED").length,
+    COMPLETED:   typeSubs.filter((s) => s.status === "COMPLETED").length,
+    REJECTED:    typeSubs.filter((s) => s.status === "REJECTED").length,
   };
 
   if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
@@ -76,7 +78,7 @@ export default function AdminDashboard() {
     return null;
   }
 
-  const filtered = submissions
+  const filtered = typeSubs
     .filter((sub) => {
       if (statusFilter !== "ALL" && sub.status !== statusFilter) return false;
       if (search) {
@@ -163,6 +165,28 @@ export default function AdminDashboard() {
 
       {/* Search + status tabs */}
       <div className="space-y-3">
+        {/* Type filter pills */}
+        <div className="flex gap-2">
+          {(
+            [
+              { label: "ทุกประเภท",        value: "ALL",            icon: null,                                           activeClass: "bg-gray-700 text-white" },
+              { label: "โครงร่าง",          value: "PROPOSAL",       icon: <BookOpen className="w-3.5 h-3.5" />,          activeClass: "bg-blue-600 text-white" },
+              { label: "สอบวิทยานิพนธ์",   value: "THESIS_DEFENSE", icon: <GraduationCap className="w-3.5 h-3.5" />,     activeClass: "bg-indigo-600 text-white" },
+            ] as const
+          ).map(({ label, value, icon, activeClass }) => (
+            <button
+              key={value}
+              onClick={() => { setTypeFilter(value); setStatusFilter("ALL"); }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition ${
+                typeFilter === value ? activeClass : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="relative">
           <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 pointer-events-none" />
           <input
