@@ -75,9 +75,12 @@ export function NotificationBell() {
     else if (user.role === "ADMIN") router.push(`/dashboard/admin/${notif.submissionId}`);
     else {
       const seg = {
-        ADVISOR: "advisor", PROGRAM_CHAIR: "program-chair", EXAM_COMMITTEE: "exam-committee",
+        ADVISOR: "advisor", CO_ADVISOR: "co-advisor", PROGRAM_CHAIR: "program-chair",
+        HEAD_EXAM_COMMITTEE: "head-exam-committee", EXAM_COMMITTEE: "exam-committee",
+        INVITED_EXAM_COMMITTEE: "invited-exam-committee",
         DEPT_STAFF: "dept-staff", FACULTY_DEAN: "faculty-dean", GRADUATE_SCHOOL: "graduate-school",
-      }[user.role as string] ?? "";
+        SUPER_ADMIN: "admin",
+      }[user.role as string] ?? "admin";
       router.push(`/dashboard/${seg}/${notif.submissionId}`);
     }
   }

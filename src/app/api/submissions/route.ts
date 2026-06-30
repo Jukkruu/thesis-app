@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// PROPOSAL: 10 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
+// PROPOSAL: 11 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
   "STUDENT",               // 1  upload BW1A + BW1B
   "ADMIN",                 // 2  approve
@@ -11,9 +11,10 @@ const PROPOSAL_ROLES = [
   "HEAD_EXAM_COMMITTEE",   // 5  sign B1C
   "ADVISOR",               // 6  sign B1C
   "CO_ADVISOR",            // 7  sign B1C (sequential, skipped if no co-advisors)
-  "EXAM_COMMITTEE",        // 8  sign B1C (all members)
-  "ADMIN",                 // 9  approve
-  "PROGRAM_CHAIR",         // 10 sign B1C + B1D
+  "INVITED_EXAM_COMMITTEE",// 8  sign B1C
+  "EXAM_COMMITTEE",        // 9  sign B1C + B1D (all members)
+  "ADMIN",                 // 10 approve
+  "PROGRAM_CHAIR",         // 11 sign B1C + B1D
 ] as const;
 
 // THESIS_DEFENSE: 22 steps — บ.2/3 through thesis cover signing
@@ -121,7 +122,10 @@ export async function POST(req: NextRequest) {
         create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,
           role,
-          status: role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length ? "SKIPPED" : "PENDING",
+          status:
+            (role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length) ||
+            (role === "INVITED_EXAM_COMMITTEE" && !data.invitedCommitteeId)
+              ? "SKIPPED" : "PENDING",
           committeeMembers:
             role === "EXAM_COMMITTEE" ? (data.committeeIds ?? []) :
             role === "CO_ADVISOR"     ? (data.coAdvisorIds ?? []) : [],

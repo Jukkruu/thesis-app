@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { ROLE_LABELS, ROLE_EMOJI, getStepName, formatDate } from "@/lib/utils";
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
   };
 
   if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-    router.replace("/dashboard");
+    router.replace(ROLE_ROUTES[user.role] ?? "/login");
     return null;
   }
 
@@ -424,11 +425,11 @@ function StepDistributionDashboard({
         {proposalGroups.length > 0 && (
           <div className="px-5 py-4 space-y-2">
             <div className="flex items-center mb-1">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">โครงร่าง · 10 ขั้นตอน</p>
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">โครงร่าง · 11 ขั้นตอน</p>
               <span className="ml-auto text-xs font-semibold text-gray-400">ค้างอยู่</span>
             </div>
             {proposalGroups.map((g) => (
-              <StepRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" users={users} />
+              <StepRow key={g.stepOrder} group={g} totalSteps={11} submissionType="PROPOSAL" users={users} />
             ))}
           </div>
         )}

@@ -19,12 +19,12 @@ export function RolePendingList({ role, title, basePath }: Props) {
   const { submissions, user, users } = useApp();
   const [tab, setTab] = useState<"pending" | "history">("pending");
 
-  const isCommittee = role === "EXAM_COMMITTEE";
+  const isCommittee = role === "EXAM_COMMITTEE" || role === "CO_ADVISOR";
 
   // Has the current committee member personally acted on this submission's committee step?
   const iSignedCommittee = (sub: typeof submissions[number]) =>
     sub.workflowSteps.some(
-      (s) => s.role === "EXAM_COMMITTEE" && (s.committeeActions ?? []).some((a) => a.userId === user?.id)
+      (s) => s.role === role && (s.committeeActions ?? []).some((a) => a.userId === user?.id)
     );
 
   const pending = submissions.filter((sub) => {

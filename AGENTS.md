@@ -31,7 +31,7 @@ FINANCE_EMAIL         # recipient for finance notifications
 ## Key facts
 
 - **All API logic is in `src/app/api/`**. State is server-fetched; client state lives in `AppContext` which polls the API.
-- Two submission types: **PROPOSAL** (10 steps) and **THESIS_DEFENSE** (22 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
+- Two submission types: **PROPOSAL** (11 steps) and **THESIS_DEFENSE** (22 steps). Step arrays: `PROPOSAL_ROLES` / `THESIS_ROLES` in `src/app/api/submissions/route.ts`.
 - **Step names**: `PROPOSAL_STEP_NAMES` / `THESIS_STEP_NAMES` in `src/lib/utils.ts`. Always call `getStepName(stepOrder, submissionType)` — never access the maps directly.
 - **EXAM_COMMITTEE and CO_ADVISOR steps** track per-member decisions in `committeeActions` (JSON on `WorkflowStep`). All assigned members must approve before the step advances. CO_ADVISOR steps are auto-SKIPPED at creation when `coAdvisorIds` is empty.
 - **Required uploads gate**: Before a STUDENT step can advance, the student must upload specific form types. Enforced server-side in `PATCH /api/submissions/[id]` (action `"approve"`) and client-side in the student detail page.
@@ -75,7 +75,7 @@ Each of the 4 form types (BW1A, BW1B, B1C, B1D) has a single display slot in `Fi
 `RoleSubmissionDetail` computes `formsToShow` from `STEP_SIGN_FORMS` so each role sees only the documents relevant to their step. Passed to both `SignatureButton` and `CommitteeSignPanel`.
 
 ```
-PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C,B1D]  9→[B1C,B1D]  10→[B1C,B1D]
+PROPOSAL:       2→[BW1A,BW1B]  3→[BW1A]  5→[B1C]  6→[B1C]  7→[B1C]  8→[B1C]  9→[B1C,B1D]  10→[B1C,B1D]  11→[B1C,B1D]
 THESIS_DEFENSE: 2→[B3]  3→[B2]  4→[B2]  5→[B2]  6→[B2]  7→[B2,B3]
                 10→[SIGNED]  11→[SIGNED]  12→[SIGNED]  13→[SIGNED]  14→[SIGNED]  15→[SIGNED]
                 17→[B4]  18→[THESIS]  19→[THESIS]  20→[THESIS]  21→[THESIS]  22→[THESIS]
@@ -168,7 +168,7 @@ stepUploads={isFutureStep ? [] : stepUploads}
 
 ## Workflow — source of truth
 
-### PROPOSAL (10 steps)
+### PROPOSAL (11 steps)
 
 #### Phase 1 (Steps 1–3): บ.วศ.1ก + บ.วศ.1ข
 | Step | Role | Action |
@@ -177,16 +177,17 @@ stepUploads={isFutureStep ? [] : stepUploads}
 | 2 | ADMIN | Review and approve |
 | 3 | PROGRAM_CHAIR | Sign บ.วศ.1ก → **triggers finance email** |
 
-#### Phase 2 (Steps 4–10): บ.วศ.1ค + บ.วศ.1ง
+#### Phase 2 (Steps 4–11): บ.วศ.1ค + บ.วศ.1ง
 | Step | Role | Action |
 |------|------|--------|
 | 4  | STUDENT | Upload B1C (บ.วศ.1ค) + B1D (บ.วศ.1ง) |
 | 5  | HEAD_EXAM_COMMITTEE | Sign บ.วศ.1ค |
 | 6  | ADVISOR | Sign บ.วศ.1ค |
 | 7  | CO_ADVISOR | Sign บ.วศ.1ค — **auto-SKIPPED if no co-advisors assigned** |
-| 8  | EXAM_COMMITTEE | All members sign บ.วศ.1ค + บ.วศ.1ง (sequential) |
-| 9  | ADMIN | Verify and approve |
-| 10 | PROGRAM_CHAIR | Sign บ.วศ.1ค + บ.วศ.1ง |
+| 8  | INVITED_EXAM_COMMITTEE | Sign บ.วศ.1ค |
+| 9  | EXAM_COMMITTEE | All members sign บ.วศ.1ค + บ.วศ.1ง (sequential) |
+| 10 | ADMIN | Verify and approve |
+| 11 | PROGRAM_CHAIR | Sign บ.วศ.1ค + บ.วศ.1ง |
 
 If rejected → goes back one step (e.g. step 9 → step 8, step 8 → step 7).
 

@@ -115,7 +115,7 @@ export const FORM_SHORT: Record<FormType, string> = {
   FINANCE_DOC: "การเงิน",
 };
 
-// Step names for proposal submissions (10 steps)
+// Step names for proposal submissions (11 steps)
 export const PROPOSAL_STEP_NAMES: Record<number, string> = {
   1:  "นิสิตอัปโหลด บ.วศ.1ก + บ.วศ.1ข",
   2:  "เจ้าหน้าที่ตรวจรับและอนุมัติ",
@@ -124,9 +124,10 @@ export const PROPOSAL_STEP_NAMES: Record<number, string> = {
   5:  "ประธานกรรมการสอบลงนาม บ.วศ.1ค",
   6:  "อาจารย์ที่ปรึกษาลงนาม บ.วศ.1ค",
   7:  "อาจารย์ที่ปรึกษาร่วมลงนาม บ.วศ.1ค",
-  8:  "กรรมการสอบลงนาม บ.วศ.1ค",
-  9:  "เจ้าหน้าที่ตรวจสอบ (รอบ 2)",
-  10: "ประธานหลักสูตรลงนาม บ.วศ.1ค + บ.วศ.1ง",
+  8:  "กรรมการภายนอกลงนาม บ.วศ.1ค",
+  9:  "กรรมการสอบลงนาม บ.วศ.1ค",
+  10: "เจ้าหน้าที่ตรวจสอบ (รอบ 2)",
+  11: "ประธานหลักสูตรลงนาม บ.วศ.1ค + บ.วศ.1ง",
 };
 
 // Step names for thesis defense submissions (22 steps)

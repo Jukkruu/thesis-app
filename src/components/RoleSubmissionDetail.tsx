@@ -22,6 +22,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   const router = useRouter();
   const sub = submissions.find((s) => s.id === submissionId);
 
+  const [thesisResult, setThesisResult] = useState("");
+
   if (!sub) {
     return (
       <div className="text-center py-20 text-gray-400 space-y-3">
@@ -30,8 +32,6 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       </div>
     );
   }
-
-  const [thesisResult, setThesisResult] = useState("");
 
   const allUsers    = users;
   const student     = allUsers.find((u) => u.id === sub.studentId);
@@ -53,9 +53,10 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       5:  ["B1C"],
       6:  ["B1C"],
       7:  ["B1C"],           // CO_ADVISOR signs B1C
-      8:  ["B1C"],             // EXAM_COMMITTEE
-      9:  ["B1C", "B1D"],
-      10: ["B1C", "B1D"],
+      8:  ["B1C"],           // INVITED_EXAM_COMMITTEE signs B1C
+      9:  ["B1C", "B1D"],   // EXAM_COMMITTEE
+      10: ["B1C", "B1D"],   // ADMIN
+      11: ["B1C", "B1D"],   // PROGRAM_CHAIR
     },
     THESIS_DEFENSE: {
       2:  ["B3"],            // EXAM_COMMITTEE signs B3

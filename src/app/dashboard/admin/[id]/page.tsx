@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
 import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, previewFile } from "@/lib/utils";
+import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { MockWorkflowStep, MockUpload } from "@/types";
 import Link from "next/link";
 import {
@@ -248,7 +249,7 @@ export default function AdminSubmissionDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-    router.replace("/dashboard");
+    router.replace(ROLE_ROUTES[user.role] ?? "/login");
     return null;
   }
 
