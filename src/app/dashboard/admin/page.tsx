@@ -387,7 +387,7 @@ function SummaryCard({ icon, label, value, color, textColor }: {
   );
 }
 
-type StepGroup = { stepOrder: number; role: Role; count: number };
+type StepGroup = { stepOrder: number; role: Role; subs: MockSubmission[] };
 
 function buildStepGroups(subs: MockSubmission[]): StepGroup[] {
   const map = new Map<number, StepGroup>();
@@ -395,15 +395,15 @@ function buildStepGroups(subs: MockSubmission[]): StepGroup[] {
     const pending = sub.workflowSteps.find((s) => s.status === "PENDING");
     if (!pending) continue;
     if (!map.has(pending.stepOrder)) {
-      map.set(pending.stepOrder, { stepOrder: pending.stepOrder, role: pending.role as Role, count: 0 });
+      map.set(pending.stepOrder, { stepOrder: pending.stepOrder, role: pending.role as Role, subs: [] });
     }
-    map.get(pending.stepOrder)!.count += 1;
+    map.get(pending.stepOrder)!.subs.push(sub);
   }
   return Array.from(map.values()).sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
 function StepDistributionDashboard({
-  proposalSubs, thesisSubs,
+  proposalSubs, thesisSubs, users,
 }: {
   proposalSubs: MockSubmission[];
   thesisSubs: MockSubmission[];
@@ -428,7 +428,7 @@ function StepDistributionDashboard({
               <span className="ml-auto text-xs font-semibold text-gray-400">ค้างอยู่</span>
             </div>
             {proposalGroups.map((g) => (
-              <StepRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" />
+              <StepRow key={g.stepOrder} group={g} totalSteps={10} submissionType="PROPOSAL" users={users} />
             ))}
           </div>
         )}
@@ -439,7 +439,7 @@ function StepDistributionDashboard({
               <span className="ml-auto text-xs font-semibold text-gray-400">ค้างอยู่</span>
             </div>
             {thesisGroups.map((g) => (
-              <StepRow key={g.stepOrder} group={g} totalSteps={22} submissionType="THESIS_DEFENSE" />
+              <StepRow key={g.stepOrder} group={g} totalSteps={22} submissionType="THESIS_DEFENSE" users={users} />
             ))}
           </div>
         )}
@@ -448,30 +448,76 @@ function StepDistributionDashboard({
   );
 }
 
-function StepRow({ group, totalSteps, submissionType }: {
-  group: StepGroup; totalSteps: number; submissionType: string;
+function StepRow({ group, totalSteps, submissionType, users }: {
+  group: StepGroup; totalSteps: number; submissionType: string; users: MockUser[];
 }) {
-  const isAdminStep = group.role === "ADMIN";
-  const stepName    = getStepName(group.stepOrder, submissionType);
+  const [open, setOpen]  = useState(false);
+  const isAdminStep      = group.role === "ADMIN";
+  const stepName         = getStepName(group.stepOrder, submissionType);
+  const count            = group.subs.length;
 
   return (
-    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${
-      isAdminStep ? "bg-orange-50 border border-orange-200" : "bg-gray-50"
+    <div className={`rounded-xl overflow-hidden border ${
+      isAdminStep ? "border-orange-200" : "border-gray-100"
     }`}>
-      <span className={`text-xs font-bold w-14 shrink-0 ${isAdminStep ? "text-orange-500" : "text-gray-400"}`}>
-        ขั้น {group.stepOrder}/{totalSteps}
-      </span>
-      <span className={`flex-1 text-sm truncate ${isAdminStep ? "text-orange-900 font-medium" : "text-gray-700"}`}>
-        {stepName}
-      </span>
-      {isAdminStep && (
-        <span className="text-xs font-semibold text-orange-600 shrink-0">รอท่าน</span>
+      {/* Header row — clickable */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition ${
+          isAdminStep
+            ? "bg-orange-50 hover:bg-orange-100"
+            : "bg-gray-50 hover:bg-gray-100"
+        }`}
+      >
+        <span className={`text-xs font-bold w-14 shrink-0 ${isAdminStep ? "text-orange-500" : "text-gray-400"}`}>
+          ขั้น {group.stepOrder}/{totalSteps}
+        </span>
+        <span className={`flex-1 text-sm truncate ${isAdminStep ? "text-orange-900 font-medium" : "text-gray-700"}`}>
+          {stepName}
+        </span>
+        {isAdminStep && (
+          <span className="text-xs font-semibold text-orange-600 shrink-0">รอท่าน</span>
+        )}
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
+          isAdminStep ? "bg-orange-200 text-orange-800" : "bg-gray-200 text-gray-600"
+        }`}>
+          {count}
+        </span>
+        <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-90" : ""} ${
+          isAdminStep ? "text-orange-400" : "text-gray-300"
+        }`} />
+      </button>
+
+      {/* Expanded student list */}
+      {open && (
+        <div className={`border-t divide-y ${
+          isAdminStep ? "border-orange-100 divide-orange-50" : "border-gray-100 divide-gray-50"
+        }`}>
+          {group.subs.map((sub) => {
+            const student = users.find((u) => u.id === sub.studentId);
+            return (
+              <Link
+                key={sub.id}
+                href={`/dashboard/admin/${sub.id}`}
+                className={`flex items-center gap-3 px-4 py-2.5 transition ${
+                  isAdminStep
+                    ? "bg-orange-50 hover:bg-orange-100"
+                    : "bg-white hover:bg-gray-50"
+                }`}
+              >
+                <User className={`w-3.5 h-3.5 shrink-0 ${isAdminStep ? "text-orange-400" : "text-gray-400"}`} />
+                <span className={`text-sm font-medium flex-1 ${isAdminStep ? "text-orange-900" : "text-gray-700"}`}>
+                  {student?.name ?? "นักศึกษา"}
+                </span>
+                {student?.studentId && (
+                  <span className="text-xs text-gray-400 shrink-0">{student.studentId}</span>
+                )}
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isAdminStep ? "text-orange-400" : "text-gray-300"}`} />
+              </Link>
+            );
+          })}
+        </div>
       )}
-      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-        isAdminStep ? "bg-orange-200 text-orange-800" : "bg-gray-200 text-gray-600"
-      }`}>
-        {group.count}
-      </span>
     </div>
   );
 }
