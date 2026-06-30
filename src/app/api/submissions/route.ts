@@ -122,10 +122,7 @@ export async function POST(req: NextRequest) {
         create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,
           role,
-          status:
-            (role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length) ||
-            (role === "INVITED_EXAM_COMMITTEE" && !data.invitedCommitteeId)
-              ? "SKIPPED" : "PENDING",
+          status: role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length ? "SKIPPED" : "PENDING",
           committeeMembers:
             role === "EXAM_COMMITTEE" ? (data.committeeIds ?? []) :
             role === "CO_ADVISOR"     ? (data.coAdvisorIds ?? []) : [],
