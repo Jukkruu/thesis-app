@@ -186,6 +186,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           await sendStepEmail({ role: nextStep.role, sub, stepName, specificMemberId });
         } catch (e) { console.error("[email/step]", e); }
       }
+      // Notify student that their submission has progressed (unless it was their own step)
+      if (step.role !== "STUDENT") {
+        const actorLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
+        const currentStepName = getStepName(step.stepOrder, sub.submissionType) || actorLabel;
+        await prisma.notification.create({
+          data: { recipientId: sub.studentId, message: `คำร้องคืบหน้า — ${actorLabel}อนุมัติ: ${currentStepName}`, detail: sub.title, submissionId: id, type: "info" },
+        });
+      }
       // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
       if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
         try {
@@ -440,6 +448,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           await sendStepEmail({ role: nextPending.role, sub, stepName, specificMemberId });
         } catch (e) { console.error("[email/override-next]", e); }
       }
+      // Always notify student when admin overrides
+      const overrideMsg = decision === "APPROVED"
+        ? `ผู้ดูแลระบบอนุมัติขั้นตอนที่ ${stepOrder} แทน — คำร้องของท่านคืบหน้าแล้ว`
+        : `ผู้ดูแลระบบรีเซตขั้นตอนที่ ${stepOrder} — กรุณาตรวจสอบคำร้องของท่าน`;
+      await prisma.notification.create({
+        data: { recipientId: sub.studentId, message: overrideMsg, detail: sub.title, submissionId: id, type: decision === "APPROVED" ? "info" : "rejected" },
+      });
     }
 
   }
