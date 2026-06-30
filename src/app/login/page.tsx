@@ -107,15 +107,18 @@ export default function LoginPage() {
     // redirect handled by useEffect above after session updates
   }
 
-  async function quickLogin(email: string) {
+  async function quickLogin(email: string, role: Role) {
     setSubmitting(true);
-    await fetch("/api/auth/demo", {
+    const res = await fetch("/api/auth/demo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    setSubmitting(false);
-    router.refresh();
+    if (res.ok) {
+      window.location.href = ROLE_ROUTES[role];
+    } else {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -197,7 +200,7 @@ export default function LoginPage() {
               {DEMO_USERS.map((u) => (
                 <button
                   key={u.email}
-                  onClick={() => quickLogin(u.email)}
+                  onClick={() => quickLogin(u.email, u.role)}
                   disabled={submitting}
                   className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left disabled:opacity-60"
                 >
