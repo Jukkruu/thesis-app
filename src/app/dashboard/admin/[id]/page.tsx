@@ -335,11 +335,7 @@ export default function AdminSubmissionDetail() {
                 </p>
                 <FileUploader submissionId={sub.id} formType="SIGNED" />
                 <p className="text-xs text-gray-400">อัปโหลดซ้ำได้หลายครั้ง — แต่ละไฟล์จะแสดงแยกกัน</p>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 pt-1">
-                  <Upload className="w-3.5 h-3.5" /> เอกสารการเงิน (FINANCE_DOC)
-                </p>
-                <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
-              </div>
+                </div>
             </div>
           ) : (
             <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
@@ -382,13 +378,6 @@ export default function AdminSubmissionDetail() {
             />
           )}
         </div>
-      )}
-
-      {/* Admin can reject at ANY step — shown when it's not admin's own turn */}
-      {!isMyTurn && sub.status === "IN_PROGRESS" && (
-        <AdminRejectAnyStep
-          onConfirm={(notes) => rejectCurrentStep(sub.id, notes)}
-        />
       )}
 
       {/* PROPOSAL step 4: admin must upload FINANCE_DOC while student uploads B1C+B1D */}
@@ -784,33 +773,3 @@ function RejectForm({ onConfirm, onCancel }: { onConfirm: (notes: string) => voi
   );
 }
 
-function AdminRejectAnyStep({ onConfirm }: { onConfirm: (notes: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <XCircle className="w-5 h-5 text-red-500 shrink-0" />
-          <div>
-            <p className="font-semibold text-red-700">ปฏิเสธคำร้อง</p>
-            <p className="text-xs text-red-500">รีเซ็ตทุกขั้นตอนกลับไปที่ขั้นที่ 1</p>
-          </div>
-        </div>
-        {!open && (
-          <button
-            onClick={() => setOpen(true)}
-            className="px-4 py-2 border-2 border-red-300 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition text-sm"
-          >
-            ปฏิเสธ
-          </button>
-        )}
-      </div>
-      {open && (
-        <RejectForm
-          onConfirm={(notes) => { onConfirm(notes); setOpen(false); }}
-          onCancel={() => setOpen(false)}
-        />
-      )}
-    </div>
-  );
-}

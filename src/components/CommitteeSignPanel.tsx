@@ -13,9 +13,10 @@ interface Props {
   step: MockWorkflowStep;
   onSuccess?: () => void;
   formsToShow?: string[];
+  title?: string;
 }
 
-export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow }: Props) {
+export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow, title }: Props) {
   const { user, users, submissions, committeeSign } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
@@ -72,7 +73,7 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow 
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
       <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
         <Users className="w-5 h-5 text-blue-500" />
-        คณะกรรมการสอบ
+        {title ?? "คณะกรรมการสอบ"}
       </h3>
 
       {/* Progress */}

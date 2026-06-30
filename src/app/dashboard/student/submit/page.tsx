@@ -230,7 +230,6 @@ export default function NewSubmissionPage() {
   const { createSubmission, users } = useApp();
 
   const advisors       = users.filter((u) => u.role === "ADVISOR");
-  const coAdvisors     = users.filter((u) => (u.role === "CO_ADVISOR" || u.role === "ADVISOR") && u.id !== advisorId);
   const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
   const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
@@ -259,6 +258,9 @@ export default function NewSubmissionPage() {
   const [error,              setError]              = useState<string | null>(null);
   const [confirmed,          setConfirmed]          = useState(false);
   const [submitting,         setSubmitting]         = useState(false);
+
+  // coAdvisors must come after advisorId state is declared to avoid TDZ
+  const coAdvisors = users.filter((u) => (u.role === "CO_ADVISOR" || u.role === "ADVISOR") && u.id !== advisorId);
 
   // Draft save / restore
   useEffect(() => {

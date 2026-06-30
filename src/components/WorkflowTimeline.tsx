@@ -105,8 +105,8 @@ export function WorkflowTimeline({
           const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
           const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.role === "ADMIN") ?? null : null;
           const uploads4 = showAdminFinanceRow ? (submission?.uploads ?? []) : [];
-          const financeUploaded = showAdminFinanceRow && step.status === "APPROVED" && uploads4.some((u) => u.formType === "FINANCE_DOC");
-          const studentStep4Done = showAdminFinanceRow && step.status === "APPROVED" &&
+          const financeUploaded = showAdminFinanceRow && uploads4.some((u) => u.formType === "FINANCE_DOC");
+          const studentStep4Done = showAdminFinanceRow &&
             uploads4.some((u) => u.formType === "B1C") &&
             uploads4.some((u) => u.formType === "B1D");
 
@@ -226,8 +226,8 @@ export function WorkflowTimeline({
                       {adminFinanceUser.name}{" "}
                       <span className="text-gray-400 font-normal">(อัปโหลดเอกสารการเงิน)</span>
                     </span>
-                    <span className={`font-semibold shrink-0 ${financeUploaded ? "text-green-500" : "text-gray-300 italic"}`}>
-                      {financeUploaded ? "✓ อัปโหลดแล้ว" : "ยังไม่ได้ดำเนินการ"}
+                    <span className={`font-semibold shrink-0 ${financeUploaded ? "text-green-500" : step.status === "PENDING" ? "text-amber-500 italic" : "text-gray-300 italic"}`}>
+                      {financeUploaded ? "✓ อัปโหลดแล้ว" : step.status === "PENDING" ? "รออัปโหลด..." : "ยังไม่ได้ดำเนินการ"}
                     </span>
                   </div>
                 )}

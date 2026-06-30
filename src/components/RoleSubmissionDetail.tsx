@@ -197,7 +197,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
         <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all duration-500"
-            style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+            style={{ width: `${totalSteps > 0 ? (doneCount / totalSteps) * 100 : 0}%` }}
           />
         </div>
         <span className="text-sm font-medium text-gray-600 shrink-0">
@@ -265,17 +265,18 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
-          {/* Action — committee step uses multi-member panel */}
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role === "EXAM_COMMITTEE" && (
+          {/* Action — committee steps (EXAM_COMMITTEE and CO_ADVISOR) use sequential multi-member panel */}
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && (currentStep?.role === "EXAM_COMMITTEE" || currentStep?.role === "CO_ADVISOR") && (
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
               formsToShow={formsToShow}
+              title={currentStep.role === "CO_ADVISOR" ? "อาจารย์ที่ปรึกษาร่วม" : undefined}
               onSuccess={() => router.push(backPath)}
             />
           )}
 
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && (
+          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && currentStep?.role !== "CO_ADVISOR" && (
             <SignatureButton
               submissionId={sub.id}
               formsToShow={formsToShow}
