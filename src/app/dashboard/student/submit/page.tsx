@@ -230,7 +230,7 @@ export default function NewSubmissionPage() {
   const { createSubmission, users } = useApp();
 
   const advisors       = users.filter((u) => u.role === "ADVISOR");
-  const coAdvisors     = users.filter((u) => u.role === "CO_ADVISOR" || u.role === "ADVISOR");
+  const coAdvisors     = users.filter((u) => (u.role === "CO_ADVISOR" || u.role === "ADVISOR") && u.id !== advisorId);
   const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
   const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
 
@@ -337,6 +337,7 @@ export default function NewSubmissionPage() {
     if (!invitedProfName.trim())    { setError("กรุณาระบุชื่อ-นามสกุลกรรมการภายนอก");          return; }
     if (!invitedProfAffil.trim())   { setError("กรุณาระบุสังกัดกรรมการภายนอก");                return; }
     if (!invitedProfEmail.trim())   { setError("กรุณาระบุอีเมลกรรมการภายนอก");                 return; }
+    if (parkingNeeded && !carPlate.trim()) { setError("กรุณาระบุเลขทะเบียนรถ");                return; }
     setError(null);
     setSubmitting(true);
     try {
@@ -508,12 +509,12 @@ export default function NewSubmissionPage() {
           </Field>
 
           <Field label="อาจารย์ที่ปรึกษาร่วม">
-            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มเฉพาะเมื่อมีอาจารย์ที่ปรึกษาร่วม</p>
-            <SearchableSelect
+            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มได้หลายคน</p>
+            <MultiPicker
               options={coAdvisors}
-              value={coAdvisorIds[0] ?? ""}
-              onChange={(id) => setCoAdvisorIds(id ? [id] : [])}
-              placeholder="ค้นหาอาจารย์ที่ปรึกษาร่วม..."
+              selected={coAdvisorIds}
+              onChange={setCoAdvisorIds}
+              placeholder="ค้นหาและเพิ่มอาจารย์ที่ปรึกษาร่วม..."
             />
           </Field>
 

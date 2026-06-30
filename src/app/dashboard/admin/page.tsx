@@ -51,6 +51,7 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
   { label: "กำลังดำเนินการ", value: "IN_PROGRESS" },
   { label: "เสร็จสิ้น",      value: "COMPLETED" },
   { label: "ถูกปฏิเสธ",      value: "REJECTED" },
+  { label: "ยกเลิกแล้ว",     value: "CANCELLED" },
 ];
 
 export default function AdminDashboard() {
@@ -73,6 +74,7 @@ export default function AdminDashboard() {
     IN_PROGRESS: inProgress.length,
     COMPLETED:   typeSubs.filter((s) => s.status === "COMPLETED").length,
     REJECTED:    typeSubs.filter((s) => s.status === "REJECTED").length,
+    CANCELLED:   typeSubs.filter((s) => s.status === "CANCELLED").length,
   };
 
   if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {

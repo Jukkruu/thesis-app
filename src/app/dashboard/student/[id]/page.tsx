@@ -563,7 +563,7 @@ export default function StudentSubmissionDetail() {
                     )}
                   </div>
                   <button
-                    disabled={!studentUploaded || submitting}
+                    disabled={!allRequiredUploaded || submitting}
                     onClick={async () => {
                       setSubmitting(true);
                       try {
@@ -598,7 +598,7 @@ export default function StudentSubmissionDetail() {
                       }
                     }}
                     className={`w-full flex items-center justify-center gap-2 py-3.5 text-white rounded-xl font-semibold transition ${
-                      studentUploaded && !submitting
+                      allRequiredUploaded && !submitting
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-300 cursor-not-allowed"
                     }`}
@@ -609,14 +609,16 @@ export default function StudentSubmissionDetail() {
                 </>
               )}
 
-              {/* Cancel — always available while in progress */}
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
-              >
-                <XCircle className="w-4 h-4" />
-                ยกเลิกคำร้องนี้
-              </button>
+              {/* Cancel — only shown here when it's the student's turn; other states show it in the status banner */}
+              {isMyTurn && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
+                >
+                  <XCircle className="w-4 h-4" />
+                  ยกเลิกคำร้องนี้
+                </button>
+              )}
             </div>
           )}
         </div>

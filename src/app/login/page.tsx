@@ -294,9 +294,6 @@ export default function LoginPage() {
           </ol>
         </div>
 
-        <p className="text-xs text-gray-400 text-center">
-          ข้อมูลทดสอบ — บันทึกใน localStorage เท่านั้น
-        </p>
       </div>
     </div>
   );

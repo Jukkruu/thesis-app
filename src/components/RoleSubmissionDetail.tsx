@@ -33,6 +33,26 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
+  // Ownership guard — only authorized users can see submission details
+  const authorized = !user ? false
+    : user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "PROGRAM_CHAIR" ? true
+    : user.role === "STUDENT"                ? sub.studentId === user.id
+    : user.role === "ADVISOR"                ? sub.advisorId === user.id
+    : user.role === "CO_ADVISOR"             ? (sub.coAdvisorIds ?? []).includes(user.id)
+    : user.role === "HEAD_EXAM_COMMITTEE"    ? sub.headCommitteeId === user.id
+    : user.role === "EXAM_COMMITTEE"         ? (sub.committeeIds ?? []).includes(user.id)
+    : user.role === "INVITED_EXAM_COMMITTEE" ? sub.invitedCommitteeId === user.id
+    : false;
+
+  if (!authorized) {
+    return (
+      <div className="text-center py-20 text-gray-400 space-y-3">
+        <p className="text-lg">ไม่มีสิทธิ์เข้าถึงคำร้องนี้</p>
+        <Link href={backPath} className="text-blue-500 hover:underline">กลับหน้าหลัก</Link>
+      </div>
+    );
+  }
+
   const allUsers    = users;
   const student     = allUsers.find((u) => u.id === sub.studentId);
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
@@ -54,9 +74,9 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       6:  ["B1C"],
       7:  ["B1C"],           // CO_ADVISOR signs B1C
       8:  ["B1C"],           // INVITED_EXAM_COMMITTEE signs B1C
-      9:  ["B1C", "B1D"],   // EXAM_COMMITTEE
-      10: ["B1C", "B1D"],   // ADMIN
-      11: ["B1C", "B1D"],   // PROGRAM_CHAIR
+      9:  ["B1C"],           // EXAM_COMMITTEE signs B1C only
+      10: ["B1C"],           // ADMIN verifies B1C
+      11: ["B1C", "B1D"],   // PROGRAM_CHAIR signs both
     },
     THESIS_DEFENSE: {
       2:  ["B3"],            // EXAM_COMMITTEE signs B3
