@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
 
   const ext = isPdf ? "pdf" : isJpeg ? "jpg" : "png";
 
-  // Verify the caller is involved in this submission (or is an admin/super_admin)
-  const isAdminRole = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  // Verify the caller is involved in this submission (or is an admin/super_admin/program_chair)
+  const isAdminRole = ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(session.user.role);
   if (!isAdminRole) {
     const subCheck = await prisma.submission.findUnique({ where: { id: submissionId } });
     if (!subCheck) return NextResponse.json({ error: "Submission not found" }, { status: 404 });
@@ -103,10 +103,9 @@ export async function POST(req: NextRequest) {
           const types = new Set(subWithUploads.uploads.map((u: any) => u.formType));
           if (types.has("B1C") && types.has("B1D") && types.has("FINANCE_DOC")) {
             const now = new Date();
-            const actorName: string = (session.user as any).name ?? (session.user as any).email ?? "ระบบ";
             await prisma.workflowStep.update({
               where: { id: step4.id },
-              data: { status: "APPROVED", actedAt: now, actedByName: actorName, actedById: session.user.id },
+              data: { status: "APPROVED", actedAt: now, actedByName: "ระบบ (อัตโนมัติ)", actedById: null },
             });
             const nextStep = subWithUploads.workflowSteps.find(
               (s: any) => s.stepOrder > 4 && s.status === "PENDING"

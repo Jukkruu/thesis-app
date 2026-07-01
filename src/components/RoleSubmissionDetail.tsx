@@ -74,7 +74,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       6:  ["B1C"],
       7:  ["B1C"],           // CO_ADVISOR signs B1C
       8:  ["B1C"],           // INVITED_EXAM_COMMITTEE signs B1C
-      9:  ["B1C"],           // EXAM_COMMITTEE signs B1C only
+      9:  ["B1C", "B1D"],   // EXAM_COMMITTEE signs B1C + B1D
       10: ["B1C"],           // ADMIN verifies B1C
       11: ["B1C", "B1D"],   // PROGRAM_CHAIR signs both
     },

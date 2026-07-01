@@ -298,19 +298,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
       await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
 
-      // Notify student
+      // Notify student in-app and send them an email to re-upload from step 1
       await prisma.notification.create({
         data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId: id, type: "rejected" },
       });
-      // Notify step 1's role (workflow restarts from the beginning)
-      const firstStep = sub.workflowSteps.find((s: any) => s.stepOrder === 1);
-      if (firstStep && firstStep.role !== "STUDENT") {
-        await notifyRole(firstStep.role, sub, rejectionNote, "rejected");
-        try {
-          const stepName = getStepName(firstStep.stepOrder, sub.submissionType) || ROLE_LABELS[firstStep.role as keyof typeof ROLE_LABELS];
-          await sendStepEmail({ role: firstStep.role, sub, stepName });
-        } catch (e) { console.error("[email/admin-reject]", e); }
-      }
+      try {
+        const stepName = getStepName(1, sub.submissionType) || "อัปโหลดเอกสาร";
+        await sendStepEmail({ role: "STUDENT", sub, stepName });
+      } catch (e) { console.error("[email/admin-reject]", e); }
     } else {
       // Other roles: go back exactly one step (the immediately preceding step)
       const prevStep = [...sub.workflowSteps]
@@ -390,7 +385,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   else if (action === "admin_reset") {
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.workflowStep.updateMany({
-      where: { submissionId: id },
+      where: { submissionId: id, status: { not: "SKIPPED" } },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });

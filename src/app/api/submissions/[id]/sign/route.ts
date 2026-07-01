@@ -89,6 +89,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (prevStep.role === "STUDENT")              prevRecipientId = sub.studentId;
     else if (prevStep.role === "ADVISOR")          prevRecipientId = (sub as any).advisorId ?? null;
     else if (prevStep.role === "HEAD_EXAM_COMMITTEE") prevRecipientId = (sub as any).headCommitteeId ?? null;
+    else if (prevStep.role === "INVITED_EXAM_COMMITTEE") prevRecipientId = (sub as any).invitedCommitteeId ?? null;
+    else if (prevStep.role === "CO_ADVISOR")       prevRecipientId = ((sub as any).coAdvisorIds as string[])?.[0] ?? null;
+    else if (prevStep.role === "EXAM_COMMITTEE")   prevRecipientId = ((sub as any).committeeIds as string[])?.[0] ?? null;
     else {
       const u = await prisma.user.findFirst({ where: { role: prevStep.role as any } });
       prevRecipientId = u?.id ?? null;
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     } else {
       await prisma.workflowStep.update({
         where: { id: step.id },
-        data: { status: "APPROVED", committeeActions: newActions, actedAt: now, actedByName: "กรรมการสอบครบทุกท่าน" },
+        data: { status: "APPROVED", committeeActions: newActions, actedAt: now, actedByName: step.role === "CO_ADVISOR" ? "อาจารย์ที่ปรึกษาร่วมครบทุกท่าน" : "กรรมการสอบครบทุกท่าน" },
       });
       const remaining = sub.workflowSteps.filter((s: any) => s.id !== step.id && s.status === "PENDING");
       const isComplete = remaining.length === 0;

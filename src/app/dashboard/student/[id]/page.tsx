@@ -69,7 +69,6 @@ export default function StudentSubmissionDetail() {
   const { user, submissions, users, approveCurrentStep, studentResubmit, cancelSubmission, refresh } = useApp();
   const { showToast } = useToast();
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelNote, setCancelNote] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<Partial<Record<FormType, File>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmSigns, setConfirmSigns] = useState(false);
@@ -649,15 +648,6 @@ export default function StudentSubmissionDetail() {
                 <p className="text-sm text-gray-500">หลังจากยกเลิกแล้วจะไม่สามารถดำเนินการต่อได้</p>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">เหตุผล (ไม่บังคับ)</label>
-              <textarea
-                value={cancelNote}
-                onChange={(e) => setCancelNote(e.target.value)}
-                placeholder="ระบุเหตุผลในการยกเลิก..."
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleCancelConfirm}
@@ -666,7 +656,7 @@ export default function StudentSubmissionDetail() {
                 ยืนยันยกเลิก
               </button>
               <button
-                onClick={() => { setShowCancelModal(false); setCancelNote(""); }}
+                onClick={() => setShowCancelModal(false)}
                 className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition"
               >
                 ไม่ยกเลิก
