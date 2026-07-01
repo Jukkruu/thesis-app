@@ -212,7 +212,7 @@ export default function AdminUserProfilePage() {
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full transition-all"
-                        style={{ width: `${(doneCount / totalSteps) * 100}%` }}
+                        style={{ width: `${totalSteps > 0 ? (doneCount / totalSteps) * 100 : 0}%` }}
                       />
                     </div>
                     <span className="text-xs text-gray-400 shrink-0">{doneCount}/{totalSteps} ขั้น</span>

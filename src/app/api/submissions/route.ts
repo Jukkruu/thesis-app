@@ -74,6 +74,7 @@ export async function GET() {
   else if (role === "HEAD_EXAM_COMMITTEE")    where = { headCommitteeId: userId };
   else if (role === "EXAM_COMMITTEE")         where = { committeeIds: { hasSome: [userId] } };
   else if (role === "INVITED_EXAM_COMMITTEE") where = { invitedCommitteeId: userId };
+  else if (!["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(role)) return NextResponse.json([]);
   // ADMIN, SUPER_ADMIN, PROGRAM_CHAIR see all
 
   const submissions = await prisma.submission.findMany({
@@ -135,11 +136,11 @@ export async function POST(req: NextRequest) {
   // Step 1 starts as PENDING — student must upload required files and click submit.
   // The approve action will notify step 2 automatically when step 1 is completed.
 
-  // Notify admin that a new submission was created (informational)
-  const admin = await prisma.user.findFirst({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
-  if (admin) {
-    await prisma.notification.create({
-      data: { recipientId: admin.id, message: "มีคำร้องวิทยานิพนธ์ใหม่", detail: data.title, submissionId: submission.id, type: "info" },
+  // Notify all admins that a new submission was created (informational)
+  const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
+  if (admins.length) {
+    await prisma.notification.createMany({
+      data: admins.map((a) => ({ recipientId: a.id, message: "มีคำร้องวิทยานิพนธ์ใหม่", detail: data.title, submissionId: submission.id, type: "info" })),
     });
   }
 

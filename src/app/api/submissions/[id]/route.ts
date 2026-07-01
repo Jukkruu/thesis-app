@@ -163,12 +163,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await prisma.notification.create({
         data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId: id, type: "approved" },
       });
-      // Notify admin when PROPOSAL fully completes
+      // Notify all admins when PROPOSAL fully completes
       if (sub.submissionType === "PROPOSAL") {
-        const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-        if (adminUser) {
-          await prisma.notification.create({
-            data: { recipientId: adminUser.id, message: "กระบวนการ Proposal เสร็จสมบูรณ์แล้ว", detail: sub.title, submissionId: id, type: "approved" },
+        const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+        if (adminUsers.length) {
+          await prisma.notification.createMany({
+            data: adminUsers.map((a) => ({ recipientId: a.id, message: "กระบวนการ Proposal เสร็จสมบูรณ์แล้ว", detail: sub.title, submissionId: id, type: "approved" })),
           });
           try { await sendStepEmail({ role: "ADMIN", sub, stepName: "Proposal เสร็จสมบูรณ์" }); } catch (e) { console.error("[email/proposal-complete]", e); }
         }
@@ -194,13 +194,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           data: { recipientId: sub.studentId, message: `คำร้องคืบหน้า — ${actorLabel}อนุมัติ: ${currentStepName}`, detail: sub.title, submissionId: id, type: "info" },
         });
       }
-      // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify admin to collect + send to Faculty
+      // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify all admins to collect + send to Faculty
       if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
         try {
-          const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-          if (adminUser) {
-            await prisma.notification.create({
-              data: { recipientId: adminUser.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" },
+          const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+          if (adminUsers.length) {
+            await prisma.notification.createMany({
+              data: adminUsers.map((a) => ({ recipientId: a.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" })),
             });
             await sendStepEmail({ role: "ADMIN", sub, stepName: "นำส่ง บ.2+บ.3 ไปคณะ" });
           }
@@ -251,11 +251,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           parkingNeeded: (sub as any).parkingNeeded,
           carPlate: (sub as any).carPlate,
         });
-        // Notify admin that finance email was sent
-        const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-        if (adminUser) {
-          await prisma.notification.create({
-            data: { recipientId: adminUser.id, message: "ส่งอีเมลแจ้งฝ่ายการเงินแล้ว", detail: sub.title, submissionId: id, type: "info" },
+        // Notify all admins that finance email was sent
+        const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+        if (adminUsers.length) {
+          await prisma.notification.createMany({
+            data: adminUsers.map((a) => ({ recipientId: a.id, message: "ส่งอีเมลแจ้งฝ่ายการเงินแล้ว", detail: sub.title, submissionId: id, type: "info" })),
           });
         }
       } catch (e) {
@@ -383,7 +383,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.submission.update({
       where: { id },
-      data: { title: body.title ?? undefined, advisorId: body.advisorId ?? undefined },
+      data: { title: body.title ?? undefined, advisorId: body.advisorId === undefined ? undefined : (body.advisorId || null) },
     });
   }
 

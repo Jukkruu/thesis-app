@@ -52,7 +52,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
   const approved = isCommittee
     ? history.filter((sub) =>
         sub.workflowSteps.some((s) =>
-          s.role === "EXAM_COMMITTEE" &&
+          s.role === role &&
           (s.committeeActions ?? []).some((a) => a.userId === user?.id && a.decision === "APPROVED")
         )
       ).length

@@ -23,18 +23,25 @@ function mapSub(s: any) {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user || !["EXAM_COMMITTEE", "CO_ADVISOR"].includes(session.user.role))
+  if (!session?.user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // Re-check role from DB — JWT role can be stale after a role change
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+  const userRole: string = dbUser?.role ?? session.user.role;
+  if (!["EXAM_COMMITTEE", "CO_ADVISOR"].includes(userRole))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id: submissionId } = await params;
   const { decision, notes } = await req.json();
-  const { id: userId, name: userName, role: userRole } = session.user;
+  const { id: userId, name: userName } = session.user;
 
   const sub = await prisma.submission.findUnique({
     where: { id: submissionId },
     include: { workflowSteps: { orderBy: { stepOrder: "asc" } }, uploads: true },
   });
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (["COMPLETED", "CANCELLED"].includes(sub.status))
+    return NextResponse.json({ error: "คำร้องนี้ปิดแล้ว ไม่สามารถลงนามได้" }, { status: 400 });
 
   const step = sub.workflowSteps.find((s: any) => s.status === "PENDING" && s.role === userRole);
   if (!step) return NextResponse.json({ error: "No pending committee step" }, { status: 400 });

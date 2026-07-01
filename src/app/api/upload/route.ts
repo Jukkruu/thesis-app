@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
   if (!isPdf && !isJpeg && !isPng)
     return NextResponse.json({ error: "อนุญาตเฉพาะไฟล์ PDF, JPEG หรือ PNG" }, { status: 400 });
 
+  const ext = isPdf ? "pdf" : isJpeg ? "jpg" : "png";
+
   // Verify the caller is involved in this submission (or is an admin/super_admin)
   const isAdminRole = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
   if (!isAdminRole) {
@@ -59,12 +61,12 @@ export async function POST(req: NextRequest) {
     const sub = await prisma.submission.findUnique({ where: { id: submissionId }, select: { studentCode: true } });
     const shortLabel = FORM_SHORT[formType as FormType] ?? formType;
     displayFileName = sub?.studentCode
-      ? `${shortLabel}_${sub.studentCode}.pdf`
-      : `${shortLabel}.pdf`;
+      ? `${shortLabel}_${sub.studentCode}.${ext}`
+      : `${shortLabel}.${ext}`;
   }
 
   const safeFormType = formType.replace(/[^A-Z0-9_]/g, "");
-  const path = `${submissionId}/${safeFormType}_${Date.now()}.pdf`;
+  const path = `${submissionId}/${safeFormType}_${Date.now()}.${ext}`;
   let fileUrl: string | undefined;
 
   try {
