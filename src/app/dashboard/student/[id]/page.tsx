@@ -95,13 +95,27 @@ export default function StudentSubmissionDetail() {
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
   const subType = sub.submissionType ?? "PROPOSAL";
+
+  // At THESIS step 9 (student uploads แบบรายงานฯ), admin already uploaded SIGNED at step 8.
+  // Filter those out so the checklist and uploader don't count the admin's file as the student's own.
+  const step8ActedAt = (subType === "THESIS_DEFENSE" && currentStep?.stepOrder === 9)
+    ? (() => {
+        const s8 = sub.workflowSteps.find((s) => s.stepOrder === 8);
+        return s8?.actedAt ? new Date(s8.actedAt).getTime() : 0;
+      })()
+    : null;
+  const effectiveUploads = step8ActedAt !== null
+    ? sub.uploads.filter((u) => u.formType !== "SIGNED" || new Date(u.uploadedAt).getTime() > step8ActedAt)
+    : sub.uploads;
+
   const suggested = currentStep
     ? (SUGGESTED_BY_STEP[subType]?.[currentStep.stepOrder] ?? null)
     : null;
+  const effectiveUploadedTypes = new Set(effectiveUploads.map((u) => u.formType));
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
   const requiredForms = suggested?.forms ?? [];
   const adminRequiredForms = suggested?.adminForms ?? [];
-  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => uploadedTypes.has(f) || !!selectedFiles[f]);
+  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => effectiveUploadedTypes.has(f) || !!selectedFiles[f]);
   const adminUploaded   = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
 
   const needsSignConfirm   = subType === "THESIS_DEFENSE" && isMyTurn &&
@@ -436,7 +450,7 @@ export default function StudentSubmissionDetail() {
                     {suggested.multiUpload && <span className="font-normal">(อัปโหลดได้หลายไฟล์)</span>}
                   </p>
                   {suggested.forms.map((ft) => {
-                    const alreadyUploaded = uploadedTypes.has(ft);
+                    const alreadyUploaded = effectiveUploadedTypes.has(ft);
                     const fileSelected = !!selectedFiles[ft];
                     const done = alreadyUploaded || fileSelected;
                     return (
@@ -475,7 +489,7 @@ export default function StudentSubmissionDetail() {
               {/* Uploaders for required forms — always show when it's the student's turn
                   so they can re-upload after a rejection without being blocked */}
               {suggested?.forms.map((ft, idx) => {
-                  const existing = sub.uploads
+                  const existing = effectiveUploads
                     .filter((u) => u.formType === ft)
                     .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
                   return (

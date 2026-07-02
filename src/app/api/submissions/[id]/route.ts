@@ -165,6 +165,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // THESIS step 9 (STUDENT แบบรายงานฯ): require a SIGNED uploaded AFTER step 8 completed.
+    // Admin uploads SIGNED at step 8 — without this gate the general check above would pass
+    // on the admin's upload, letting the student skip their own signed document entirely.
+    if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 9 && step.role === "STUDENT") {
+      const step8 = sub.workflowSteps.find((s: any) => s.stepOrder === 8);
+      const step8ActedAt = step8?.actedAt ? new Date(step8.actedAt).getTime() : 0;
+      const hasStudentSigned = sub.uploads.some(
+        (u: any) => u.formType === "SIGNED" && new Date(u.uploadedAt).getTime() > step8ActedAt
+      );
+      if (!hasStudentSigned) {
+        return NextResponse.json(
+          { error: "กรุณาอัปโหลดแบบรายงานการเสนอผลงานฯ ที่ลงนามโดยนิสิตก่อน" },
+          { status: 400 }
+        );
+      }
+    }
+
     await prisma.workflowStep.update({
       where: { id: step.id },
       data: { status: "APPROVED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes ?? null },
@@ -280,6 +297,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   else if (action === "reject") {
+    // Block rejection while submission is already REJECTED — a second reject would create two
+    // REJECTED steps; resubmit only resets one of them, leaving the other permanently orphaned.
+    if (sub.status === "REJECTED")
+      return NextResponse.json({ error: "คำร้องถูกปฏิเสธ — รอนักศึกษายืนยันการแก้ไขก่อน" }, { status: 400 });
+
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
 
