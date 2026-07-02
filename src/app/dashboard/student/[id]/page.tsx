@@ -123,7 +123,9 @@ export default function StudentSubmissionDetail() {
   const needsProgramConfirm = subType === "THESIS_DEFENSE" && isMyTurn && currentStep?.stepOrder === 16;
   const preSubmitAllChecked = (!needsSignConfirm || confirmSigns) && (!needsProgramConfirm || confirmProgram);
 
-  const allRequiredUploaded = studentUploaded && adminUploaded && preSubmitAllChecked;
+  // Student can submit as soon as their own files are ready — FINANCE_DOC is uploaded by admin
+  // in parallel; the API handles the case where admin hasn't uploaded yet (waitingForFinance).
+  const allRequiredUploaded = studentUploaded && preSubmitAllChecked;
 
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {

@@ -254,7 +254,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     html: `
       <div style="font-family:'Sarabun',sans-serif;max-width:640px;margin:0 auto;padding:24px;">
         <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
-          <h1 style="margin:0;font-size:20px;">📧 แจ้งการเงิน — วิทยานิพนธ์ผ่านขั้นตอนที่ 1</h1>
+          <h1 style="margin:0;font-size:20px;">ระบบจัดการวิทยานิพนธ์</h1>
           <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
         </div>
 
