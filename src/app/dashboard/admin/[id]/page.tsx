@@ -298,103 +298,6 @@ export default function AdminSubmissionDetail() {
         </span>
       </div>
 
-      {/* ─── Admin's own approval panel ─────────────────────────────────── */}
-      {isMyTurn && sub.status !== "REJECTED" && (
-        <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-500" />
-            <h2 className="font-semibold text-blue-800 text-lg">
-              {isThesisRelayStep
-                ? "ถึงคิวของท่าน — นำส่งเอกสารไปยังคณะ"
-                : isThesisUploadStep
-                ? "ถึงคิวของท่าน — อัปโหลดเอกสารจากคณะ"
-                : "ถึงคิวของท่าน — กรุณาตรวจรับและอนุมัติเอกสาร"}
-            </h2>
-          </div>
-          {isThesisRelayStep ? (
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>ขั้นตอนนี้ต้องดำเนินการทางกายภาพก่อนกดอนุมัติ:</p>
-              <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
-                <li>พิมพ์ / รวบรวม บ.2 + บ.3 จากระบบ</li>
-                <li>นำส่งไปยังคณะวิศวกรรมศาสตร์</li>
-                <li>กดอนุมัติเพื่อยืนยันว่านำส่งแล้ว (รอรับเอกสารกลับในขั้นถัดไป)</li>
-              </ol>
-            </div>
-          ) : isThesisUploadStep ? (
-            <div className="space-y-3 text-sm text-gray-600">
-              <p>รับเอกสารจากคณะแล้วอัปโหลดก่อนกดอนุมัติ:</p>
-              <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
-                <li>รับเอกสารจากคณะ (ใบรายงานผลการสอบ · แบบรายงานฯ · invitation letter · แบบประเมิน ถ้ามี)</li>
-                <li>อัปโหลดเอกสารทั้งหมดด้านล่าง</li>
-                <li>ส่งต่อเอกสารให้นิสิต</li>
-                <li>กดอนุมัติเพื่อแจ้งให้นิสิตดำเนินขั้นถัดไป</li>
-              </ol>
-              <div className="space-y-2 pt-1">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" /> อัปโหลดเอกสารจากคณะ (SIGNED)
-                </p>
-                <FileUploader submissionId={sub.id} formType="SIGNED" />
-                <p className="text-xs text-gray-400">อัปโหลดซ้ำได้หลายครั้ง — แต่ละไฟล์จะแสดงแยกกัน</p>
-                </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">ตรวจสอบเอกสารที่นักศึกษาอัปโหลด แล้วอนุมัติเพื่อส่งต่อไปยังขั้นถัดไป หรือปฏิเสธหากเอกสารไม่ครบถ้วน</p>
-          )}
-
-          {!showReject ? (
-            <div className="space-y-3">
-              {isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED") && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  ⚠️ กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อนกดอนุมัติ
-                </p>
-              )}
-              <textarea
-                value={approveNotes}
-                onChange={(e) => setApproveNotes(e.target.value)}
-                placeholder="หมายเหตุ (ไม่บังคับ)..."
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <div className="flex gap-2">
-                <button
-                  disabled={isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED")}
-                  onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <CheckCircle2 className="w-5 h-5" />
-                  อนุมัติและส่งต่อ
-                </button>
-                <button
-                  onClick={() => setShowReject(true)}
-                  className="px-5 py-3 border-2 border-red-300 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition"
-                >
-                  ปฏิเสธ
-                </button>
-              </div>
-            </div>
-          ) : (
-            <RejectForm
-              onConfirm={(notes) => { rejectCurrentStep(sub.id, notes); setShowReject(false); }}
-              onCancel={() => setShowReject(false)}
-            />
-          )}
-        </div>
-      )}
-
-      {/* PROPOSAL step 4: admin must upload FINANCE_DOC while student uploads B1C+B1D */}
-      {isProposalFinanceStep && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-yellow-600" />
-            <h2 className="font-semibold text-yellow-800 text-lg">อัปโหลดเอกสารการเงิน</h2>
-          </div>
-          <p className="text-sm text-gray-600">
-            ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
-            นิสิตจึงจะสามารถส่งขั้นตอนนี้ได้
-          </p>
-          <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
-        </div>
-      )}
-
       {/* Header + edit */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 space-y-4">
         <div className="flex items-start flex-wrap gap-3">
@@ -646,6 +549,114 @@ export default function AdminSubmissionDetail() {
 
         {/* Right sidebar */}
         <div className="space-y-4">
+
+          {/* Admin's own action panel — same right-sidebar pattern as RoleSubmissionDetail */}
+          {isMyTurn && sub.status !== "REJECTED" && (
+            <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <h2 className="font-semibold text-blue-800">
+                  {isThesisRelayStep
+                    ? "ถึงคิวของท่าน — นำส่งเอกสาร"
+                    : isThesisUploadStep
+                    ? "ถึงคิวของท่าน — อัปโหลดเอกสาร"
+                    : "ถึงคิวของท่านแล้ว"}
+                </h2>
+              </div>
+
+              {isThesisRelayStep ? (
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>ขั้นตอนนี้ต้องดำเนินการก่อนกดอนุมัติ:</p>
+                  <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
+                    <li>พิมพ์ / รวบรวม บ.2 + บ.3 จากระบบ</li>
+                    <li>นำส่งไปยังคณะวิศวกรรมศาสตร์</li>
+                    <li>กดอนุมัติเพื่อยืนยันว่านำส่งแล้ว</li>
+                  </ol>
+                </div>
+              ) : isThesisUploadStep ? (
+                <div className="space-y-3 text-sm text-gray-600">
+                  <p>รับเอกสารจากคณะแล้วอัปโหลดก่อนกดอนุมัติ:</p>
+                  <ol className="list-decimal list-inside space-y-1 pl-1 text-gray-700">
+                    <li>รับเอกสารจากคณะ</li>
+                    <li>อัปโหลดด้านล่าง</li>
+                    <li>ส่งต่อให้นิสิต</li>
+                    <li>กดอนุมัติเพื่อแจ้งนิสิต</li>
+                  </ol>
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5" /> อัปโหลดเอกสารจากคณะ
+                    </p>
+                    <FileUploader submissionId={sub.id} formType="SIGNED" />
+                    <p className="text-xs text-gray-400">อัปโหลดซ้ำได้หลายครั้ง</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">ตรวจสอบเอกสาร แล้วอนุมัติหรือปฏิเสธ</p>
+              )}
+
+              {!showReject ? (
+                <div className="space-y-3">
+                  {isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED") && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      ⚠️ กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อน
+                    </p>
+                  )}
+                  <textarea
+                    value={approveNotes}
+                    onChange={(e) => setApproveNotes(e.target.value)}
+                    placeholder="หมายเหตุ (ไม่บังคับ)..."
+                    className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      disabled={isThesisUploadStep && !sub.uploads.some((u) => u.formType === "SIGNED")}
+                      onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      อนุมัติ
+                    </button>
+                    <button
+                      onClick={() => setShowReject(true)}
+                      className="px-5 py-3 border-2 border-red-300 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition"
+                    >
+                      ปฏิเสธ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <RejectForm
+                  onConfirm={(notes) => { rejectCurrentStep(sub.id, notes); setShowReject(false); }}
+                  onCancel={() => setShowReject(false)}
+                />
+              )}
+            </div>
+          )}
+
+          {/* PROPOSAL step 4: upload FINANCE_DOC in parallel while student uploads B1C+B1D */}
+          {isProposalFinanceStep && (
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-yellow-600" />
+                <h2 className="font-semibold text-yellow-800">อัปโหลดเอกสารการเงิน</h2>
+              </div>
+              <p className="text-sm text-gray-600">
+                ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
+              </p>
+              <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
+            </div>
+          )}
+
+          {/* Waiting-for-resubmit — admin is the prevStep role, blocked until student resubmits */}
+          {isMyTurn && sub.status === "REJECTED" && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+              <div className="flex items-center gap-2 text-red-700 font-semibold mb-1">
+                <Clock className="w-5 h-5" />
+                รอนักศึกษายืนยันการแก้ไข
+              </div>
+              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นักศึกษาต้องกด "แก้ไขและยื่นใหม่" ก่อน</p>
+            </div>
+          )}
 
           {/* Current status summary */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
