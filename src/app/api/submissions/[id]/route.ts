@@ -141,9 +141,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         );
       }
       // PROPOSAL step 4 parallel gate: student docs are ready — check if FINANCE_DOC is also done.
-      // If not, acknowledge the student's submission but keep the step PENDING until admin uploads.
+      // If not, acknowledge the student's submission, notify admin, and keep the step PENDING.
       if ((sub.submissionType ?? "PROPOSAL") === "PROPOSAL" && step.stepOrder === 4) {
         if (!uploaded.has("FINANCE_DOC")) {
+          // Notify all admins to upload their FINANCE_DOC
+          const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
+          if (admins.length) {
+            await prisma.notification.createMany({
+              data: admins.map((a: any) => ({
+                recipientId: a.id,
+                message: "นิสิตอัปโหลด บ.วศ.1ค + บ.วศ.1ง แล้ว — กรุณาอัปโหลดเอกสารการเงิน",
+                detail: sub.title,
+                submissionId: sub.id,
+                type: "pending",
+              })),
+            });
+          }
+          try {
+            await sendStepEmail({ role: "ADMIN", sub, stepName: "อัปโหลดเอกสารการเงิน (ขั้นที่ 4)" });
+          } catch (e) { console.error("[email/step4-finance]", e); }
           const result = await getSub(id);
           return NextResponse.json({ ...mapSub(result!), waitingForFinance: true });
         }
@@ -324,9 +340,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!isInvolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // All roles go back exactly one step
+    // All roles go back exactly one step — skip SKIPPED steps (e.g. CO_ADVISOR when no co-advisors)
     const prevStep = [...sub.workflowSteps]
-      .filter((s: any) => s.stepOrder < step.stepOrder)
+      .filter((s: any) => s.stepOrder < step.stepOrder && s.status !== "SKIPPED")
       .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
 
     if (!prevStep) {
@@ -373,13 +389,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const rejectedStep = sub.workflowSteps.find((s: any) => s.status === "REJECTED");
     if (!rejectedStep) return NextResponse.json({ error: "No rejected step" }, { status: 400 });
 
-    // Go back exactly one step from the rejected step (same as the reject action).
+    // Go back exactly one step from the rejected step — skip SKIPPED steps same as reject action.
     const prevStep = [...sub.workflowSteps]
-      .filter((s: any) => s.stepOrder < rejectedStep.stepOrder)
+      .filter((s: any) => s.stepOrder < rejectedStep.stepOrder && s.status !== "SKIPPED")
       .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0] ?? rejectedStep;
 
+    // Reset only non-SKIPPED steps in the range — don't accidentally un-skip CO_ADVISOR etc.
     const idsToReset = sub.workflowSteps
-      .filter((s: any) => s.stepOrder >= prevStep.stepOrder && s.stepOrder <= rejectedStep.stepOrder)
+      .filter((s: any) =>
+        s.stepOrder >= prevStep.stepOrder &&
+        s.stepOrder <= rejectedStep.stepOrder &&
+        s.status !== "SKIPPED"
+      )
       .map((s: any) => s.id);
 
     await prisma.workflowStep.updateMany({
