@@ -115,16 +115,19 @@ export default function StudentSubmissionDetail() {
   const remaining = (ALL_STUDENT_FORMS[subType] ?? []).filter((f) => !uploadedTypes.has(f));
   const requiredForms = suggested?.forms ?? [];
   const adminRequiredForms = suggested?.adminForms ?? [];
-  const studentUploaded = requiredForms.length === 0 || requiredForms.every((f) => effectiveUploadedTypes.has(f) || !!selectedFiles[f]);
-  const adminUploaded   = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
+  const studentUploaded   = requiredForms.length === 0 || requiredForms.every((f) => effectiveUploadedTypes.has(f) || !!selectedFiles[f]);
+  const adminUploaded     = adminRequiredForms.length === 0 || adminRequiredForms.every((f) => uploadedTypes.has(f));
+  // True when student's required files are already in the DB (submitted this round), not just selected
+  const studentFilesInDb  = requiredForms.length > 0 && requiredForms.every((f) => effectiveUploadedTypes.has(f));
+  // Parallel step: student submitted their part but admin hasn't uploaded FINANCE_DOC yet
+  const waitingForAdminUpload = isMyTurn && adminRequiredForms.length > 0 && studentFilesInDb && !adminUploaded;
 
   const needsSignConfirm   = subType === "THESIS_DEFENSE" && isMyTurn &&
     (currentStep?.stepOrder === 9 || currentStep?.stepOrder === 16);
   const needsProgramConfirm = subType === "THESIS_DEFENSE" && isMyTurn && currentStep?.stepOrder === 16;
   const preSubmitAllChecked = (!needsSignConfirm || confirmSigns) && (!needsProgramConfirm || confirmProgram);
 
-  // Student can submit as soon as their own files are ready — FINANCE_DOC is uploaded by admin
-  // in parallel; the API handles the case where admin hasn't uploaded yet (waitingForFinance).
+  // Student can submit as soon as their own files are ready — FINANCE_DOC is handled by admin in parallel
   const allRequiredUploaded = studentUploaded && preSubmitAllChecked;
 
   // Who is responsible for the current step (with name if available)
@@ -225,13 +228,13 @@ export default function StudentSubmissionDetail() {
       );
     }
 
-    if (isMyTurn && adminRequiredForms.length > 0 && studentUploaded && !adminUploaded) {
+    if (waitingForAdminUpload) {
       return (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 flex items-start gap-4">
-          <Clock className="w-7 h-7 text-orange-500 shrink-0 mt-0.5" />
+        <div className="bg-green-50 border border-green-300 rounded-2xl p-5 flex items-start gap-4">
+          <CheckCircle2 className="w-7 h-7 text-green-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-orange-800 font-bold text-lg">รอเจ้าหน้าที่อัปโหลดเอกสารการเงิน</p>
-            <p className="text-orange-600 text-sm mt-1">ท่านอัปโหลดเอกสารครบแล้ว — กำลังรอเจ้าหน้าที่อัปโหลดเอกสารการเงินก่อนดำเนินการต่อ</p>
+            <p className="text-green-800 font-bold text-lg">ส่งเอกสารของท่านแล้ว</p>
+            <p className="text-green-600 text-sm mt-1">กำลังรอเจ้าหน้าที่อัปโหลดเอกสารการเงิน — ระบบจะดำเนินต่อโดยอัตโนมัติเมื่อครบทั้งสองฝ่าย</p>
           </div>
         </div>
       );
@@ -429,8 +432,8 @@ export default function StudentSubmissionDetail() {
             />
           )}
 
-          {/* Upload section — only show when it is actually the student's turn */}
-          {subStatus === "IN_PROGRESS" && isMyTurn && (
+          {/* Upload section — hide when student has already submitted and is waiting for admin */}
+          {subStatus === "IN_PROGRESS" && isMyTurn && !waitingForAdminUpload && (
             <div className="bg-white rounded-2xl border border-blue-100 p-4 space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 pb-1 border-b border-gray-100">

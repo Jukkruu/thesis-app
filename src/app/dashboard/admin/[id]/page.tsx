@@ -635,16 +635,26 @@ export default function AdminSubmissionDetail() {
 
           {/* PROPOSAL step 4: upload FINANCE_DOC in parallel while student uploads B1C+B1D */}
           {isProposalFinanceStep && (
-            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-yellow-600" />
-                <h2 className="font-semibold text-yellow-800">อัปโหลดเอกสารการเงิน</h2>
+            sub.uploads.some((u) => u.formType === "FINANCE_DOC") ? (
+              <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <h2 className="font-semibold text-green-800">อัปโหลดเอกสารการเงินแล้ว</h2>
+                </div>
+                <p className="text-sm text-gray-600">กำลังรอนิสิตส่ง บ.วศ.1ค + บ.วศ.1ง — ระบบจะดำเนินต่อโดยอัตโนมัติ</p>
               </div>
-              <p className="text-sm text-gray-600">
-                ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
-              </p>
-              <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
-            </div>
+            ) : (
+              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-yellow-600" />
+                  <h2 className="font-semibold text-yellow-800">อัปโหลดเอกสารการเงิน</h2>
+                </div>
+                <p className="text-sm text-gray-600">
+                  ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
+                </p>
+                <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
+              </div>
+            )
           )}
 
           {/* Waiting-for-resubmit — admin is the prevStep role, blocked until student resubmits */}
