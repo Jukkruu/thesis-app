@@ -258,10 +258,11 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="p-5 space-y-3">
-                  {/* Row 1: type + title + actions */}
+                  {/* Row 1: title + actions */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="font-semibold text-gray-900 text-base leading-snug">{sub.title}</p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {sub.submissionType === "PROPOSAL" && (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0">
                             <BookOpen className="w-3 h-3" />โครงร่าง
@@ -279,8 +280,7 @@ export default function AdminDashboard() {
                           </span>
                         )}
                       </div>
-                      <p className="font-semibold text-gray-900 text-base leading-snug">{sub.title}</p>
-                      <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
+                      <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                         <User className="w-3.5 h-3.5 shrink-0" />
                         {student ? (
                           <Link
