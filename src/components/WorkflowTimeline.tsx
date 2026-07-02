@@ -7,7 +7,7 @@ import { CheckCircle2, Clock, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SubInfo = Pick<MockSubmission,
-  "studentId" | "advisorId" | "headCommitteeId" | "coAdvisorIds" |
+  "studentId" | "studentFullName" | "advisorId" | "headCommitteeId" | "coAdvisorIds" |
   "committeeIds" | "invitedCommitteeId" | "invitedProfName"
 > & { uploads?: MockUpload[] };
 
@@ -223,7 +223,7 @@ export function WorkflowTimeline({
                           ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                           : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                         <span className={cn("flex-1", studentStep4Done ? "text-green-700 font-medium" : "text-gray-600")}>
-                          นิสิต
+                          {submission?.studentFullName ?? "นิสิต"}
                           <span className="text-gray-400 font-normal"> (บ.วศ.1ค + บ.วศ.1ง)</span>
                         </span>
                         {!studentStep4Done && (
