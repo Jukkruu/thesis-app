@@ -150,7 +150,7 @@ export default function AdminDashboard() {
               let taskLabel: string;
               let taskIcon: React.ReactNode;
               if (type === "finance") {
-                taskLabel = "อัปโหลดเอกสารการเงิน (ขณะรอนิสิตส่งเอกสาร)";
+                taskLabel = "อัปโหลดเอกสารการเงิน";
                 taskIcon  = <Upload className="w-3.5 h-3.5 text-yellow-600 shrink-0" />;
               } else if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 7) {
                 taskLabel = "พิมพ์ บ.2+บ.3 แล้วนำส่งไปยังคณะวิศวกรรมศาสตร์";
