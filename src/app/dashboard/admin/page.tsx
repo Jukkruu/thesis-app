@@ -11,7 +11,7 @@ import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
   ChevronRight, Clock, CheckCircle2, XCircle, FileText,
-  Trash2, Search, AlertCircle, Bell, BarChart2, BookOpen, GraduationCap, User,
+  Trash2, Search, AlertCircle, Bell, BarChart2, BookOpen, GraduationCap, User, Upload,
 } from "lucide-react";
 import type { MockSubmission, MockWorkflowStep, MockUser } from "@/types";
 import { Role } from "@/types";
@@ -69,6 +69,21 @@ export default function AdminDashboard() {
   const proposalInProgress = inProgress.filter((s) => s.submissionType === "PROPOSAL");
   const thesisInProgress   = inProgress.filter((s) => s.submissionType === "THESIS_DEFENSE");
 
+  // PROPOSAL step 4 parallel: admin must upload FINANCE_DOC while student uploads B1C+B1D
+  const needsFinanceUpload = inProgress.filter((s) => {
+    if (s.submissionType !== "PROPOSAL") return false;
+    const step = s.workflowSteps.find((w) => w.status === "PENDING");
+    return step?.stepOrder === 4 && !s.uploads.some((u) => u.formType === "FINANCE_DOC");
+  });
+
+  type AdminTask = { sub: MockSubmission; type: "turn" | "finance" };
+  const adminTasks: AdminTask[] = [
+    ...needsMe.map((sub) => ({ sub, type: "turn" as const })),
+    ...needsFinanceUpload
+      .filter((sub) => !needsMe.some((s) => s.id === sub.id))
+      .map((sub) => ({ sub, type: "finance" as const })),
+  ];
+
   const counts = {
     ALL:         typeSubs.length,
     IN_PROGRESS: inProgress.length,
@@ -104,7 +119,7 @@ export default function AdminDashboard() {
         role="ADMIN"
         name={user?.name ?? "ผู้ดูแลระบบ"}
         title="ภาพรวมคำร้อง"
-        highlight={{ label: "รอดำเนินการ", value: needsMe.length }}
+        highlight={{ label: "รอดำเนินการ", value: adminTasks.length }}
       />
 
       {/* Summary cards */}
@@ -115,35 +130,56 @@ export default function AdminDashboard() {
         <SummaryCard icon={<XCircle className="w-5 h-5 text-red-400" />}        label="ถูกปฏิเสธ"       value={counts.REJECTED}    color="bg-red-50 border-red-200"     textColor="text-red-700" />
       </div>
 
-      {/* My pending tasks — most actionable section */}
-      {needsMe.length > 0 && (
+      {/* Admin task box — all pending tasks with specific descriptions */}
+      {adminTasks.length > 0 && (
         <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-orange-500" />
-            <h2 className="font-semibold text-orange-800 text-lg">รออนุมัติจากท่าน</h2>
+            <h2 className="font-semibold text-orange-800 text-lg">งานที่ต้องดำเนินการ</h2>
             <span className="ml-auto text-sm font-bold text-orange-700 bg-orange-100 px-2.5 py-0.5 rounded-full">
-              {needsMe.length} รายการ
+              {adminTasks.length} รายการ
             </span>
           </div>
           <div className="space-y-2">
-            {needsMe.map((sub) => {
-              const student  = users.find((u) => u.id === sub.studentId);
-              const step     = sub.workflowSteps.find((w) => w.status === "PENDING")!;
-              const stepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role];
+            {adminTasks.map(({ sub, type }) => {
+              const student   = users.find((u) => u.id === sub.studentId);
+              const step      = sub.workflowSteps.find((w) => w.status === "PENDING")!;
               const stuckDays = getStuckDays(sub);
+
+              // Specific task description per step type
+              let taskLabel: string;
+              let taskIcon: React.ReactNode;
+              if (type === "finance") {
+                taskLabel = "อัปโหลดเอกสารการเงิน (ขณะรอนิสิตส่งเอกสาร)";
+                taskIcon  = <Upload className="w-3.5 h-3.5 text-yellow-600 shrink-0" />;
+              } else if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 7) {
+                taskLabel = "พิมพ์ บ.2+บ.3 แล้วนำส่งไปยังคณะวิศวกรรมศาสตร์";
+                taskIcon  = <Clock className="w-3.5 h-3.5 text-orange-500 shrink-0" />;
+              } else if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 8) {
+                taskLabel = "รับเอกสารจากคณะ อัปโหลด แล้วส่งต่อนิสิต";
+                taskIcon  = <Upload className="w-3.5 h-3.5 text-orange-500 shrink-0" />;
+              } else {
+                taskLabel = "ตรวจสอบเอกสารและอนุมัติ";
+                taskIcon  = <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />;
+              }
+
               return (
                 <Link
-                  key={sub.id}
+                  key={`${sub.id}-${type}`}
                   href={`/dashboard/admin/${sub.id}`}
-                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-orange-200 hover:border-orange-400 hover:shadow-sm transition group"
+                  className="flex items-start gap-3 bg-white rounded-xl px-4 py-3 border border-orange-200 hover:border-orange-400 hover:shadow-sm transition group"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 truncate">{sub.title}</p>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <User className="w-3 h-3" />{student?.name}
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                      <User className="w-3 h-3 shrink-0" />
+                      {student?.name ?? "—"}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {taskIcon}
+                      <span className={`text-xs font-medium ${type === "finance" ? "text-yellow-700" : "text-orange-700"}`}>
+                        {taskLabel}
                       </span>
-                      <span className="text-xs text-orange-600 font-medium">ขั้นที่ {step.stepOrder} — {stepName}</span>
                       {stuckDays > 7 && (
                         <span className="text-xs text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded-full">
                           ค้างมา {stuckDays} วัน
@@ -151,7 +187,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-orange-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-orange-400 shrink-0 mt-1 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               );
             })}
