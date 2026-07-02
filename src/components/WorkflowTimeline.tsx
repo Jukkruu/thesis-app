@@ -155,7 +155,7 @@ export function WorkflowTimeline({
                 )}
 
                 {/* Assignee bullet list */}
-                {assignees.length > 0 && (
+                {(assignees.length > 0 || showAdminFinanceRow) && (
                   <div className="mt-2 space-y-1.5">
                     {/* Header count — committee signing or parallel step 4 */}
                     {(isCommittee || showAdminFinanceRow) && (
@@ -216,14 +216,30 @@ export function WorkflowTimeline({
                       );
                     })}
 
-                    {/* Admin finance row — shown inline with student row for visual consistency */}
-                    {showAdminFinanceRow && adminFinanceUser && (
+                    {/* Step 4 student row fallback when student not in users list (other-role pages) */}
+                    {showAdminFinanceRow && assignees.length === 0 && (
+                      <div className="flex items-center gap-2 text-xs">
+                        {studentStep4Done
+                          ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                          : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                        <span className={cn("flex-1", studentStep4Done ? "text-green-700 font-medium" : "text-gray-600")}>
+                          นิสิต
+                          <span className="text-gray-400 font-normal"> (บ.วศ.1ค + บ.วศ.1ง)</span>
+                        </span>
+                        {!studentStep4Done && (
+                          <span className="text-gray-300 italic shrink-0">ยังไม่ได้ดำเนินการ</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin finance row */}
+                    {showAdminFinanceRow && (
                       <div className="flex items-center gap-2 text-xs">
                         {financeUploaded
                           ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                           : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                         <span className={cn("flex-1", financeUploaded ? "text-green-700 font-medium" : "text-gray-600")}>
-                          {adminFinanceUser.name}
+                          {adminFinanceUser?.name ?? "เจ้าหน้าที่"}
                           <span className="text-gray-400 font-normal"> (เอกสารการเงิน)</span>
                         </span>
                         {!financeUploaded && (
