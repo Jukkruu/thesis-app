@@ -30,6 +30,9 @@ enum FormType {
   THESIS
   SIGNED
   FINANCE_DOC
+  EXAM_RESULT
+  INVITE_LETTER
+  VERY_GOOD_EVAL
 }
 
 enum ProgramType {

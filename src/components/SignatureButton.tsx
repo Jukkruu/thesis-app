@@ -39,13 +39,10 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
 
   const sub = submissions.find((s) => s.id === submissionId);
 
-  // Determine which form slots to show for upload.
-  // Non-SIGNED types upload with their own formType (versions the original file).
-  // SIGNED or no formsToShow → single SIGNED slot.
-  const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
-  const baseTargets: string[] = nonSignedForms.length ? nonSignedForms : ["SIGNED"];
+  // Upload targets: use all formsToShow directly (each uploads as its own formType).
+  // Fall back to a single SIGNED slot only when formsToShow is empty and no extraSlots.
   const uploadTargets: string[] = [
-    ...baseTargets,
+    ...(formsToShow?.length ? formsToShow : (extraSlots?.length ? [] : ["SIGNED"])),
     ...(extraSlots ?? []).map((s) => s.slotKey),
   ];
   // Ready when every slot is either already uploaded or has a file selected

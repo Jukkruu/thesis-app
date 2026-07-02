@@ -1,22 +1,22 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
+import { useToast } from "@/context/ToastContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { SubmissionStatusBadge, StepStatusBadge } from "@/components/StatusBadge";
-import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, previewFile } from "@/lib/utils";
+import { FORM_LABELS, ROLE_LABELS, getStepName, PROGRAM_LABELS, formatBytes, formatDate, previewFile, cn } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { MockWorkflowStep, MockUpload } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Download, FileText, Pencil, Check, X,
   Trash2, ShieldCheck, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, Clock, User, Users, CalendarDays, Upload,
+  CheckCircle2, XCircle, Clock, User, Users, CalendarDays, Upload, Loader2,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { FileUploader } from "@/components/FileUploader";
-import { SignatureButton } from "@/components/SignatureButton";
 
 // ─── Step control card ────────────────────────────────────────────────────────
 
@@ -220,6 +220,178 @@ function StepCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Thesis step 8: faculty-return upload panel ───────────────────────────────
+
+const FACULTY_SLOTS = [
+  { key: "SIGNED",        formType: "SIGNED",        label: "แบบรายงานการเสนอผลงานทางวิชาการของนิสิต" },
+  { key: "EXAM_RESULT",   formType: "EXAM_RESULT",   label: "ใบรายงานผลการสอบวิทยานิพนธ์" },
+  { key: "INVITE_LETTER", formType: "INVITE_LETTER", label: "หนังสือเชิญกรรมการสอบ" },
+  { key: "FINANCE_DOC",   formType: "FINANCE_DOC",   label: "เอกสารการเงิน" },
+] as const;
+
+function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
+  const { approveCurrentStep } = useApp();
+  const { showToast }          = useToast();
+
+  const [includeVeryGood, setIncludeVeryGood] = useState(false);
+  const [fileBySlot,    setFileBySlot]    = useState<Record<string, File | null>>({});
+  const [uploadedSlots, setUploadedSlots] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const activeSlots = [
+    ...FACULTY_SLOTS,
+    ...(includeVeryGood ? [{ key: "VERY_GOOD_EVAL", formType: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก" } as const] : []),
+  ];
+
+  const allReady = activeSlots.every((s) => uploadedSlots.has(s.key) || !!fileBySlot[s.key]);
+
+  async function handleSubmit() {
+    if (!allReady) { setError("กรุณาเลือกไฟล์ให้ครบทุกช่องก่อน"); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      for (const slot of activeSlots) {
+        if (!uploadedSlots.has(slot.key) && fileBySlot[slot.key]) {
+          const fd = new FormData();
+          fd.append("file", fileBySlot[slot.key]!);
+          fd.append("submissionId", submissionId);
+          fd.append("formType", slot.formType);
+          const res = await fetch("/api/upload", { method: "POST", body: fd });
+          if (!res.ok) throw new Error("upload failed");
+          setUploadedSlots((prev) => new Set([...prev, slot.key]));
+        }
+      }
+      await approveCurrentStep(submissionId, undefined);
+      showToast("อัปโหลดเอกสารและส่งต่อนิสิตเรียบร้อยแล้ว ✓");
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
+      <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ — อัปโหลดเอกสารจากคณะ</h3>
+
+      {/* Required 4 slots */}
+      <div className="space-y-3">
+        {FACULTY_SLOTS.map((slot) => {
+          const isDone    = uploadedSlots.has(slot.key);
+          const selected  = fileBySlot[slot.key] ?? null;
+          return (
+            <div key={slot.key}>
+              <p className="text-xs font-semibold text-gray-600 mb-1">{slot.label}</p>
+              {isDone ? (
+                <div className="flex items-center gap-2 border-2 border-green-200 rounded-xl px-4 py-3 bg-green-50">
+                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                  <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จ</p>
+                </div>
+              ) : (
+                <div
+                  onClick={() => !loading && fileRefs.current[slot.key]?.click()}
+                  className={cn(
+                    "flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition",
+                    selected ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white",
+                    loading && "cursor-wait opacity-60"
+                  )}
+                >
+                  {selected ? <FileText className="w-4 h-4 text-blue-400 shrink-0" /> : <Upload className="w-4 h-4 text-gray-300 shrink-0" />}
+                  <span className="text-sm text-gray-500 truncate">
+                    {selected ? `${selected.name} (${formatBytes(selected.size)})` : "คลิกเพื่อเลือกไฟล์ PDF"}
+                  </span>
+                </div>
+              )}
+              <input
+                ref={(el) => { fileRefs.current[slot.key] = el; }}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setFileBySlot((prev) => ({ ...prev, [slot.key]: f }));
+                  setError(null);
+                  if (fileRefs.current[slot.key]) fileRefs.current[slot.key]!.value = "";
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Optional: ดีมาก evaluation form */}
+      <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50">
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={includeVeryGood}
+            onChange={(e) => {
+              setIncludeVeryGood(e.target.checked);
+              if (!e.target.checked) setFileBySlot((prev) => { const n = { ...prev }; delete n["VERY_GOOD_EVAL"]; return n; });
+            }}
+            className="w-4 h-4 accent-purple-600"
+          />
+          <span className="text-sm font-semibold text-purple-700">ผลสอบ "ดีมาก" — แนบแบบประเมินวิทยานิพนธ์ดีมาก</span>
+        </label>
+        {includeVeryGood && (() => {
+          const slot = { key: "VERY_GOOD_EVAL", formType: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก" };
+          const isDone   = uploadedSlots.has(slot.key);
+          const selected = fileBySlot[slot.key] ?? null;
+          return isDone ? (
+            <div className="flex items-center gap-2 border-2 border-green-200 rounded-xl px-4 py-3 bg-green-50">
+              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+              <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จ</p>
+            </div>
+          ) : (
+            <div
+              onClick={() => !loading && fileRefs.current[slot.key]?.click()}
+              className={cn(
+                "flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition",
+                selected ? "border-purple-300 bg-purple-100" : "border-purple-200 hover:border-purple-300 bg-white",
+                loading && "cursor-wait opacity-60"
+              )}
+            >
+              {selected ? <FileText className="w-4 h-4 text-purple-400 shrink-0" /> : <Upload className="w-4 h-4 text-purple-300 shrink-0" />}
+              <span className="text-sm text-purple-600 truncate">
+                {selected ? `${selected.name} (${formatBytes(selected.size)})` : "คลิกเพื่อเลือกไฟล์ PDF"}
+              </span>
+              <input
+                ref={(el) => { fileRefs.current[slot.key] = el; }}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setFileBySlot((prev) => ({ ...prev, [slot.key]: f }));
+                  setError(null);
+                }}
+              />
+            </div>
+          );
+        })()}
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={loading || !allReady}
+        className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-60 transition"
+      >
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+        {loading ? "กำลังบันทึก..." : "ส่งต่อนิสิต"}
+      </button>
     </div>
   );
 }
@@ -583,12 +755,7 @@ export default function AdminSubmissionDetail() {
           {/* Admin's action panel — SignatureButton for upload steps, simple approve for others */}
           {isMyTurn && sub.status !== "REJECTED" && (
             isThesisUploadStep ? (
-              <SignatureButton
-                submissionId={sub.id}
-                label="ส่งต่อนิสิต"
-                onSuccess={() => {}}
-                hideDownloads={true}
-              />
+              <ThesisFacultyUploadPanel submissionId={sub.id} />
             ) : (
               <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ</h3>

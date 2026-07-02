@@ -166,16 +166,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    // THESIS step 8 (ADMIN upload step): require at least one SIGNED doc uploaded AFTER step 7 completed
+    // THESIS step 8 (ADMIN upload): require all 4 document types uploaded AFTER step 7 completed
     if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 8 && step.role === "ADMIN") {
       const step7 = sub.workflowSteps.find((s: any) => s.stepOrder === 7);
       const step7ActedAt = step7?.actedAt ? new Date(step7.actedAt).getTime() : 0;
-      const hasSigned = sub.uploads.some(
-        (u: any) => u.formType === "SIGNED" && new Date(u.uploadedAt).getTime() >= step7ActedAt
+      const requiredTypes = ["SIGNED", "EXAM_RESULT", "INVITE_LETTER", "FINANCE_DOC"];
+      const missing = requiredTypes.filter(
+        (ft) => !sub.uploads.some(
+          (u: any) => u.formType === ft && new Date(u.uploadedAt).getTime() >= step7ActedAt
+        )
       );
-      if (!hasSigned) {
+      if (missing.length > 0) {
         return NextResponse.json(
-          { error: "กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อนอนุมัติ" },
+          { error: "กรุณาอัปโหลดเอกสารให้ครบทั้ง 4 ประเภทก่อนอนุมัติ" },
           { status: 400 }
         );
       }

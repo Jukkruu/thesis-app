@@ -84,13 +84,13 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       5:  ["B2"],            // HEAD_EXAM_COMMITTEE signs B2
       6:  ["B2"],            // PROGRAM_CHAIR signs B2
       // Step 7 (ADMIN relay) omitted — admin physically delivers, no signing, uses own page
-      // Step 8 (ADMIN upload) omitted — admin uploads new docs from Faculty, handled via admin page with hideDownloads
-      10: ["SIGNED"],        // ADVISOR signs แบบรายงาน + ใบรายงานผล
-      11: ["SIGNED"],        // CO_ADVISOR
-      12: ["SIGNED"],        // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
-      13: ["SIGNED"],        // EXAM_COMMITTEE signs ใบรายงานผล
-      14: ["SIGNED"],        // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
-      15: ["SIGNED"],        // PROGRAM_CHAIR signs ใบรายงานผล
+      // Step 8 (ADMIN upload) omitted — admin uploads new docs from Faculty, handled via admin page
+      10: ["SIGNED", "EXAM_RESULT"], // ADVISOR signs แบบรายงาน + ใบรายงานผล
+      11: ["EXAM_RESULT"],           // CO_ADVISOR signs ใบรายงานผล
+      12: ["EXAM_RESULT"],           // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
+      13: ["EXAM_RESULT"],           // EXAM_COMMITTEE signs ใบรายงานผล
+      14: ["EXAM_RESULT"],           // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
+      15: ["EXAM_RESULT"],           // PROGRAM_CHAIR signs ใบรายงานผล
       17: ["B4"],            // PROGRAM_CHAIR signs B4
       18: ["THESIS"],        // ADVISOR signs thesis cover
       19: ["THESIS"],        // CO_ADVISOR signs thesis cover
@@ -285,7 +285,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
               requireNotePrefix={isThesisAdvisorResultStep}
               extraSlots={
                 isThesisAdvisorResultStep && thesisResult === "ดีมาก"
-                  ? [{ slotKey: "SIGNED_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก", formType: "SIGNED" }]
+                  ? [{ slotKey: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก", formType: "VERY_GOOD_EVAL" }]
                   : undefined
               }
             />
