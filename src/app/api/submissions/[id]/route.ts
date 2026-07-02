@@ -35,7 +35,6 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
   else if (role === "HEAD_EXAM_COMMITTEE") recipientId = sub.headCommitteeId;
   else if (role === "INVITED_EXAM_COMMITTEE") recipientId = sub.invitedCommitteeId;
   else if (role === "EXAM_COMMITTEE") {
-    // Sequential signing: only notify the FIRST member; the sign route chains to the next.
     const firstId: string | undefined = sub.committeeIds?.[0];
     if (firstId) {
       await prisma.notification.create({
@@ -44,11 +43,19 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
     }
     return;
   } else if (role === "CO_ADVISOR") {
-    // Sequential signing: only notify the FIRST co-advisor.
     const firstId: string | undefined = sub.coAdvisorIds?.[0];
     if (firstId) {
       await prisma.notification.create({
         data: { recipientId: firstId, message, detail: sub.title, submissionId: sub.id, type },
+      });
+    }
+    return;
+  } else if (role === "ADMIN" || role === "SUPER_ADMIN") {
+    // Fix #3: notify ALL admins, not just the first one found
+    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
+    if (admins.length) {
+      await prisma.notification.createMany({
+        data: admins.map((a: any) => ({ recipientId: a.id, message, detail: sub.title, submissionId: sub.id, type })),
       });
     }
     return;
@@ -139,9 +146,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    // THESIS step 8 (ADMIN upload step): require at least one SIGNED doc uploaded before approving
+    // THESIS step 8 (ADMIN upload step): require at least one SIGNED doc uploaded AFTER step 7 completed
     if (sub.submissionType === "THESIS_DEFENSE" && step.stepOrder === 8 && step.role === "ADMIN") {
-      const hasSigned = sub.uploads.some((u: any) => u.formType === "SIGNED");
+      const step7 = sub.workflowSteps.find((s: any) => s.stepOrder === 7);
+      const step7ActedAt = step7?.actedAt ? new Date(step7.actedAt).getTime() : 0;
+      const hasSigned = sub.uploads.some(
+        (u: any) => u.formType === "SIGNED" && new Date(u.uploadedAt).getTime() >= step7ActedAt
+      );
       if (!hasSigned) {
         return NextResponse.json(
           { error: "กรุณาอัปโหลดเอกสารจากคณะอย่างน้อย 1 ไฟล์ก่อนอนุมัติ" },
@@ -273,10 +284,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ? `ส่งกลับเพื่อแก้ไข — "${body.notes}"`
       : `ส่งกลับโดย ${byLabel}`;
 
-    const isAdminReject = role === "ADMIN" || role === "SUPER_ADMIN";
+    const isPrivileged = role === "ADMIN" || role === "SUPER_ADMIN";
 
-    // Non-admin users must be involved in this submission to reject
-    if (!isAdminReject) {
+    // Non-privileged users must be involved in this submission to reject
+    if (!isPrivileged) {
       const isInvolved =
         sub.studentId === userId ||
         sub.advisorId === userId ||
@@ -287,57 +298,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!isInvolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (isAdminReject) {
-      // Admin: reset ALL non-SKIPPED steps from step 1 up to the current pending step
-      const idsToReset = sub.workflowSteps
-        .filter((s: any) => s.stepOrder <= step.stepOrder && s.status !== "SKIPPED")
-        .map((s: any) => s.id);
-      await prisma.workflowStep.updateMany({
-        where: { id: { in: idsToReset } },
-        data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
-      });
-      await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
+    // All roles go back exactly one step
+    const prevStep = [...sub.workflowSteps]
+      .filter((s: any) => s.stepOrder < step.stepOrder)
+      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
 
-      // Notify student in-app and send them an email to re-upload from step 1
+    if (!prevStep) {
+      return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
+    }
+
+    // Mark current step REJECTED, reset prev step so that role can act again
+    await prisma.workflowStep.update({
+      where: { id: step.id },
+      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: rejectionNote },
+    });
+    await prisma.workflowStep.update({
+      where: { id: prevStep.id },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+    });
+    await prisma.submission.update({ where: { id }, data: { status: "REJECTED" } });
+
+    // Notify the role being sent back to
+    await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
+    try {
+      const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
+      await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
+    } catch (e) { console.error("[email/reject]", e); }
+
+    // Notify student if the step being sent back to is not their own step
+    if (prevStep.role !== "STUDENT") {
+      const studentNote = body.notes
+        ? `คำร้องถูกส่งกลับ — "${body.notes}"`
+        : `คำร้องถูกส่งกลับขั้นตอนก่อนหน้าโดย ${byLabel}`;
       await prisma.notification.create({
-        data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId: id, type: "rejected" },
+        data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
       });
-      try {
-        const stepName = getStepName(1, sub.submissionType) || "อัปโหลดเอกสาร";
-        await sendStepEmail({ role: "STUDENT", sub, stepName });
-      } catch (e) { console.error("[email/admin-reject]", e); }
-    } else {
-      // Other roles: go back exactly one step (the immediately preceding step)
-      const prevStep = [...sub.workflowSteps]
-        .filter((s: any) => s.stepOrder < step.stepOrder)
-        .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
-
-      if (!prevStep) {
-        return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
-      }
-
-      await prisma.workflowStep.updateMany({
-        where: { id: { in: [step.id, prevStep.id] } },
-        data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
-      });
-      await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
-
-      // Notify the role being sent back to
-      await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
-      try {
-        const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
-        await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
-      } catch (e) { console.error("[email/reject]", e); }
-
-      // Also notify student if the step being sent back to is not the student step
-      if (prevStep.role !== "STUDENT") {
-        const studentNote = body.notes
-          ? `คำร้องถูกส่งกลับ — "${body.notes}"`
-          : `คำร้องถูกส่งกลับขั้นตอนก่อนหน้าโดย ${byLabel}`;
-        await prisma.notification.create({
-          data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
-        });
-      }
     }
   }
 

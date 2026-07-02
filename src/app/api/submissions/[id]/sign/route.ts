@@ -75,11 +75,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
     }
 
-    await prisma.workflowStep.updateMany({
-      where: { id: { in: [step.id, prevStep.id] } },
+    await prisma.workflowStep.update({
+      where: { id: step.id },
+      data: { status: "REJECTED", committeeActions: newActions, actedAt: now, actedByName: userName, actedById: userId },
+    });
+    await prisma.workflowStep.update({
+      where: { id: prevStep.id },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
-    await prisma.submission.update({ where: { id: submissionId }, data: { status: "IN_PROGRESS" } });
+    await prisma.submission.update({ where: { id: submissionId }, data: { status: "REJECTED" } });
 
     const rejectionNote = notes
       ? `กรรมการส่งกลับเพื่อแก้ไข — "${notes}"`

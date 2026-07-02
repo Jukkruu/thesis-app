@@ -178,7 +178,7 @@ export default function StudentDashboard() {
                   <div className="flex items-center gap-2 pt-0.5">
                     <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-400 rounded-full"
+                        className={`h-full rounded-full ${accent}`}
                         style={{ width: `${(doneCount / totalSteps) * 100}%` }}
                       />
                     </div>

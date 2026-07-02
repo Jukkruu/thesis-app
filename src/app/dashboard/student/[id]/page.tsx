@@ -413,8 +413,8 @@ export default function StudentSubmissionDetail() {
             />
           )}
 
-          {/* Upload section — always visible when in progress */}
-          {subStatus === "IN_PROGRESS" && (
+          {/* Upload section — only show when it is actually the student's turn */}
+          {subStatus === "IN_PROGRESS" && isMyTurn && (
             <div className="bg-white rounded-2xl border border-blue-100 p-4 space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 pb-1 border-b border-gray-100">

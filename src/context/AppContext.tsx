@@ -156,7 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (sub.id !== submissionId) return sub;
         return {
           ...sub,
-          uploads: [...sub.uploads, { id, formType, fileName, fileSize, uploadedAt: new Date().toISOString() }],
+          uploads: [...sub.uploads, { id, formType, fileName, fileSize, fileUrl: "", uploadedAt: new Date().toISOString() }],
         };
       })
     );
