@@ -157,15 +157,19 @@ export function WorkflowTimeline({
                 {/* Assignee bullet list */}
                 {assignees.length > 0 && (
                   <div className="mt-2 space-y-1.5">
-                    {isCommittee && (
+                    {/* Header count — committee signing or parallel step 4 */}
+                    {(isCommittee || showAdminFinanceRow) && (
                       <p className="text-xs font-medium text-gray-500">
-                        ลงนามแล้ว{" "}
+                        {isCommittee ? "ลงนามแล้ว" : "อัปโหลดแล้ว"}{" "}
                         <span className="font-bold text-gray-700">
-                          {step.status === "APPROVED"
-                            ? assignees.length
-                            : actions.filter((a) => a.decision === "APPROVED").length}/{assignees.length}
+                          {isCommittee
+                            ? (step.status === "APPROVED"
+                                ? assignees.length
+                                : actions.filter((a) => a.decision === "APPROVED").length)
+                            : (studentStep4Done ? 1 : 0) + (financeUploaded ? 1 : 0)
+                          }/{isCommittee ? assignees.length : 2}
                         </span>
-                        {" "}ท่าน
+                        {" "}{isCommittee ? "ท่าน" : "ฝ่าย"}
                       </p>
                     )}
                     {assignees.map(({ id, name }) => {
@@ -198,6 +202,9 @@ export function WorkflowTimeline({
                                        "text-gray-600"
                           )}>
                             {name}
+                            {showAdminFinanceRow && (
+                              <span className="text-gray-400 font-normal"> (บ.วศ.1ค + บ.วศ.1ง)</span>
+                            )}
                           </span>
                           {actedAt && (
                             <span className="text-gray-400 shrink-0">{formatDate(actedAt)}</span>
@@ -208,6 +215,22 @@ export function WorkflowTimeline({
                         </div>
                       );
                     })}
+
+                    {/* Admin finance row — shown inline with student row for visual consistency */}
+                    {showAdminFinanceRow && adminFinanceUser && (
+                      <div className="flex items-center gap-2 text-xs">
+                        {financeUploaded
+                          ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                          : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                        <span className={cn("flex-1", financeUploaded ? "text-green-700 font-medium" : "text-gray-600")}>
+                          {adminFinanceUser.name}
+                          <span className="text-gray-400 font-normal"> (เอกสารการเงิน)</span>
+                        </span>
+                        {!financeUploaded && (
+                          <span className="text-gray-300 italic shrink-0">ยังไม่ได้ดำเนินการ</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -215,21 +238,6 @@ export function WorkflowTimeline({
                   <p className="mt-1.5 text-sm text-gray-600 bg-white border border-gray-100 rounded-lg px-3 py-2">
                     "{step.notes}"
                   </p>
-                )}
-
-                {showAdminFinanceRow && adminFinanceUser && (
-                  <div className="mt-1.5 flex items-center gap-2 text-xs">
-                    {financeUploaded
-                      ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                      : <Circle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
-                    <span className={`flex-1 ${financeUploaded ? "text-green-700 font-medium" : "text-gray-600"}`}>
-                      {adminFinanceUser.name}{" "}
-                      <span className="text-gray-400 font-normal">(อัปโหลดเอกสารการเงิน)</span>
-                    </span>
-                    <span className={`font-semibold shrink-0 ${financeUploaded ? "text-green-500" : step.status === "PENDING" ? "text-amber-500 italic" : "text-gray-300 italic"}`}>
-                      {financeUploaded ? "✓ อัปโหลดแล้ว" : step.status === "PENDING" ? "รออัปโหลด..." : "ยังไม่ได้ดำเนินการ"}
-                    </span>
-                  </div>
                 )}
               </div>
             </li>
