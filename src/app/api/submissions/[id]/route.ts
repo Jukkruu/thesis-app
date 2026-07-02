@@ -451,6 +451,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           data: { status: "APPROVED", actedAt: now, actedByName: userName, actedById: userId, notes: notes ?? null },
         });
       }
+      // Clear any REJECTED steps after the approved target back to PENDING.
+      // Without this, a prior rejection at step N (which sets step N → REJECTED, step N-1 → PENDING)
+      // leaves step N orphaned when admin approves step N-1 — the workflow advances past REJECTED N
+      // to PENDING N+1, permanently skipping step N.
+      const orphanedRejected = sub.workflowSteps
+        .filter((s: any) => s.stepOrder > stepOrder && s.status === "REJECTED")
+        .map((s: any) => s.id);
+      if (orphanedRejected.length > 0) {
+        await prisma.workflowStep.updateMany({
+          where: { id: { in: orphanedRejected } },
+          data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+        });
+      }
     } else if (decision === "REJECTED") {
       // Reset target + all non-SKIPPED steps after it to PENDING
       const toReset = sub.workflowSteps
