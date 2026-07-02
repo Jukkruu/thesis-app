@@ -587,6 +587,7 @@ export default function AdminSubmissionDetail() {
                 submissionId={sub.id}
                 label="ส่งต่อนิสิต"
                 onSuccess={() => {}}
+                hideDownloads={true}
               />
             ) : (
               <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">

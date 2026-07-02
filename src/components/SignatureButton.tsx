@@ -21,9 +21,10 @@ interface Props {
   notePrefix?: string;
   requireNotePrefix?: boolean;
   extraSlots?: ExtraSlot[];
+  hideDownloads?: boolean;
 }
 
-export function SignatureButton({ submissionId, label = "ส่งต่อ", onSuccess, formsToShow, notePrefix, requireNotePrefix, extraSlots }: Props) {
+export function SignatureButton({ submissionId, label = "ส่งต่อ", onSuccess, formsToShow, notePrefix, requireNotePrefix, extraSlots, hideDownloads }: Props) {
   const { approveCurrentStep, rejectCurrentStep, submissions } = useApp();
   const { showToast } = useToast();
   const [notes,      setNotes]      = useState("");
@@ -105,8 +106,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
       <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ</h3>
 
-      {/* Step 1: Download forms to sign */}
-      {!showReject && (
+      {/* Step 1: Download forms to sign (hidden for steps where role uploads new files, not signed copies) */}
+      {!hideDownloads && !showReject && (
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-2">
             <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">1</span>
@@ -150,11 +151,13 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
         </div>
       )}
 
-      {/* Step 2: Upload signed file(s) — one slot per upload target */}
+      {/* Step 2 (or 1 when downloads hidden): Upload signed file(s) */}
       {!showReject && (
         <div className="space-y-3">
           <p className="text-sm font-semibold text-gray-700">
-            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
+            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">
+              {hideDownloads ? "1" : "2"}
+            </span>
             อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
           </p>
 

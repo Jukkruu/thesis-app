@@ -68,14 +68,13 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   // Which form types the current role needs to download and physically sign
   const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
     PROPOSAL: {
-      2:  ["BW1A", "BW1B"],
+      // Step 2 (ADMIN approve) and step 10 (ADMIN verify) omitted — admin only clicks approve, no signing
       3:  ["BW1A"],
       5:  ["B1C"],
       6:  ["B1C"],
       7:  ["B1C"],           // CO_ADVISOR signs B1C
       8:  ["B1C"],           // INVITED_EXAM_COMMITTEE signs B1C
       9:  ["B1C", "B1D"],   // EXAM_COMMITTEE signs B1C + B1D
-      10: ["B1C"],           // ADMIN verifies B1C
       11: ["B1C", "B1D"],   // PROGRAM_CHAIR signs both
     },
     THESIS_DEFENSE: {
@@ -84,7 +83,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       4:  ["B2"],            // CO_ADVISOR signs B2
       5:  ["B2"],            // HEAD_EXAM_COMMITTEE signs B2
       6:  ["B2"],            // PROGRAM_CHAIR signs B2
-      7:  ["B2", "B3"],      // ADMIN: relay to Faculty (download B2+B3)
+      // Step 7 (ADMIN relay) omitted — admin physically delivers, no signing, uses own page
+      // Step 8 (ADMIN upload) omitted — admin uploads new docs from Faculty, handled via admin page with hideDownloads
       10: ["SIGNED"],        // ADVISOR signs แบบรายงาน + ใบรายงานผล
       11: ["SIGNED"],        // CO_ADVISOR
       12: ["SIGNED"],        // HEAD_EXAM_COMMITTEE signs ใบรายงานผล
@@ -92,7 +92,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       14: ["SIGNED"],        // INVITED_EXAM_COMMITTEE signs ใบรายงานผล
       15: ["SIGNED"],        // PROGRAM_CHAIR signs ใบรายงานผล
       17: ["B4"],            // PROGRAM_CHAIR signs B4
-      18: ["THESIS"],        // ADVISOR signs thesis
+      18: ["THESIS"],        // ADVISOR signs thesis cover
       19: ["THESIS"],        // CO_ADVISOR signs thesis cover
       20: ["THESIS"],        // HEAD_EXAM_COMMITTEE signs thesis cover
       21: ["THESIS"],        // EXAM_COMMITTEE signs thesis cover
