@@ -267,9 +267,13 @@ export default function AdminSubmissionDetail() {
   const student    = allUsers.find((u) => u.id === sub.studentId);
   const advisor    = allUsers.find((u) => u.id === sub.advisorId);
   const advisors   = allUsers.filter((u) => u.role === "ADVISOR");
-  const currentOrd = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
-  const doneCount  = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
+  const currentOrd        = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
+  const visibleSteps      = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
+  const currentDisplayOrd = currentOrd !== null
+    ? (visibleSteps.findIndex((s) => s.stepOrder === currentOrd) + 1) || null
+    : null;
+  const doneCount  = visibleSteps.filter((s) => s.status === "APPROVED").length;
+  const totalSteps = visibleSteps.length;
 
   function saveEdit() {
     if (!sub || !editTitle.trim()) return;
@@ -668,7 +672,7 @@ export default function AdminSubmissionDetail() {
                 <Clock className="w-5 h-5 text-orange-500 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-orange-800">
-                    ขั้นที่ {currentOrd}: {ROLE_LABELS[sub.workflowSteps.find((s) => s.stepOrder === currentOrd)?.role ?? "ADMIN"]}
+                    ขั้นที่ {currentDisplayOrd}: {ROLE_LABELS[sub.workflowSteps.find((s) => s.stepOrder === currentOrd)?.role ?? "ADMIN"]}
                   </p>
                   <p className="text-xs text-orange-600">กำลังรอดำเนินการ</p>
                 </div>
