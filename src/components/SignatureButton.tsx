@@ -32,9 +32,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
   const [error,      setError]      = useState<string | null>(null);
 
   // Per-form upload state
-  const [fileByForm,      setFileByForm]      = useState<Record<string, File | null>>({});
-  const [uploadingForm,   setUploadingForm]   = useState<string | null>(null);
-  const [uploadedForms,   setUploadedForms]   = useState<Set<string>>(new Set());
+  const [fileByForm,    setFileByForm]    = useState<Record<string, File | null>>({});
+  const [uploadedForms, setUploadedForms] = useState<Set<string>>(new Set());
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const sub = submissions.find((s) => s.id === submissionId);
@@ -48,40 +47,34 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
     ...baseTargets,
     ...(extraSlots ?? []).map((s) => s.slotKey),
   ];
-  const allFormsUploaded = uploadTargets.every((ft) => uploadedForms.has(ft));
-
-  async function handleUploadForm(slotKey: string, file: File) {
-    // Extra slots may have a different actual formType than their slot key
-    const actualFormType = extraSlots?.find((s) => s.slotKey === slotKey)?.formType ?? slotKey;
-    setUploadingForm(slotKey);
-    setError(null);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("submissionId", submissionId);
-      fd.append("formType", actualFormType);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error("upload failed");
-      setUploadedForms((prev) => new Set([...prev, slotKey]));
-    } catch {
-      setError("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง");
-    } finally {
-      setUploadingForm(null);
-    }
-  }
+  // Ready when every slot is either already uploaded or has a file selected
+  const allFormsReady = uploadTargets.every((ft) => uploadedForms.has(ft) || !!fileByForm[ft]);
 
   async function handleApprove() {
     if (requireNotePrefix && !notePrefix) {
       setError("กรุณาเลือกผลการสอบวิทยานิพนธ์ก่อน");
       return;
     }
-    if (!allFormsUploaded) {
-      setError("กรุณาอัปโหลดเอกสารที่ลงนามแล้วให้ครบก่อน");
+    if (!allFormsReady) {
+      setError("กรุณาเลือกไฟล์ที่ลงนามแล้วให้ครบก่อน");
       return;
     }
     setLoading(true);
     setError(null);
     try {
+      // Upload any pending files first, then approve in one action
+      for (const ft of uploadTargets) {
+        if (!uploadedForms.has(ft) && fileByForm[ft]) {
+          const actualFormType = extraSlots?.find((s) => s.slotKey === ft)?.formType ?? ft;
+          const fd = new FormData();
+          fd.append("file", fileByForm[ft]!);
+          fd.append("submissionId", submissionId);
+          fd.append("formType", actualFormType);
+          const res = await fetch("/api/upload", { method: "POST", body: fd });
+          if (!res.ok) throw new Error("upload failed");
+          setUploadedForms((prev) => new Set([...prev, ft]));
+        }
+      }
       const combinedNotes = [notePrefix, notes].filter(Boolean).join("\n") || undefined;
       await approveCurrentStep(submissionId, combinedNotes);
       showToast("อัปโหลดและอนุมัติเรียบร้อยแล้ว ✓");
@@ -166,16 +159,15 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
           </p>
 
           {uploadTargets.map((ft) => {
-            const isDone      = uploadedForms.has(ft);
-            const isUploading = uploadingForm === ft;
-            const selected    = fileByForm[ft] ?? null;
-            const extraSlot   = extraSlots?.find((s) => s.slotKey === ft);
-            const label       = extraSlot?.label ?? FORM_LABELS[ft as FormType] ?? ft;
+            const isDone    = uploadedForms.has(ft);
+            const selected  = fileByForm[ft] ?? null;
+            const extraSlot = extraSlots?.find((s) => s.slotKey === ft);
+            const slotLabel = extraSlot?.label ?? FORM_LABELS[ft as FormType] ?? ft;
 
             return (
               <div key={ft}>
                 {uploadTargets.length > 1 && (
-                  <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>
+                  <p className="text-xs text-gray-500 mb-1 font-medium">{slotLabel}</p>
                 )}
 
                 {isDone ? (
@@ -186,28 +178,24 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
                 ) : (
                   <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
                     <div
-                      onClick={() => !isUploading && fileRefs.current[ft]?.click()}
+                      onClick={() => !loading && fileRefs.current[ft]?.click()}
                       className={cn(
                         "flex flex-col items-center gap-2 py-5 rounded-lg transition",
-                        isUploading ? "bg-gray-50 cursor-wait" : "cursor-pointer hover:bg-gray-50"
+                        loading ? "bg-gray-50 cursor-wait" : "cursor-pointer hover:bg-gray-50"
                       )}
                     >
-                      {isUploading ? (
-                        <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
-                      ) : selected ? (
+                      {selected ? (
                         <FileText className="w-7 h-7 text-blue-400" />
                       ) : (
                         <Upload className="w-7 h-7 text-gray-300" />
                       )}
                       <span className="text-xs text-gray-500 text-center px-2">
-                        {isUploading
-                          ? "กำลังอัปโหลด..."
-                          : selected
+                        {selected
                           ? `${selected.name} (${formatBytes(selected.size)})`
                           : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
                       </span>
                     </div>
-                    {selected && !isUploading && (
+                    {selected && (
                       <button
                         onClick={() => { setFileByForm((prev) => ({ ...prev, [ft]: null })); if (fileRefs.current[ft]) fileRefs.current[ft]!.value = ""; }}
                         className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
@@ -229,16 +217,6 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
                     setError(null);
                   }}
                 />
-
-                {selected && !isDone && !isUploading && (
-                  <button
-                    onClick={() => handleUploadForm(ft, selected)}
-                    className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    อัปโหลด{uploadTargets.length > 1 ? ` ${label}` : ""}
-                  </button>
-                )}
               </div>
             );
           })}
@@ -271,7 +249,7 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
           <>
             <button
               onClick={handleApprove}
-              disabled={loading}
+              disabled={loading || !allFormsReady}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-60 transition"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
