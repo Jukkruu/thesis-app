@@ -111,6 +111,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const now = new Date();
 
   if (action === "approve") {
+    // Block approval while submission is REJECTED — student must resubmit to reset the rejected step
+    if (sub.status === "REJECTED")
+      return NextResponse.json({ error: "คำร้องถูกปฏิเสธ — รอนักศึกษายืนยันการแก้ไขก่อน" }, { status: 400 });
+
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
     if (step.role !== role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

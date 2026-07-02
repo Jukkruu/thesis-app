@@ -266,7 +266,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           )}
 
           {/* Action — committee steps (EXAM_COMMITTEE and CO_ADVISOR) use sequential multi-member panel */}
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && (currentStep?.role === "EXAM_COMMITTEE" || currentStep?.role === "CO_ADVISOR") && (
+          {isMyTurn && sub.status === "IN_PROGRESS" && (currentStep?.role === "EXAM_COMMITTEE" || currentStep?.role === "CO_ADVISOR") && (
             <CommitteeSignPanel
               submissionId={sub.id}
               step={currentStep}
@@ -276,7 +276,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {isMyTurn && !["COMPLETED", "CANCELLED"].includes(sub.status) && currentStep?.role !== "EXAM_COMMITTEE" && currentStep?.role !== "CO_ADVISOR" && (
+          {isMyTurn && sub.status === "IN_PROGRESS" && currentStep?.role !== "EXAM_COMMITTEE" && currentStep?.role !== "CO_ADVISOR" && (
             <SignatureButton
               submissionId={sub.id}
               formsToShow={formsToShow}
@@ -289,6 +289,17 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
                   : undefined
               }
             />
+          )}
+
+          {/* Waiting-for-resubmit banner — shown to the prevStep role when submission is REJECTED */}
+          {isMyTurn && sub.status === "REJECTED" && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+              <div className="flex items-center gap-2 text-red-700 font-semibold mb-1">
+                <Clock className="w-5 h-5" />
+                รอนักศึกษายืนยันการแก้ไข
+              </div>
+              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นักศึกษาต้องกด "แก้ไขและยื่นใหม่" ก่อน จึงจะดำเนินขั้นตอนนี้ต่อได้</p>
+            </div>
           )}
 
           {!isMyTurn && currentStep && !["COMPLETED", "CANCELLED"].includes(sub.status) && (

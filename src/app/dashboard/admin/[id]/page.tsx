@@ -299,7 +299,7 @@ export default function AdminSubmissionDetail() {
       </div>
 
       {/* ─── Admin's own approval panel ─────────────────────────────────── */}
-      {isMyTurn && (
+      {isMyTurn && sub.status !== "REJECTED" && (
         <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
