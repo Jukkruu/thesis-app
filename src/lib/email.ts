@@ -128,7 +128,7 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
       to:   ["outanagon2549@gmail.com"],
-      subject: `[ถึงคิวของท่าน] ${stepName} — ${sub.title}`,
+      subject: `[ระบบจัดการวิทยานิพนธ์] ${stepName} — ${sub.title}`,
       html: buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink),
     });
 
