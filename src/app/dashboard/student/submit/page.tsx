@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { MockUser, ProgramType, SubmissionType } from "@/types";
-import { ArrowLeft, User, Users, CalendarDays, Info, Search, X, Check, ChevronDown, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
+import { ArrowLeft, User, Users, CalendarDays, Info, Search, X, Check, ChevronDown, BookOpen, GraduationCap, AlertCircle, Save } from "lucide-react";
 import Link from "next/link";
 
 // ─── Searchable single-select ─────────────────────────────────────────────────
@@ -258,6 +258,7 @@ export default function NewSubmissionPage() {
   const [error,              setError]              = useState<string | null>(null);
   const [confirmed,          setConfirmed]          = useState(false);
   const [submitting,         setSubmitting]         = useState(false);
+  const [lastSaved,          setLastSaved]          = useState<Date | null>(null);
 
   // coAdvisors must come after advisorId state is declared to avoid TDZ
   const coAdvisors = users.filter((u) => (u.role === "CO_ADVISOR" || u.role === "ADVISOR") && u.id !== advisorId);
@@ -282,6 +283,7 @@ export default function NewSubmissionPage() {
         headCommitteeId, committeeIds, coAdvisorIds, invitedProfName, invitedProfAffil, invitedProfEmail,
         invitedProfPhone, examDate, examTime, roomNeeded, parkingNeeded, carPlate,
       }));
+      setLastSaved(new Date());
     } catch { /* ignore */ }
   }, [title, advisorId, studentFullName, studentCode, program, studentEmail, studentPhone,
       headCommitteeId, committeeIds, coAdvisorIds, invitedProfName, invitedProfAffil, invitedProfEmail,
@@ -613,17 +615,32 @@ export default function NewSubmissionPage() {
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={!confirmed || submitting}
-          className={`w-full py-3.5 text-white font-semibold rounded-xl transition shadow-sm text-base disabled:opacity-50 ${
-            isProposal
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-indigo-600 hover:bg-indigo-700"
-          }`}
-        >
-          {submitting ? "กำลังยื่น..." : `ยืนยัน — ${formTitle}`}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={saveDraft}
+            className="flex items-center gap-2 px-4 py-3.5 rounded-xl border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition shrink-0"
+          >
+            <Save className="w-4 h-4" />
+            บันทึกร่าง
+          </button>
+          <button
+            type="submit"
+            disabled={!confirmed || submitting}
+            className={`flex-1 py-3.5 text-white font-semibold rounded-xl transition shadow-sm text-base disabled:opacity-50 ${
+              isProposal
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+          >
+            {submitting ? "กำลังยื่น..." : `ยืนยัน — ${formTitle}`}
+          </button>
+        </div>
+        {lastSaved && (
+          <p className="text-xs text-gray-400 text-center">
+            บันทึกร่างอัตโนมัติ · {lastSaved.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
+          </p>
+        )}
       </form>
     </div>
   );
