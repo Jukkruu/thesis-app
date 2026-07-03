@@ -5,7 +5,8 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 
 function mapUser(u: any) {
-  return { id: u.id, name: u.name, email: u.email, role: u.role, studentId: u.studentId ?? undefined };
+  const roles: string[] = u.roles ?? (u.role ? [u.role] : []);
+  return { id: u.id, name: u.name, email: u.email, roles, role: roles[0] ?? "", studentId: u.studentId ?? undefined };
 }
 
 const FACULTY_ROLES = ["ADVISOR", "CO_ADVISOR", "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE", "PROGRAM_CHAIR"];
@@ -14,18 +15,19 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const sessionRoles: string[] = (session.user as any).roles ?? [session.user.role];
+  const isAdmin = sessionRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r));
 
   // Admins get the full user list; everyone else gets only faculty/committee roles
-  // (needed by students to pick advisors/committee, and by detail views for names)
-  const where = isAdmin ? undefined : { role: { in: FACULTY_ROLES as any[] } };
+  const where = isAdmin ? undefined : { roles: { hasSome: FACULTY_ROLES as any[] } };
   const users = await prisma.user.findMany({ where, orderBy: { name: "asc" } });
   return NextResponse.json(users.map(mapUser));
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role))
+  const postRoles: string[] = (session?.user as any)?.roles ?? [session?.user?.role ?? ""];
+  if (!session?.user || !postRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { name, email, role, studentId, password } = await req.json();
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     data: {
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      role,
+      roles: role ? [role] : [],
       studentId: studentId?.trim() || null,
       passwordHash,
     },

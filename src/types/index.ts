@@ -22,7 +22,8 @@ export interface MockUser {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  roles: Role[];
+  role: Role; // primary role = roles[0]
   studentId?: string;
 }
 

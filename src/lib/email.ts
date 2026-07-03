@@ -88,7 +88,7 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
       const u = await prisma.user.findUnique({ where: { id: sub.invitedCommitteeId } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     } else {
-      const u = await prisma.user.findFirst({ where: { role: role as any } });
+      const u = await prisma.user.findFirst({ where: { roles: { has: role as any } } });
       if (u) recipients = [{ id: u.id, name: u.name, email: u.email }];
     }
   } catch (e) {

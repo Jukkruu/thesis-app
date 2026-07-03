@@ -79,6 +79,7 @@ export default function SuperAdminPage() {
       name:  newName.trim(),
       email: newEmail.trim().toLowerCase(),
       role:  newRole,
+      roles: [newRole],
       ...(newRole === "STUDENT" && newStudentId.trim() ? { studentId: newStudentId.trim() } : {}),
     };
     superAdminAddUser(userData, newPassword);

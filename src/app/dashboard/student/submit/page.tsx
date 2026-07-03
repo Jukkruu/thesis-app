@@ -229,9 +229,9 @@ export default function NewSubmissionPage() {
 
   const { createSubmission, users } = useApp();
 
-  const advisors       = users.filter((u) => u.role === "ADVISOR");
-  const headCandidates = users.filter((u) => u.role === "HEAD_EXAM_COMMITTEE");
-  const committees     = users.filter((u) => u.role === "EXAM_COMMITTEE");
+  const advisors       = users.filter((u) => u.roles.includes("ADVISOR"));
+  const headCandidates = users.filter((u) => u.roles.includes("HEAD_EXAM_COMMITTEE"));
+  const committees     = users.filter((u) => u.roles.includes("EXAM_COMMITTEE"));
 
   const DRAFT_KEY = `thesis-draft-${submissionType}`;
   const [showDraftBanner, setShowDraftBanner] = useState(false);
@@ -260,7 +260,7 @@ export default function NewSubmissionPage() {
   const [submitting,         setSubmitting]         = useState(false);
 
   // coAdvisors must come after advisorId state is declared to avoid TDZ
-  const coAdvisors = users.filter((u) => (u.role === "CO_ADVISOR" || u.role === "ADVISOR") && u.id !== advisorId);
+  const coAdvisors = users.filter((u) => (u.roles.includes("CO_ADVISOR") || u.roles.includes("ADVISOR")) && u.id !== advisorId);
 
   // Draft save / restore
   useEffect(() => {

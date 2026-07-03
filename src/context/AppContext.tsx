@@ -96,7 +96,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading,       setLoading]       = useState(true);
 
   const user: MockUser | null = session?.user
-    ? { id: session.user.id, name: session.user.name, email: session.user.email, role: session.user.role as Role, studentId: session.user.studentId }
+    ? {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        roles: ((session.user as any).roles ?? [session.user.role as string]) as Role[],
+        role: (((session.user as any).roles as string[])?.[0] ?? session.user.role) as Role,
+        studentId: session.user.studentId,
+      }
     : null;
 
   const unreadCount = notifications.filter((n) => !n.isRead && n.recipientId === user?.id).length;
@@ -181,23 +188,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function needsMyAction(sub: MockSubmission): boolean {
     if (!user) return false;
     const step = sub.workflowSteps.find((s) => s.status === "PENDING");
-    if (!step || step.role !== user.role) return false;
-    if (step.role === "EXAM_COMMITTEE" || step.role === "CO_ADVISOR") {
-      if (!step.committeeMembers?.includes(user.id)) return false;
-      return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+    if (!step) return false;
+    switch (step.role) {
+      case "STUDENT":               return sub.studentId === user.id;
+      case "ADVISOR":               return (sub as any).advisorId === user.id;
+      case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
+      case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
+      case "CO_ADVISOR":
+      case "EXAM_COMMITTEE":
+        if (!step.committeeMembers?.includes(user.id)) return false;
+        return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+      default:
+        return user.roles.includes(step.role as Role);
     }
-    return true;
   }
 
   function getPendingCount(role: Role): number {
     return submissions.filter((sub) => {
       const step = sub.workflowSteps.find((s) => s.status === "PENDING");
       if (step?.role !== role) return false;
-      if ((role === "EXAM_COMMITTEE" || role === "CO_ADVISOR") && user) {
-        if (!step.committeeMembers?.includes(user.id)) return false;
-        return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+      if (!user) return false;
+      switch (role) {
+        case "STUDENT":               return sub.studentId === user.id;
+        case "ADVISOR":               return (sub as any).advisorId === user.id;
+        case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
+        case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
+        case "CO_ADVISOR":
+        case "EXAM_COMMITTEE":
+          if (!step.committeeMembers?.includes(user.id)) return false;
+          return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+        default:
+          return user.roles.includes(role);
       }
-      return true;
     }).length;
   }
 

@@ -33,16 +33,15 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     );
   }
 
-  // Ownership guard — only authorized users can see submission details
+  // Ownership guard — involvement-based: any role the user plays in this submission
   const authorized = !user ? false
-    : user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "PROGRAM_CHAIR" ? true
-    : user.role === "STUDENT"                ? sub.studentId === user.id
-    : user.role === "ADVISOR"                ? sub.advisorId === user.id
-    : user.role === "CO_ADVISOR"             ? (sub.coAdvisorIds ?? []).includes(user.id)
-    : user.role === "HEAD_EXAM_COMMITTEE"    ? sub.headCommitteeId === user.id
-    : user.role === "EXAM_COMMITTEE"         ? (sub.committeeIds ?? []).includes(user.id)
-    : user.role === "INVITED_EXAM_COMMITTEE" ? sub.invitedCommitteeId === user.id
-    : false;
+    : user.roles.some((r) => ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(r)) ? true
+    : sub.studentId === user.id
+    || (sub as any).advisorId === user.id
+    || ((sub.coAdvisorIds ?? []) as string[]).includes(user.id)
+    || ((sub as any).headCommitteeId === user.id)
+    || ((sub.committeeIds ?? []) as string[]).includes(user.id)
+    || ((sub as any).invitedCommitteeId === user.id);
 
   if (!authorized) {
     return (
@@ -57,12 +56,25 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   const student     = allUsers.find((u) => u.id === sub.studentId);
   const advisor     = allUsers.find((u) => u.id === sub.advisorId);
   const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
-  const isMyTurn    = currentStep?.role === user?.role;
+
+  // Involvement-based "is it my turn" — checks whether user is assigned to play this step's role
+  const isMyTurn = (() => {
+    if (!user || !currentStep) return false;
+    switch (currentStep.role) {
+      case "STUDENT":               return sub.studentId === user.id;
+      case "ADVISOR":               return (sub as any).advisorId === user.id;
+      case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
+      case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
+      case "CO_ADVISOR":            return ((sub.coAdvisorIds ?? []) as string[]).includes(user.id);
+      case "EXAM_COMMITTEE":        return ((sub.committeeIds ?? []) as string[]).includes(user.id);
+      default:                      return user.roles.includes(currentStep.role as any);
+    }
+  })();
 
   const isThesisAdvisorResultStep =
     sub.submissionType === "THESIS_DEFENSE" &&
     currentStep?.stepOrder === 10 &&
-    user?.role === "ADVISOR" &&
+    (sub as any).advisorId === user?.id &&
     isMyTurn;
 
   // Which form types the current role needs to download and physically sign

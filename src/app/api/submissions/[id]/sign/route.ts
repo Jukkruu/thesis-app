@@ -25,12 +25,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Re-check role from DB — JWT role can be stale after a role change
-  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
-  const userRole: string = dbUser?.role ?? session.user.role;
-  if (!["EXAM_COMMITTEE", "CO_ADVISOR"].includes(userRole))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   const { id: submissionId } = await params;
   const { decision, notes } = await req.json();
   const { id: userId, name: userName } = session.user;
@@ -43,10 +37,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (["COMPLETED", "CANCELLED"].includes(sub.status))
     return NextResponse.json({ error: "คำร้องนี้ปิดแล้ว ไม่สามารถลงนามได้" }, { status: 400 });
 
-  const step = sub.workflowSteps.find((s: any) => s.status === "PENDING" && s.role === userRole);
-  if (!step) return NextResponse.json({ error: "No pending committee step" }, { status: 400 });
-  if (!(step.committeeMembers as string[])?.includes(userId))
-    return NextResponse.json({ error: "Not assigned to this submission" }, { status: 403 });
+  // Find the pending step this user is actually assigned to (involvement-based, not role-based)
+  const step = sub.workflowSteps.find(
+    (s: any) =>
+      s.status === "PENDING" &&
+      ["EXAM_COMMITTEE", "CO_ADVISOR"].includes(s.role) &&
+      (s.committeeMembers as string[])?.includes(userId)
+  );
+  if (!step) return NextResponse.json({ error: "Not assigned or no pending step" }, { status: 403 });
+  const userRole = step.role as string;
 
   const prevActions: any[] = (step.committeeActions as any[]) ?? [];
   if (prevActions.some((a) => a.userId === userId))
@@ -97,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     else if (prevStep.role === "CO_ADVISOR")       prevRecipientId = ((sub as any).coAdvisorIds as string[])?.[0] ?? null;
     else if (prevStep.role === "EXAM_COMMITTEE")   prevRecipientId = ((sub as any).committeeIds as string[])?.[0] ?? null;
     else {
-      const u = await prisma.user.findFirst({ where: { role: prevStep.role as any } });
+      const u = await prisma.user.findFirst({ where: { roles: { has: prevStep.role as any } } });
       prevRecipientId = u?.id ?? null;
     }
     if (prevRecipientId) {
@@ -164,7 +163,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           } else {
             let recipientId: string | null = nextStep.role === "ADVISOR" ? (sub as any).advisorId : null;
             if (!recipientId) {
-              const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
+              const u = await prisma.user.findFirst({ where: { roles: { has: nextStep.role as any } } });
               recipientId = u?.id ?? null;
             }
             if (recipientId) {

@@ -74,6 +74,7 @@ export default function AdminUsersPage() {
           name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
           role: form.role,
+          roles: [form.role],
           studentId: form.role === "STUDENT" && form.studentId.trim() ? form.studentId.trim() : undefined,
         },
         form.password || undefined,

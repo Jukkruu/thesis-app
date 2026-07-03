@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout, getPendingCount } = useApp();
+  const { user, logout, submissions, needsMyAction } = useApp();
   const router   = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,9 +29,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const homeRoute   = ROLE_ROUTES[user.role];
-  const isManagementRole = user.role === "STUDENT" || user.role === "SUPER_ADMIN";
-  const pendingCount = isManagementRole ? 0 : getPendingCount(user.role);
+  const homeRoute    = ROLE_ROUTES[user.role];
+  const pendingCount = submissions.filter(needsMyAction).length;
 
   const sidebar = (
     <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
@@ -39,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="p-5 border-b border-gray-100 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold text-gray-900 leading-tight">ระบบจัดการวิทยานิพนธ์</p>
-          <p className="text-sm font-medium text-blue-600 mt-0.5">{ROLE_LABELS[user.role]}</p>
+          <p className="text-sm font-medium text-blue-600 mt-0.5">{user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <NotificationBell />
@@ -62,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           active={pathname === homeRoute}
         />
 
-        {user.role === "STUDENT" && (
+        {user.roles.includes("STUDENT") && (
           <NavLink
             href="/dashboard/student/submit"
             icon={<PlusCircle className="w-5 h-5" />}
@@ -71,39 +70,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         )}
 
-        {user.role === "ADMIN" && (
+        {user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)) && (
           <>
+            {user.roles.includes("SUPER_ADMIN") && (
+              <NavLink
+                href="/dashboard/super-admin"
+                icon={<Crown className="w-5 h-5" />}
+                label="ระบบภาพรวม"
+                active={pathname === "/dashboard/super-admin"}
+              />
+            )}
             <NavLink
               href="/dashboard/admin"
               icon={<ShieldCheck className="w-5 h-5" />}
               label="ภาพรวมคำร้อง"
-              active={
-                pathname === "/dashboard/admin" ||
-                (pathname.startsWith("/dashboard/admin/") &&
-                  !pathname.startsWith("/dashboard/admin/users"))
-              }
-            />
-            <NavLink
-              href="/dashboard/admin/users"
-              icon={<Users className="w-5 h-5" />}
-              label="ผู้ใช้งานในระบบ"
-              active={pathname === "/dashboard/admin/users"}
-            />
-          </>
-        )}
-
-        {user.role === "SUPER_ADMIN" && (
-          <>
-            <NavLink
-              href="/dashboard/super-admin"
-              icon={<Crown className="w-5 h-5" />}
-              label="ระบบภาพรวม"
-              active={pathname === "/dashboard/super-admin"}
-            />
-            <NavLink
-              href="/dashboard/admin"
-              icon={<ShieldCheck className="w-5 h-5" />}
-              label="จัดการคำร้อง"
               active={
                 pathname === "/dashboard/admin" ||
                 (pathname.startsWith("/dashboard/admin/") &&
@@ -149,7 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-900 text-sm truncate">ระบบจัดการวิทยานิพนธ์</p>
-          <p className="text-xs text-blue-600 font-medium">{ROLE_LABELS[user.role]}</p>
+          <p className="text-xs text-blue-600 font-medium">{user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}</p>
         </div>
         <NotificationBell />
         {pendingCount > 0 && (

@@ -237,17 +237,13 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
   const { approveCurrentStep } = useApp();
   const { showToast }          = useToast();
 
-  const [includeVeryGood, setIncludeVeryGood] = useState(false);
   const [fileBySlot,    setFileBySlot]    = useState<Record<string, File | null>>({});
   const [uploadedSlots, setUploadedSlots] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const activeSlots = [
-    ...FACULTY_SLOTS,
-    ...(includeVeryGood ? [{ key: "VERY_GOOD_EVAL", formType: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก" } as const] : []),
-  ];
+  const activeSlots = FACULTY_SLOTS;
 
   const allReady = activeSlots.every((s) => uploadedSlots.has(s.key) || !!fileBySlot[s.key]);
 
@@ -325,58 +321,6 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
         })}
       </div>
 
-      {/* Optional: ดีมาก evaluation form */}
-      <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={includeVeryGood}
-            onChange={(e) => {
-              setIncludeVeryGood(e.target.checked);
-              if (!e.target.checked) setFileBySlot((prev) => { const n = { ...prev }; delete n["VERY_GOOD_EVAL"]; return n; });
-            }}
-            className="w-4 h-4 accent-purple-600"
-          />
-          <span className="text-sm font-semibold text-purple-700">ผลสอบ "ดีมาก" — แนบแบบประเมินวิทยานิพนธ์ดีมาก</span>
-        </label>
-        {includeVeryGood && (() => {
-          const slot = { key: "VERY_GOOD_EVAL", formType: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก" };
-          const isDone   = uploadedSlots.has(slot.key);
-          const selected = fileBySlot[slot.key] ?? null;
-          return isDone ? (
-            <div className="flex items-center gap-2 border-2 border-green-200 rounded-xl px-4 py-3 bg-green-50">
-              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-              <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จ</p>
-            </div>
-          ) : (
-            <div
-              onClick={() => !loading && fileRefs.current[slot.key]?.click()}
-              className={cn(
-                "flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition",
-                selected ? "border-purple-300 bg-purple-100" : "border-purple-200 hover:border-purple-300 bg-white",
-                loading && "cursor-wait opacity-60"
-              )}
-            >
-              {selected ? <FileText className="w-4 h-4 text-purple-400 shrink-0" /> : <Upload className="w-4 h-4 text-purple-300 shrink-0" />}
-              <span className="text-sm text-purple-600 truncate">
-                {selected ? `${selected.name} (${formatBytes(selected.size)})` : "คลิกเพื่อเลือกไฟล์ PDF"}
-              </span>
-              <input
-                ref={(el) => { fileRefs.current[slot.key] = el; }}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setFileBySlot((prev) => ({ ...prev, [slot.key]: f }));
-                  setError(null);
-                }}
-              />
-            </div>
-          );
-        })()}
-      </div>
-
       {error && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <XCircle className="w-4 h-4 text-red-500 shrink-0" />
@@ -421,7 +365,7 @@ export default function AdminSubmissionDetail() {
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
-  if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+  if (user && !user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) {
     router.replace(ROLE_ROUTES[user.role] ?? "/login");
     return null;
   }
@@ -438,7 +382,7 @@ export default function AdminSubmissionDetail() {
   const allUsers   = users;
   const student    = allUsers.find((u) => u.id === sub.studentId);
   const advisor    = allUsers.find((u) => u.id === sub.advisorId);
-  const advisors   = allUsers.filter((u) => u.role === "ADVISOR");
+  const advisors   = allUsers.filter((u) => u.roles.includes("ADVISOR"));
   const currentOrd        = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const visibleSteps      = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
   const currentDisplayOrd = currentOrd !== null
@@ -675,12 +619,12 @@ export default function AdminSubmissionDetail() {
                 // Resolve who is assigned to this step
                 let assignedName: string | null = null;
                 if (step.role === "STUDENT") assignedName = student?.name ?? null;
-                else if (step.role === "ADMIN") assignedName = allUsers.find((u) => u.role === "ADMIN")?.name ?? null;
+                else if (step.role === "ADMIN") assignedName = allUsers.find((u) => u.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))?.name ?? null;
                 else if (step.role === "ADVISOR") assignedName = advisor?.name ?? null;
                 else if (step.role === "CO_ADVISOR") assignedName = (sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid).join(", ") || null;
                 else if (step.role === "HEAD_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? null;
                 else if (step.role === "INVITED_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? (sub.invitedProfName ?? null);
-                else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => u.role === "PROGRAM_CHAIR")?.name ?? null;
+                else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => u.roles.includes("PROGRAM_CHAIR"))?.name ?? null;
 
                 // Committee sign breakdown
                 const committeeStatus = (step.role === "EXAM_COMMITTEE" || step.role === "CO_ADVISOR")
@@ -696,7 +640,7 @@ export default function AdminSubmissionDetail() {
 
                 const financeAdminName =
                   sub.submissionType === "PROPOSAL" && step.stepOrder === 4
-                    ? allUsers.find((u) => u.role === "ADMIN")?.name ?? null
+                    ? allUsers.find((u) => u.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))?.name ?? null
                     : null;
 
                 return (

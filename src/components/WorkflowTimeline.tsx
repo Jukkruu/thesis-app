@@ -40,11 +40,11 @@ function resolveAssignees(
       return name ? [{ id: sub.invitedCommitteeId ?? "ext", name }] : [];
     }
     case "PROGRAM_CHAIR": {
-      const u = users.find((u) => u.role === "PROGRAM_CHAIR");
+      const u = users.find((u) => u.roles.includes("PROGRAM_CHAIR"));
       return u ? [{ id: u.id, name: u.name }] : [];
     }
     case "ADMIN": {
-      const u = users.find((u) => u.role === "ADMIN");
+      const u = users.find((u) => u.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)));
       return u ? [{ id: u.id, name: u.name }] : [];
     }
     case "CO_ADVISOR": {
@@ -103,7 +103,7 @@ export function WorkflowTimeline({
 
           // PROPOSAL step 4: parallel uploads — check each party independently
           const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
-          const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.role === "ADMIN") ?? null : null;
+          const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) ?? null : null;
           const uploads4 = showAdminFinanceRow ? (submission?.uploads ?? []) : [];
           const financeUploaded = showAdminFinanceRow && uploads4.some((u) => u.formType === "FINANCE_DOC");
           const studentStep4Done = showAdminFinanceRow &&

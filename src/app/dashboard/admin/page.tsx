@@ -31,12 +31,12 @@ function getStuckDays(sub: MockSubmission): number {
 function resolvePendingName(
   sub: MockSubmission,
   step: MockWorkflowStep,
-  users: { id: string; name: string; role: string }[],
+  users: { id: string; name: string; role: string; roles: string[] }[],
 ): string {
   switch (step.role) {
     case "ADVISOR":             return users.find((u) => u.id === sub.advisorId)?.name ?? ROLE_LABELS[step.role];
     case "HEAD_EXAM_COMMITTEE": return users.find((u) => u.id === sub.headCommitteeId)?.name ?? ROLE_LABELS[step.role];
-    case "PROGRAM_CHAIR":       return users.find((u) => u.role === "PROGRAM_CHAIR")?.name ?? ROLE_LABELS[step.role];
+    case "PROGRAM_CHAIR":       return users.find((u) => u.roles.includes("PROGRAM_CHAIR"))?.name ?? ROLE_LABELS[step.role];
     case "EXAM_COMMITTEE": {
       const memberIds = step.committeeMembers?.length ? step.committeeMembers : (sub.committeeIds ?? []);
       const done = (step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length;
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
     CANCELLED:   typeSubs.filter((s) => s.status === "CANCELLED").length,
   };
 
-  if (user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+  if (user && !user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) {
     router.replace(ROLE_ROUTES[user.role] ?? "/login");
     return null;
   }

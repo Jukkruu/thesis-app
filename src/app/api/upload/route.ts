@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!file || !submissionId || !formType)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const ALLOWED_FORM_TYPES = ["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS", "SIGNED", "FINANCE_DOC"];
+  const ALLOWED_FORM_TYPES = ["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS", "SIGNED", "FINANCE_DOC", "EXAM_RESULT", "INVITE_LETTER", "VERY_GOOD_EVAL"];
   if (!ALLOWED_FORM_TYPES.includes(formType))
     return NextResponse.json({ error: "Invalid form type" }, { status: 400 });
 
@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
   const ext = isPdf ? "pdf" : isJpeg ? "jpg" : "png";
 
   // Verify the caller is involved in this submission (or is an admin/super_admin/program_chair)
-  const isAdminRole = ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(session.user.role);
+  const sessionRoles: string[] = (session.user as any).roles ?? [session.user.role as string];
+  const isAdminRole = sessionRoles.some((r) => ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(r));
   if (!isAdminRole) {
     const subCheck = await prisma.submission.findUnique({ where: { id: submissionId } });
     if (!subCheck) return NextResponse.json({ error: "Submission not found" }, { status: 404 });
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
               } else if (nextStep.role === "ADVISOR") {
                 recipientId = (subWithUploads as any).advisorId ?? null;
               } else {
-                const u = await prisma.user.findFirst({ where: { role: nextStep.role as any } });
+                const u = await prisma.user.findFirst({ where: { roles: { has: nextStep.role as any } } });
                 recipientId = u?.id ?? null;
               }
               if (recipientId) {

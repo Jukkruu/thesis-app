@@ -22,7 +22,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          roles: user.roles as string[],
+          role: (user.roles[0] ?? "") as string,
           studentId: user.studentId ?? undefined,
         };
       },
@@ -32,14 +33,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = (user.id ?? "") as string;
-        token.role = user.role as string;
-        token.studentId = user.studentId as string | undefined;
+        token.roles = (user as any).roles as string[];
+        token.role = ((user as any).roles?.[0] ?? "") as string;
+        token.studentId = (user as any).studentId as string | undefined;
+      }
+      // Backward compat: if old token has role but no roles, derive roles
+      if (!token.roles && token.role) {
+        token.roles = [token.role as string];
       }
       return token;
     },
     session({ session, token }) {
       session.user.id = token.id as string;
-      session.user.role = token.role as string;
+      session.user.roles = (token.roles ?? [token.role]) as string[];
+      session.user.role = ((token.roles as string[])?.[0] ?? token.role) as string;
       session.user.studentId = token.studentId as string | undefined;
       return session;
     },

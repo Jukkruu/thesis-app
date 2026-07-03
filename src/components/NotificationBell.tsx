@@ -71,17 +71,17 @@ export function NotificationBell() {
     markNotificationRead(notif.id);
     setOpen(false);
     if (!user) return;
-    if (user.role === "STUDENT")    router.push(`/dashboard/student/${notif.submissionId}`);
-    else if (user.role === "ADMIN") router.push(`/dashboard/admin/${notif.submissionId}`);
+    if (user.roles.includes("STUDENT"))                               router.push(`/dashboard/student/${notif.submissionId}`);
+    else if (user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) router.push(`/dashboard/admin/${notif.submissionId}`);
     else {
-      const seg = {
+      const seg: Record<string, string> = {
         ADVISOR: "advisor", CO_ADVISOR: "co-advisor", PROGRAM_CHAIR: "program-chair",
         HEAD_EXAM_COMMITTEE: "head-exam-committee", EXAM_COMMITTEE: "exam-committee",
         INVITED_EXAM_COMMITTEE: "invited-exam-committee",
         DEPT_STAFF: "dept-staff", FACULTY_DEAN: "faculty-dean", GRADUATE_SCHOOL: "graduate-school",
-        SUPER_ADMIN: "admin",
-      }[user.role as string] ?? "admin";
-      router.push(`/dashboard/${seg}/${notif.submissionId}`);
+      };
+      const dest = user.roles.map((r) => seg[r]).find(Boolean) ?? "admin";
+      router.push(`/dashboard/${dest}/${notif.submissionId}`);
     }
   }
 

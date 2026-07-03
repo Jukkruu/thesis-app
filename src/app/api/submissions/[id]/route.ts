@@ -52,7 +52,7 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
     return;
   } else if (role === "ADMIN" || role === "SUPER_ADMIN") {
     // Fix #3: notify ALL admins, not just the first one found
-    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
+    const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
     if (admins.length) {
       await prisma.notification.createMany({
         data: admins.map((a: any) => ({ recipientId: a.id, message, detail: sub.title, submissionId: sub.id, type })),
@@ -60,7 +60,7 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
     }
     return;
   } else {
-    const user = await prisma.user.findFirst({ where: { role: role as any } });
+    const user = await prisma.user.findFirst({ where: { roles: { has: role as any } } });
     recipientId = user?.id ?? null;
   }
   if (recipientId) {
@@ -101,9 +101,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { action } = body;
   const { id: userId, name: userName } = session.user;
 
-  // Always look up role from DB — JWT role can be stale after a role change
-  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-  const role: string = dbUser?.role ?? (session.user.role as string);
+  // Always look up roles from DB — JWT role can be stale after a role change
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { roles: true } });
+  const userRoles: string[] = dbUser?.roles as string[] ?? (session.user as any).roles ?? [session.user.role as string];
+  const role: string = userRoles[0] ?? "";
 
   const sub = await getSub(id);
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -117,10 +118,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
-    if (step.role !== role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // For STUDENT steps, only the submission's own student can advance
-    if (step.role === "STUDENT" && sub.studentId !== userId)
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Involvement-based approval check
+    const canApprove = (() => {
+      if (step.role === "STUDENT")               return sub.studentId === userId;
+      if (step.role === "ADVISOR")               return sub.advisorId === userId;
+      if (step.role === "CO_ADVISOR")            return (sub.coAdvisorIds as string[]).includes(userId);
+      if (step.role === "HEAD_EXAM_COMMITTEE")   return sub.headCommitteeId === userId;
+      if (step.role === "INVITED_EXAM_COMMITTEE")return sub.invitedCommitteeId === userId;
+      return userRoles.includes(step.role); // ADMIN, SUPER_ADMIN, PROGRAM_CHAIR, EXAM_COMMITTEE
+    })();
+    if (!canApprove) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     // Enforce required uploads before certain steps can advance
     {
@@ -145,7 +153,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if ((sub.submissionType ?? "PROPOSAL") === "PROPOSAL" && step.stepOrder === 4) {
         if (!uploaded.has("FINANCE_DOC")) {
           // Notify all admins to upload their FINANCE_DOC
-          const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } });
+          const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
           if (admins.length) {
             await prisma.notification.createMany({
               data: admins.map((a: any) => ({
@@ -216,7 +224,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
       // Notify all admins when PROPOSAL fully completes
       if (sub.submissionType === "PROPOSAL") {
-        const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+        const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
         if (adminUsers.length) {
           await prisma.notification.createMany({
             data: adminUsers.map((a) => ({ recipientId: a.id, message: "กระบวนการ Proposal เสร็จสมบูรณ์แล้ว", detail: sub.title, submissionId: id, type: "approved" })),
@@ -248,7 +256,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify all admins to collect + send to Faculty
       if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
         try {
-          const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+          const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
           if (adminUsers.length) {
             await prisma.notification.createMany({
               data: adminUsers.map((a) => ({ recipientId: a.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" })),
@@ -303,7 +311,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           carPlate: (sub as any).carPlate,
         });
         // Notify all admins that finance email was sent
-        const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" } });
+        const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
         if (adminUsers.length) {
           await prisma.notification.createMany({
             data: adminUsers.map((a) => ({ recipientId: a.id, message: "ส่งอีเมลแจ้งฝ่ายการเงินแล้ว", detail: sub.title, submissionId: id, type: "info" })),
@@ -329,7 +337,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ? `ส่งกลับเพื่อแก้ไข — "${body.notes}"`
       : `ส่งกลับโดย ${byLabel}`;
 
-    const isPrivileged = role === "ADMIN" || role === "SUPER_ADMIN";
+    const isPrivileged = userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r));
 
     // Non-privileged users must be involved in this submission to reject
     if (!isPrivileged) {
@@ -415,12 +423,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   else if (action === "admin_set_note") {
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.submission.update({ where: { id }, data: { adminNote: body.note } });
   }
 
   else if (action === "admin_update") {
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.submission.update({
       where: { id },
       data: { title: body.title ?? undefined, advisorId: body.advisorId === undefined ? undefined : (body.advisorId || null) },
@@ -428,7 +436,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   else if (action === "admin_reset") {
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.workflowStep.updateMany({
       where: { submissionId: id, status: { not: "SKIPPED" } },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
@@ -437,7 +445,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   else if (action === "admin_override_step") {
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { stepOrder, decision, notes } = body;
 
     const targetStep = sub.workflowSteps.find((s: any) => s.stepOrder === stepOrder);

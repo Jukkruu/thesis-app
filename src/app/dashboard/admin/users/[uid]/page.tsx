@@ -27,13 +27,16 @@ function daysSince(dateStr: string): string {
 function getRelatedSubmissions(
   submissions: MockSubmission[],
   userId: string,
-  role: Role
+  roles: Role[]
 ): MockSubmission[] {
-  if (role === "STUDENT") return submissions.filter((s) => s.studentId === userId);
-  if (role === "ADVISOR") return submissions.filter((s) => s.advisorId === userId);
-  if (role === "ADMIN")   return submissions;
+  if (roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return submissions;
   return submissions.filter((s) =>
-    s.workflowSteps.some((st) => st.role === role)
+    s.studentId === userId ||
+    (s as any).advisorId === userId ||
+    ((s.coAdvisorIds ?? []) as string[]).includes(userId) ||
+    ((s.committeeIds ?? []) as string[]).includes(userId) ||
+    (s as any).headCommitteeId === userId ||
+    (s as any).invitedCommitteeId === userId
   );
 }
 
@@ -55,7 +58,7 @@ export default function AdminUserProfilePage() {
     );
   }
 
-  const related   = getRelatedSubmissions(submissions, uid, user.role);
+  const related   = getRelatedSubmissions(submissions, uid, user.roles);
   const inProg    = related.filter((s) => s.status === "IN_PROGRESS").length;
   const completed = related.filter((s) => s.status === "COMPLETED").length;
   const rejected  = related.filter((s) => s.status === "REJECTED").length;
@@ -95,7 +98,7 @@ export default function AdminUserProfilePage() {
             )}
           </div>
           <span className="shrink-0 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-full">
-            {ROLE_LABELS[user.role]}
+            {user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}
           </span>
         </div>
 
@@ -132,9 +135,10 @@ export default function AdminUserProfilePage() {
               const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
 
               // For non-student roles: show which step they are at for this submission
-              const myStep = user.role !== "STUDENT" && user.role !== "ADMIN"
-                ? sub.workflowSteps.find((s) => s.role === user.role && s.status === "PENDING")
-                  ?? sub.workflowSteps.filter((s) => s.role === user.role).at(-1)
+              const nonStudentRole = user.roles.find((r) => r !== "STUDENT" && r !== "ADMIN" && r !== "SUPER_ADMIN");
+              const myStep = nonStudentRole
+                ? sub.workflowSteps.find((s) => s.role === nonStudentRole && s.status === "PENDING")
+                  ?? sub.workflowSteps.filter((s) => s.role === nonStudentRole).at(-1)
                 : null;
 
               // Days since last activity
@@ -161,7 +165,7 @@ export default function AdminUserProfilePage() {
 
                   {/* Meta */}
                   <div className="text-sm text-gray-500 space-y-0.5">
-                    {user.role !== "STUDENT" && student && (
+                    {!user.roles.includes("STUDENT") && student && (
                       <p>
                         นักศึกษา:{" "}
                         <Link href={`/dashboard/admin/users/${student.id}`} className="font-medium text-blue-600 hover:underline">
@@ -169,7 +173,7 @@ export default function AdminUserProfilePage() {
                         </Link>
                       </p>
                     )}
-                    {user.role !== "ADVISOR" && advisor && (
+                    {!user.roles.includes("ADVISOR") && advisor && (
                       <p>ที่ปรึกษา: <span className="text-gray-700">{advisor.name}</span></p>
                     )}
                   </div>
