@@ -77,6 +77,12 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     (sub as any).advisorId === user?.id &&
     isMyTurn;
 
+  const isThesisHeadResultStep =
+    sub.submissionType === "THESIS_DEFENSE" &&
+    currentStep?.stepOrder === 5 &&
+    (sub as any).headCommitteeId === user?.id &&
+    isMyTurn;
+
   // Which form types the current role needs to download and physically sign
   const STEP_SIGN_FORMS: Record<string, Record<number, string[]>> = {
     PROPOSAL: {
@@ -277,6 +283,36 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
+          {/* Pass/fail selector — HEAD_EXAM_COMMITTEE at THESIS_DEFENSE step 5 */}
+          {isThesisHeadResultStep && (
+            <div className="bg-white border border-blue-200 rounded-2xl p-5 space-y-3">
+              <p className="font-semibold text-gray-800">ผลการสอบวิทยานิพนธ์ <span className="text-red-500">*</span></p>
+              <p className="text-xs text-gray-500">กรุณาเลือกผลการสอบก่อนลงนาม</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "ผ่าน",    label: "ผ่าน",    color: "green" },
+                  { value: "ไม่ผ่าน", label: "ไม่ผ่าน", color: "red"   },
+                ].map((opt) => {
+                  const selected = thesisResult === opt.value;
+                  const colorMap: Record<string, string> = {
+                    green: selected ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 text-gray-600 hover:border-green-300",
+                    red:   selected ? "border-red-500 bg-red-50 text-red-800"       : "border-gray-200 text-gray-600 hover:border-red-300",
+                  };
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setThesisResult(opt.value)}
+                      className={`py-3 rounded-xl border-2 font-semibold text-sm transition ${colorMap[opt.color]}`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Action — committee steps (EXAM_COMMITTEE and CO_ADVISOR) use sequential multi-member panel */}
           {isMyTurn && sub.status === "IN_PROGRESS" && (currentStep?.role === "EXAM_COMMITTEE" || currentStep?.role === "CO_ADVISOR") && (
             <CommitteeSignPanel
@@ -293,8 +329,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
               submissionId={sub.id}
               formsToShow={formsToShow}
               onSuccess={() => router.push(backPath)}
-              notePrefix={isThesisAdvisorResultStep && thesisResult ? `ผลการสอบ: ${thesisResult}` : undefined}
-              requireNotePrefix={isThesisAdvisorResultStep}
+              notePrefix={(isThesisAdvisorResultStep || isThesisHeadResultStep) && thesisResult ? `ผลการสอบ: ${thesisResult}` : undefined}
+              requireNotePrefix={isThesisAdvisorResultStep || isThesisHeadResultStep}
               extraSlots={
                 isThesisAdvisorResultStep && thesisResult === "ดีมาก"
                   ? [{ slotKey: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก", formType: "VERY_GOOD_EVAL" }]
