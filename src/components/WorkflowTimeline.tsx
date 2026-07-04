@@ -105,10 +105,14 @@ export function WorkflowTimeline({
           const showAdminFinanceRow = submissionType === "PROPOSAL" && step.stepOrder === 4;
           const adminFinanceUser = showAdminFinanceRow ? users.find((u) => u.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) ?? null : null;
           const uploads4 = showAdminFinanceRow ? (submission?.uploads ?? []) : [];
-          const financeUploaded = showAdminFinanceRow && uploads4.some((u) => u.formType === "FINANCE_DOC");
+          // When step is already APPROVED, both parties are done regardless of upload presence in state
+          const financeUploaded = showAdminFinanceRow &&
+            (step.status === "APPROVED" || uploads4.some((u) => u.formType === "FINANCE_DOC"));
           const studentStep4Done = showAdminFinanceRow &&
-            uploads4.some((u) => u.formType === "B1C") &&
-            uploads4.some((u) => u.formType === "B1D");
+            (step.status === "APPROVED" || (
+              uploads4.some((u) => u.formType === "B1C") &&
+              uploads4.some((u) => u.formType === "B1D")
+            ));
 
           return (
             <li
