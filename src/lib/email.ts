@@ -201,6 +201,180 @@ function buildHtml(
   `;
 }
 
+// ─── Welcome email (sent on registration) ─────────────────────────────────────
+
+export interface WelcomeEmailData {
+  userId: string;
+  name: string;
+  email: string;
+  password: string;
+}
+
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    console.log("[email/welcome] RESEND_API_KEY not set — skipping");
+    return;
+  }
+
+  await prisma.magicToken.deleteMany({
+    where: { userId: data.userId, expiresAt: { lt: new Date() } },
+  });
+
+  const rawToken = randomBytes(32).toString("hex");
+  await prisma.magicToken.create({
+    data: {
+      token: rawToken,
+      userId: data.userId,
+      redirectTo: "/dashboard/student",
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+    },
+  });
+
+  const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+  const { error } = await resend.emails.send({
+    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
+    to: ["outanagon2549@gmail.com"],
+    subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
+    html: buildWelcomeHtml(data.name, data.email, data.password, loginLink),
+  });
+
+  if (error) {
+    console.error(`[email/welcome] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+  } else {
+    console.log(`[email/welcome] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+  }
+}
+
+function buildWelcomeHtml(name: string, email: string, password: string, loginLink: string): string {
+  const rName  = escapeHtml(name);
+  const rEmail = escapeHtml(email);
+  const rPass  = escapeHtml(password);
+  return `
+    <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:20px;">ระบบจัดการวิทยานิพนธ์</h1>
+        <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
+      </div>
+
+      <p style="color:#374151;font-size:16px;">ยินดีต้อนรับ ${rName}!</p>
+      <p style="color:#374151;">บัญชีของคุณในระบบจัดการวิทยานิพนธ์ถูกสร้างเรียบร้อยแล้ว กรุณาบันทึกข้อมูลด้านล่างเพื่อใช้เข้าสู่ระบบในครั้งถัดไป</p>
+
+      <div style="background:#f0fdf4;border-left:4px solid #22c55e;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0 0 8px;font-weight:700;color:#166534;font-size:13px;">ข้อมูลบัญชีของคุณ</p>
+        <p style="margin:0 0 6px;color:#374151;font-size:15px;"><strong>อีเมล:</strong> ${rEmail}</p>
+        <p style="margin:0;color:#374151;font-size:15px;"><strong>รหัสผ่าน:</strong> <code style="background:#e5e7eb;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;letter-spacing:0.05em;">${rPass}</code></p>
+      </div>
+
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${loginLink}"
+           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
+          คลิกเพื่อเข้าสู่ระบบทันที
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
+          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
+          หลังจากนั้นให้ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ
+        </p>
+      </div>
+
+      <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
+        อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
+        กรุณาอย่าตอบกลับอีเมลนี้
+      </p>
+    </div>
+  `;
+}
+
+// ─── Forgot-password email ─────────────────────────────────────────────────────
+
+export interface ForgotPasswordEmailData {
+  userId: string;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    console.log("[email/forgot-pw] RESEND_API_KEY not set — skipping");
+    return;
+  }
+
+  await prisma.magicToken.deleteMany({
+    where: { userId: data.userId, expiresAt: { lt: new Date() } },
+  });
+
+  const rawToken = randomBytes(32).toString("hex");
+  const redirectTo = ROLE_ROUTES[data.role as Role] ?? "/dashboard";
+  await prisma.magicToken.create({
+    data: {
+      token: rawToken,
+      userId: data.userId,
+      redirectTo,
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+    },
+  });
+
+  const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+  const { error } = await resend.emails.send({
+    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
+    to: ["outanagon2549@gmail.com"],
+    subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
+    html: buildForgotPasswordHtml(data.name, data.email, data.password, loginLink),
+  });
+
+  if (error) {
+    console.error(`[email/forgot-pw] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+  } else {
+    console.log(`[email/forgot-pw] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+  }
+}
+
+function buildForgotPasswordHtml(name: string, email: string, password: string, loginLink: string): string {
+  const rName  = escapeHtml(name);
+  const rEmail = escapeHtml(email);
+  const rPass  = escapeHtml(password);
+  return `
+    <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:20px;">ระบบจัดการวิทยานิพนธ์</h1>
+        <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
+      </div>
+
+      <p style="color:#374151;font-size:16px;">เรียน ${rName},</p>
+      <p style="color:#374151;">มีการขอรีเซ็ตรหัสผ่านสำหรับบัญชีของคุณ รหัสผ่านใหม่ของคุณคือ:</p>
+
+      <div style="background:#fefce8;border-left:4px solid #eab308;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0 0 8px;font-weight:700;color:#713f12;font-size:13px;">รหัสผ่านใหม่</p>
+        <p style="margin:0 0 6px;color:#374151;font-size:15px;"><strong>อีเมล:</strong> ${rEmail}</p>
+        <p style="margin:0;color:#374151;font-size:15px;"><strong>รหัสผ่านใหม่:</strong> <code style="background:#e5e7eb;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;letter-spacing:0.05em;">${rPass}</code></p>
+      </div>
+
+      <p style="color:#6b7280;font-size:14px;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบทันที</p>
+
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${loginLink}"
+           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
+          คลิกเพื่อเข้าสู่ระบบทันที
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
+          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
+          หลังจากนั้นให้ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ
+        </p>
+      </div>
+
+      <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
+        อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
+        กรุณาอย่าตอบกลับอีเมลนี้
+      </p>
+    </div>
+  `;
+}
+
+// ─── Finance email ─────────────────────────────────────────────────────────────
+
 export interface FinanceEmailData {
   studentName: string;
   studentCode: string;

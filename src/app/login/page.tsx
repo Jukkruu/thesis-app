@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { ROLE_LABELS, ROLE_EMOJI, ROLE_GRADIENT } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Eye, EyeOff, LogIn, GraduationCap, Sparkles, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Role } from "@/types";
 
@@ -189,6 +190,15 @@ export default function LoginPage() {
                 {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </button>
             </form>
+
+            <div className="flex items-center justify-between pt-1 text-sm">
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                สร้างบัญชีใหม่
+              </Link>
+              <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">
+                ลืมรหัสผ่าน?
+              </Link>
+            </div>
           </div>
 
           {/* Demo shortcuts — click to log in instantly by role */}
