@@ -255,32 +255,6 @@ export default function StudentSubmissionDetail() {
       );
     }
 
-    if (currentStep) {
-      const pendingName = resolvePendingName();
-      return (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
-          <div className="flex items-start gap-4">
-            <Clock className="w-7 h-7 text-orange-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-orange-800 font-bold text-lg">รอการดำเนินการ</p>
-              <p className="text-orange-600 text-sm mt-1">
-                ขั้นที่ {currentStep.stepOrder}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
-              </p>
-              <p className="text-orange-700 text-sm font-medium">{pendingName}</p>
-              <p className="text-orange-400 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowCancelModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
-          >
-            <XCircle className="w-4 h-4" />
-            ยกเลิกคำร้องนี้
-          </button>
-        </div>
-      );
-    }
-
     return null;
   }
 
@@ -471,6 +445,30 @@ export default function StudentSubmissionDetail() {
               >
                 <RefreshCw className="w-5 h-5" />
                 ยืนยันและยื่นใหม่อีกครั้ง
+              </button>
+            </div>
+          )}
+
+          {/* Waiting — not the student's turn */}
+          {subStatus === "IN_PROGRESS" && !isMyTurn && !waitingForAdminUpload && currentStep && (
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <Clock className="w-6 h-6 text-orange-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-orange-800 font-bold">รอการดำเนินการ</p>
+                  <p className="text-orange-600 text-sm mt-1">
+                    ขั้นที่ {currentStep.stepOrder}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
+                  </p>
+                  <p className="text-orange-700 text-sm font-medium">{resolvePendingName()}</p>
+                  <p className="text-orange-400 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition"
+              >
+                <XCircle className="w-4 h-4" />
+                ยกเลิกคำร้องนี้
               </button>
             </div>
           )}
