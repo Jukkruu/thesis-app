@@ -345,7 +345,7 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
 export default function AdminSubmissionDetail() {
   const { id }  = useParams<{ id: string }>();
   const router  = useRouter();
-  const { user, submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, approveCurrentStep, rejectCurrentStep } = useApp();
+  const { user, submissions, users, adminUpdateSubmission, adminDeleteSubmission, adminOverrideStep, approveCurrentStep, rejectCurrentStep, returnToPrevStep } = useApp();
 
   const sub = submissions.find((s) => s.id === id);
 
@@ -355,8 +355,9 @@ export default function AdminSubmissionDetail() {
   const isThesisUploadStep = sub?.submissionType === "THESIS_DEFENSE" && pendingStep$?.stepOrder === 8;
   const isProposalFinanceStep = sub?.submissionType === "PROPOSAL" && pendingStep$?.stepOrder === 4;
   const [approveNotes, setApproveNotes] = useState("");
+  const [actionMode,   setActionMode]   = useState<"reject" | "return" | null>(null);
+  const [actionNotes,  setActionNotes]  = useState("");
   const [rejectNotes,  setRejectNotes]  = useState("");
-  const [showReject,   setShowReject]   = useState(false);
 
   const [editMode,    setEditMode]    = useState(false);
   const [editTitle,   setEditTitle]   = useState(sub?.title ?? "");
@@ -707,38 +708,93 @@ export default function AdminSubmissionDetail() {
               <div className="bg-white border-2 border-blue-400 rounded-2xl p-5 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ</h3>
                 {!isThesisRelayStep && (
-                  <p className="text-sm text-gray-500">ตรวจสอบเอกสาร แล้วอนุมัติหรือปฏิเสธ</p>
+                  <p className="text-sm text-gray-500">ตรวจสอบเอกสาร แล้วเลือกการดำเนินการ</p>
                 )}
-                {!showReject ? (
+
+                {/* Approve — always visible at top */}
+                {actionMode !== "reject" && actionMode !== "return" && (
                   <div className="space-y-3">
                     <textarea
                       value={approveNotes}
                       onChange={(e) => setApproveNotes(e.target.value)}
                       placeholder="หมายเหตุ (ไม่บังคับ)..."
-                      className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
-                    <div className="flex gap-3">
+                    <button
+                      onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition"
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      อนุมัติ
+                    </button>
+                  </div>
+                )}
+
+                {/* Reject form */}
+                {actionMode === "reject" && (
+                  <div className="space-y-3 border border-red-200 rounded-xl p-3 bg-red-50">
+                    <p className="text-sm font-semibold text-red-700">ปฏิเสธ — นิสิตต้องแก้ไขและยื่นใหม่</p>
+                    <textarea
+                      value={actionNotes}
+                      onChange={(e) => setActionNotes(e.target.value)}
+                      placeholder="เหตุผลการปฏิเสธ..."
+                      autoFocus
+                      className="w-full border border-red-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => { approveCurrentStep(sub.id, approveNotes || undefined); setApproveNotes(""); }}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition"
+                        disabled={!actionNotes.trim()}
+                        onClick={() => { rejectCurrentStep(sub.id, actionNotes.trim()); setActionMode(null); setActionNotes(""); }}
+                        className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                       >
-                        <CheckCircle2 className="w-5 h-5" />
-                        อนุมัติ
+                        ยืนยันปฏิเสธ
                       </button>
-                      <button
-                        onClick={() => setShowReject(true)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition"
-                      >
-                        <XCircle className="w-5 h-5" />
-                        ปฏิเสธ
-                      </button>
+                      <button onClick={() => { setActionMode(null); setActionNotes(""); }} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition text-sm">ยกเลิก</button>
                     </div>
                   </div>
-                ) : (
-                  <RejectForm
-                    onConfirm={(notes) => { rejectCurrentStep(sub.id, notes); setShowReject(false); }}
-                    onCancel={() => setShowReject(false)}
-                  />
+                )}
+
+                {/* Return-to-prev form */}
+                {actionMode === "return" && (
+                  <div className="space-y-3 border border-orange-200 rounded-xl p-3 bg-orange-50">
+                    <p className="text-sm font-semibold text-orange-700">ส่งกลับ — ขั้นตอนก่อนหน้าต้องดำเนินการใหม่</p>
+                    <textarea
+                      value={actionNotes}
+                      onChange={(e) => setActionNotes(e.target.value)}
+                      placeholder="เหตุผล (ไม่บังคับ)..."
+                      autoFocus
+                      className="w-full border border-orange-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { returnToPrevStep(sub.id, actionNotes.trim() || undefined); setActionMode(null); setActionNotes(""); }}
+                        className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition text-sm"
+                      >
+                        ยืนยันส่งกลับ
+                      </button>
+                      <button onClick={() => { setActionMode(null); setActionNotes(""); }} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reject / Return buttons */}
+                {!actionMode && (
+                  <div className="flex gap-2 pt-1 border-t border-gray-100">
+                    <button
+                      onClick={() => setActionMode("reject")}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 transition text-sm"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      ปฏิเสธ
+                    </button>
+                    <button
+                      onClick={() => setActionMode("return")}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border-2 border-orange-200 text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition text-sm"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      ส่งกลับ
+                    </button>
+                  </div>
                 )}
               </div>
             )

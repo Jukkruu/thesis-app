@@ -370,6 +370,45 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     } catch (e) { console.error("[email/reject]", e); }
   }
 
+  else if (action === "return_to_prev") {
+    // Admin sends the current step back to the previous role for re-review
+    if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
+    if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
+
+    const prevStep = [...sub.workflowSteps]
+      .filter((s: any) => s.stepOrder < step.stepOrder && s.status !== "SKIPPED")
+      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
+
+    if (!prevStep) return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
+
+    const byLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
+    const returnNote = body.notes
+      ? `ส่งกลับโดย ${byLabel} — "${body.notes}"`
+      : `ส่งกลับโดย ${byLabel}`;
+
+    await prisma.workflowStep.update({
+      where: { id: step.id },
+      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: returnNote },
+    });
+    await prisma.workflowStep.update({
+      where: { id: prevStep.id },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+    });
+    await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
+
+    await notifyRole(prevStep.role, sub, returnNote, "rejected");
+    try {
+      const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
+      await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
+    } catch (e) { console.error("[email/return_to_prev]", e); }
+    await prisma.notification.create({
+      data: { recipientId: sub.studentId, message: returnNote, detail: sub.title, submissionId: id, type: "rejected" },
+    });
+  }
+
   else if (action === "cancel") {
     if (sub.studentId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await prisma.workflowStep.updateMany({ where: { submissionId: id, status: "PENDING" }, data: { status: "SKIPPED" } });

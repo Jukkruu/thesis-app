@@ -54,6 +54,7 @@ interface AppContextType {
   createSubmission: (data: SubmissionFormData) => Promise<MockSubmission>;
   approveCurrentStep: (submissionId: string, notes?: string) => Promise<void>;
   rejectCurrentStep: (submissionId: string, notes: string) => Promise<void>;
+  returnToPrevStep: (submissionId: string, notes?: string) => Promise<void>;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number, fileContent?: string) => void;
   getPendingCount: (role: Role) => number;
   studentResubmit: (submissionId: string) => Promise<void>;
@@ -167,6 +168,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       })
     );
+  }
+
+  async function returnToPrevStep(submissionId: string, notes?: string) {
+    const sub = await api<MockSubmission>(`/api/submissions/${submissionId}`, "PATCH", { action: "return_to_prev", notes });
+    setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? sub : s)));
+    await refreshNotifications();
   }
 
   async function studentResubmit(submissionId: string) {
@@ -297,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       user, users, submissions, notifications, unreadCount, loading,
       logout, refresh,
-      createSubmission, approveCurrentStep, rejectCurrentStep,
+      createSubmission, approveCurrentStep, rejectCurrentStep, returnToPrevStep,
       addUpload, getPendingCount, studentResubmit, cancelSubmission,
       committeeSign, needsMyAction,
       markNotificationRead, markAllNotificationsRead,
