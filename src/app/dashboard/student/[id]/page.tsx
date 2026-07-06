@@ -130,6 +130,18 @@ export default function StudentSubmissionDetail() {
   // Student can submit as soon as their own files are ready — FINANCE_DOC is handled by admin in parallel
   const allRequiredUploaded = studentUploaded && preSubmitAllChecked;
 
+  // Forms the student should re-upload to fix a rejection — based on their most recent approved upload step
+  const rejectedFixForms: FormType[] = (() => {
+    if (subStatus !== "REJECTED") return [];
+    const rejectedStep = sub.workflowSteps.find((s) => s.status === "REJECTED");
+    const lastStudentStep = [...sub.workflowSteps]
+      .filter((s) => s.role === "STUDENT" && s.status === "APPROVED" && s.stepOrder <= (rejectedStep?.stepOrder ?? 999))
+      .sort((a, b) => b.stepOrder - a.stepOrder)[0];
+    return lastStudentStep
+      ? (SUGGESTED_BY_STEP[subType]?.[lastStudentStep.stepOrder]?.forms ?? [])
+      : (ALL_STUDENT_FORMS[subType] ?? []);
+  })();
+
   // Who is responsible for the current step (with name if available)
   function resolvePendingName(): string {
     if (!currentStep || !sub) return "";
@@ -201,23 +213,16 @@ export default function StudentSubmissionDetail() {
               </p>
               {rejectedStep?.notes && (
                 <p className="text-red-700 text-sm mt-2 bg-red-100 rounded-xl px-3 py-2">
-                  เหตุผล: "{rejectedStep.notes}"
+                  เหตุผล: &ldquo;{rejectedStep.notes}&rdquo;
                 </p>
               )}
             </div>
           </div>
           {rejectedStepName && (
             <p className="text-xs text-red-500 bg-red-100 rounded-lg px-3 py-2">
-              เมื่อกดยื่นใหม่ คำร้องจะส่งกลับให้ <span className="font-semibold">{rejectedStepName}</span> พิจารณาใหม่อีกครั้ง
+              แก้ไขเอกสารด้านขวา แล้วกด <span className="font-semibold">ยืนยันและยื่นใหม่</span> — ระบบจะส่งกลับให้ <span className="font-semibold">{rejectedStepName}</span> พิจารณาใหม่
             </p>
           )}
-          <button
-            onClick={handleResubmit}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
-          >
-            <RefreshCw className="w-5 h-5" />
-            แก้ไขและยื่นใหม่อีกครั้ง
-          </button>
         </div>
       );
     }
@@ -424,6 +429,50 @@ export default function StudentSubmissionDetail() {
               compact
               hideHistory
             />
+          )}
+
+          {/* REJECTED: upload corrected docs then resubmit */}
+          {subStatus === "REJECTED" && (
+            <div className="bg-white rounded-2xl border border-orange-200 p-4 space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-800 text-sm">แก้ไขเอกสาร</h2>
+                  <p className="text-xs text-gray-400">อัปโหลดไฟล์ที่แก้ไขแล้ว แล้วกดยืนยัน</p>
+                </div>
+              </div>
+
+              {rejectedFixForms.map((ft) => {
+                const existing = sub.uploads
+                  .filter((u) => u.formType === ft)
+                  .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
+                return (
+                  <div key={ft} className="space-y-1">
+                    {FORM_UPLOAD_WARNINGS[ft] && (
+                      <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        {FORM_UPLOAD_WARNINGS[ft]}
+                      </p>
+                    )}
+                    <FileUploader
+                      submissionId={sub.id}
+                      formType={ft}
+                      existingUpload={existing}
+                    />
+                  </div>
+                );
+              })}
+
+              <button
+                onClick={handleResubmit}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+              >
+                <RefreshCw className="w-5 h-5" />
+                ยืนยันและยื่นใหม่อีกครั้ง
+              </button>
+            </div>
           )}
 
           {/* Upload section — hide when student has already submitted and is waiting for admin */}
