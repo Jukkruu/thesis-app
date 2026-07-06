@@ -187,14 +187,8 @@ export default function StudentSubmissionDetail() {
 
     if (subStatus === "REJECTED") {
       const rejectedStep = sub.workflowSteps.find((s) => s.status === "REJECTED");
-      const prevStep = rejectedStep
-        ? [...sub.workflowSteps]
-            .filter((s) => s.stepOrder < rejectedStep.stepOrder)
-            .sort((a, b) => b.stepOrder - a.stepOrder)[0]
-        : null;
-      const goBackTo = prevStep ?? rejectedStep;
-      const goBackName = goBackTo
-        ? (getStepName(goBackTo.stepOrder, sub.submissionType) || ROLE_LABELS[goBackTo.role])
+      const rejectedStepName = rejectedStep
+        ? (getStepName(rejectedStep.stepOrder, sub.submissionType) || ROLE_LABELS[rejectedStep.role])
         : null;
       return (
         <div className="bg-red-50 border border-red-300 rounded-2xl p-5 space-y-3">
@@ -212,9 +206,9 @@ export default function StudentSubmissionDetail() {
               )}
             </div>
           </div>
-          {goBackName && (
+          {rejectedStepName && (
             <p className="text-xs text-red-500 bg-red-100 rounded-lg px-3 py-2">
-              เมื่อกดยื่นใหม่ คำร้องจะกลับไปยัง: <span className="font-semibold">{goBackName}</span>
+              เมื่อกดยื่นใหม่ คำร้องจะส่งกลับให้ <span className="font-semibold">{rejectedStepName}</span> พิจารณาใหม่อีกครั้ง
             </p>
           )}
           <button

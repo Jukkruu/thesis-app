@@ -339,17 +339,6 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             />
           )}
 
-          {/* Waiting-for-resubmit banner — shown to the prevStep role when submission is REJECTED */}
-          {isMyTurn && sub.status === "REJECTED" && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 text-red-700 font-semibold mb-1">
-                <Clock className="w-5 h-5" />
-                รอนักศึกษายืนยันการแก้ไข
-              </div>
-              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นักศึกษาต้องกด "แก้ไขและยื่นใหม่" ก่อน จึงจะดำเนินขั้นตอนนี้ต่อได้</p>
-            </div>
-          )}
-
           {!isMyTurn && currentStep && !["COMPLETED", "CANCELLED"].includes(sub.status) && (
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 text-orange-700 font-semibold mb-1">
@@ -370,10 +359,12 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
           )}
 
           {sub.status === "REJECTED" && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center space-y-1">
-              <p className="text-2xl">❌</p>
-              <p className="text-red-800 font-semibold text-lg">คำร้องถูกปฏิเสธ</p>
-              <p className="text-red-600 text-sm">โปรดดูหมายเหตุในขั้นตอนที่ปฏิเสธ</p>
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-1">
+              <div className="flex items-center gap-2 text-red-700 font-semibold">
+                <Clock className="w-5 h-5" />
+                รอนิสิตแก้ไขและยื่นใหม่
+              </div>
+              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นิสิตต้องกด "แก้ไขและยื่นใหม่" ก่อน ระบบจะส่งกลับมาให้พิจารณาอีกครั้ง</p>
             </div>
           )}
         </div>

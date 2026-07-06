@@ -65,54 +65,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const newActions = [...prevActions, { userId, name: userName, decision, notes, actedAt: now.toISOString() }];
 
   if (decision === "REJECTED") {
-    // Go back one step — same behaviour as the regular reject action
-    const prevStep = [...sub.workflowSteps]
-      .filter((s: any) => s.stepOrder < step.stepOrder)
-      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
-
-    if (!prevStep) {
-      return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
-    }
-
+    // Mark current step REJECTED, stay on this step — student must fix and resubmit
     await prisma.workflowStep.update({
       where: { id: step.id },
       data: { status: "REJECTED", committeeActions: newActions, actedAt: now, actedByName: userName, actedById: userId },
     });
-    await prisma.workflowStep.update({
-      where: { id: prevStep.id },
-      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
-    });
     await prisma.submission.update({ where: { id: submissionId }, data: { status: "REJECTED" } });
 
     const rejectionNote = notes
-      ? `กรรมการส่งกลับเพื่อแก้ไข — "${notes}"`
-      : `ส่งกลับโดย ${userName}`;
-    // Notify role being sent back to
-    let prevRecipientId: string | null = null;
-    if (prevStep.role === "STUDENT")              prevRecipientId = sub.studentId;
-    else if (prevStep.role === "ADVISOR")          prevRecipientId = (sub as any).advisorId ?? null;
-    else if (prevStep.role === "HEAD_EXAM_COMMITTEE") prevRecipientId = (sub as any).headCommitteeId ?? null;
-    else if (prevStep.role === "INVITED_EXAM_COMMITTEE") prevRecipientId = (sub as any).invitedCommitteeId ?? null;
-    else if (prevStep.role === "CO_ADVISOR")       prevRecipientId = ((sub as any).coAdvisorIds as string[])?.[0] ?? null;
-    else if (prevStep.role === "EXAM_COMMITTEE")   prevRecipientId = ((sub as any).committeeIds as string[])?.[0] ?? null;
-    else {
-      const u = await prisma.user.findFirst({ where: { roles: { has: prevStep.role as any } } });
-      prevRecipientId = u?.id ?? null;
-    }
-    if (prevRecipientId) {
-      await prisma.notification.create({
-        data: { recipientId: prevRecipientId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
-      });
-    }
+      ? `กรรมการปฏิเสธ — "${notes}" — กรุณาแก้ไขและยื่นใหม่`
+      : `ปฏิเสธโดย ${userName} — กรุณาแก้ไขและยื่นใหม่`;
+    await prisma.notification.create({
+      data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
+    });
     try {
-      const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
-      await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
+      const currentStepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role as keyof typeof ROLE_LABELS];
+      await sendStepEmail({ role: "STUDENT", sub, stepName: currentStepName });
     } catch (e) { console.error("[email/reject/committee]", e); }
-    if (prevStep.role !== "STUDENT") {
-      await prisma.notification.create({
-        data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
-      });
-    }
   } else {
     const allApproved = (step.committeeMembers as string[] ?? []).every(
       (mid) => newActions.find((a) => a.userId === mid)?.decision === "APPROVED"

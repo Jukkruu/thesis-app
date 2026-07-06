@@ -765,14 +765,14 @@ export default function AdminSubmissionDetail() {
             )
           )}
 
-          {/* Waiting-for-resubmit — admin is the prevStep role, blocked until student resubmits */}
-          {isMyTurn && sub.status === "REJECTED" && (
+          {/* Waiting-for-resubmit — blocked until student fixes and resubmits */}
+          {sub.status === "REJECTED" && (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 text-red-700 font-semibold mb-1">
                 <Clock className="w-5 h-5" />
-                รอนักศึกษายืนยันการแก้ไข
+                รอนิสิตแก้ไขและยื่นใหม่
               </div>
-              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นักศึกษาต้องกด "แก้ไขและยื่นใหม่" ก่อน</p>
+              <p className="text-red-600 text-sm mt-1">คำร้องถูกปฏิเสธ — นิสิตต้องกด "แก้ไขและยื่นใหม่" ก่อน ระบบจะส่งกลับให้ผู้พิจารณาตรวจสอบอีกครั้ง</p>
             </div>
           )}
 

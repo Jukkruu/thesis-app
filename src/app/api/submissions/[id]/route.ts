@@ -351,42 +351,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!isInvolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // All roles go back exactly one step — skip SKIPPED steps (e.g. CO_ADVISOR when no co-advisors)
-    const prevStep = [...sub.workflowSteps]
-      .filter((s: any) => s.stepOrder < step.stepOrder && s.status !== "SKIPPED")
-      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0];
-
-    if (!prevStep) {
-      return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
-    }
-
-    // Mark current step REJECTED, reset prev step so that role can act again
+    // Mark current step REJECTED, stay on this step — student must fix and resubmit
     await prisma.workflowStep.update({
       where: { id: step.id },
       data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: rejectionNote },
     });
-    await prisma.workflowStep.update({
-      where: { id: prevStep.id },
-      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
-    });
     await prisma.submission.update({ where: { id }, data: { status: "REJECTED" } });
 
-    // Notify the role being sent back to
-    await notifyRole(prevStep.role, sub, rejectionNote, "rejected");
+    // Notify student to fix and resubmit
+    const studentNote = body.notes
+      ? `คำร้องถูกปฏิเสธโดย ${byLabel} — "${body.notes}" — กรุณาแก้ไขและยื่นใหม่`
+      : `คำร้องถูกปฏิเสธโดย ${byLabel} — กรุณาแก้ไขและยื่นใหม่`;
+    await prisma.notification.create({
+      data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
+    });
     try {
-      const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
-      await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
+      await sendStepEmail({ role: "STUDENT", sub, stepName: getStepName(step.stepOrder, sub.submissionType) });
     } catch (e) { console.error("[email/reject]", e); }
-
-    // Notify student if the step being sent back to is not their own step
-    if (prevStep.role !== "STUDENT") {
-      const studentNote = body.notes
-        ? `คำร้องถูกส่งกลับ — "${body.notes}"`
-        : `คำร้องถูกส่งกลับขั้นตอนก่อนหน้าโดย ${byLabel}`;
-      await prisma.notification.create({
-        data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
-      });
-    }
   }
 
   else if (action === "cancel") {
@@ -400,26 +381,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const rejectedStep = sub.workflowSteps.find((s: any) => s.status === "REJECTED");
     if (!rejectedStep) return NextResponse.json({ error: "No rejected step" }, { status: 400 });
 
-    // Go back exactly one step from the rejected step — skip SKIPPED steps same as reject action.
-    const prevStep = [...sub.workflowSteps]
-      .filter((s: any) => s.stepOrder < rejectedStep.stepOrder && s.status !== "SKIPPED")
-      .sort((a: any, b: any) => b.stepOrder - a.stepOrder)[0] ?? rejectedStep;
-
-    // Reset only non-SKIPPED steps in the range — don't accidentally un-skip CO_ADVISOR etc.
-    const idsToReset = sub.workflowSteps
-      .filter((s: any) =>
-        s.stepOrder >= prevStep.stepOrder &&
-        s.stepOrder <= rejectedStep.stepOrder &&
-        s.status !== "SKIPPED"
-      )
-      .map((s: any) => s.id);
-
-    await prisma.workflowStep.updateMany({
-      where: { id: { in: idsToReset } },
+    // Reset only the rejected step itself — the reviewer re-reviews from the same step
+    await prisma.workflowStep.update({
+      where: { id: rejectedStep.id },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
-    await notifyRole(prevStep.role, sub, "กรุณาดำเนินการอีกครั้ง", "pending");
+
+    const stepName = getStepName(rejectedStep.stepOrder, sub.submissionType) || ROLE_LABELS[rejectedStep.role as keyof typeof ROLE_LABELS];
+    await notifyRole(rejectedStep.role, sub, `นิสิตแก้ไขแล้ว — กรุณาดำเนินการ: ${stepName}`, "pending");
+    try {
+      const specificMemberId = rejectedStep.role === "EXAM_COMMITTEE" ? (sub.committeeIds as string[])?.[0]
+        : rejectedStep.role === "CO_ADVISOR" ? (sub.coAdvisorIds as string[])?.[0]
+        : undefined;
+      await sendStepEmail({ role: rejectedStep.role, sub, stepName, specificMemberId });
+    } catch (e) { console.error("[email/resubmit]", e); }
   }
 
   else if (action === "admin_set_note") {
