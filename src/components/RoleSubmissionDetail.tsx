@@ -22,7 +22,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
   const router = useRouter();
   const sub = submissions.find((s) => s.id === submissionId);
 
-  const [thesisResult, setThesisResult] = useState("");
+  const [thesisResult, setThesisResult] = useState("ผ่าน");
 
   if (!sub) {
     return (
@@ -77,8 +77,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     (sub as any).advisorId === user?.id &&
     isMyTurn;
 
-  const isThesisHeadResultStep =
-    sub.submissionType === "THESIS_DEFENSE" &&
+  const isProposalHeadResultStep =
+    sub.submissionType === "PROPOSAL" &&
     currentStep?.stepOrder === 5 &&
     (sub as any).headCommitteeId === user?.id &&
     isMyTurn;
@@ -283,8 +283,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             </div>
           )}
 
-          {/* Pass/fail selector — HEAD_EXAM_COMMITTEE at THESIS_DEFENSE step 5 */}
-          {isThesisHeadResultStep && (
+          {/* Pass/fail selector — HEAD_EXAM_COMMITTEE at PROPOSAL step 5 */}
+          {isProposalHeadResultStep && (
             <div className="bg-white border border-blue-200 rounded-2xl p-5 space-y-3">
               <p className="font-semibold text-gray-800">ผลการสอบวิทยานิพนธ์ <span className="text-red-500">*</span></p>
               <p className="text-xs text-gray-500">กรุณาเลือกผลการสอบก่อนลงนาม</p>
@@ -329,8 +329,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
               submissionId={sub.id}
               formsToShow={formsToShow}
               onSuccess={() => router.push(backPath)}
-              notePrefix={(isThesisAdvisorResultStep || isThesisHeadResultStep) && thesisResult ? `ผลการสอบ: ${thesisResult}` : undefined}
-              requireNotePrefix={isThesisAdvisorResultStep || isThesisHeadResultStep}
+              notePrefix={(isThesisAdvisorResultStep || isProposalHeadResultStep) && thesisResult ? `ผลการสอบ: ${thesisResult}` : undefined}
+              requireNotePrefix={isThesisAdvisorResultStep || isProposalHeadResultStep}
               extraSlots={
                 isThesisAdvisorResultStep && thesisResult === "ดีมาก"
                   ? [{ slotKey: "VERY_GOOD_EVAL", label: "แบบประเมินวิทยานิพนธ์ดีมาก", formType: "VERY_GOOD_EVAL" }]
