@@ -24,6 +24,7 @@ function StepCard({
   step,
   isCurrentStep,
   onOverride,
+  onReturn,
   stepUploads,
   assignedName,
   committeeStatus,
@@ -34,6 +35,7 @@ function StepCard({
   step: MockWorkflowStep;
   isCurrentStep: boolean;
   onOverride: (stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => Promise<void>;
+  onReturn?: (notes?: string) => Promise<void>;
   stepUploads: MockUpload[];
   assignedName?: string | null;
   committeeStatus?: { name: string; signed: boolean; approved: boolean }[];
@@ -42,7 +44,7 @@ function StepCard({
   financeAdminName?: string | null;
 }) {
   const [open,    setOpen]    = useState(false);
-  const [action,  setAction]  = useState<"APPROVED" | "REJECTED">("APPROVED");
+  const [action,  setAction]  = useState<"APPROVED" | "REJECTED" | "RETURN">("APPROVED");
   const [notes,   setNotes]   = useState("");
   const [saving,  setSaving]  = useState(false);
   const [errMsg,  setErrMsg]  = useState<string | null>(null);
@@ -179,13 +181,34 @@ function StepCard({
               <XCircle className="w-4 h-4" />
               ปฏิเสธ
             </button>
+            {isCurrentStep && onReturn && (
+              <button
+                onClick={() => setAction("RETURN")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-medium text-sm transition ${
+                  action === "RETURN"
+                    ? "bg-orange-500 text-white"
+                    : "bg-white border border-gray-200 text-gray-600 hover:border-orange-400"
+                }`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                ส่งกลับ
+              </button>
+            )}
           </div>
 
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="หมายเหตุสำหรับการแก้ไข (ไม่บังคับ)..."
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            placeholder={
+              action === "RETURN" ? "เหตุผลการส่งกลับ (ไม่บังคับ)..."
+              : action === "REJECTED" ? "เหตุผลการปฏิเสธ (ไม่บังคับ)..."
+              : "หมายเหตุ (ไม่บังคับ)..."
+            }
+            className={`w-full border rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 ${
+              action === "RETURN" ? "border-orange-300 focus:ring-orange-400"
+              : action === "REJECTED" ? "border-red-300 focus:ring-red-400"
+              : "border-gray-200 focus:ring-orange-400"
+            }`}
           />
 
           {errMsg && (
@@ -198,7 +221,11 @@ function StepCard({
                 setSaving(true);
                 setErrMsg(null);
                 try {
-                  await onOverride(step.stepOrder, action, notes || undefined);
+                  if (action === "RETURN" && onReturn) {
+                    await onReturn(notes || undefined);
+                  } else {
+                    await onOverride(step.stepOrder, action as "APPROVED" | "REJECTED", notes || undefined);
+                  }
                   setOpen(false);
                   setNotes("");
                 } catch (e) {
@@ -207,9 +234,13 @@ function StepCard({
                   setSaving(false);
                 }
               }}
-              className="flex-1 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex-1 py-2.5 text-white font-semibold rounded-xl transition text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                action === "RETURN" ? "bg-orange-500 hover:bg-orange-600"
+                : action === "REJECTED" ? "bg-red-600 hover:bg-red-700"
+                : "bg-green-600 hover:bg-green-700"
+              }`}
             >
-              {saving ? "กำลังบันทึก..." : "ยืนยันการแก้ไข"}
+              {saving ? "กำลังบันทึก..." : action === "RETURN" ? "ยืนยันส่งกลับ" : action === "REJECTED" ? "ยืนยันปฏิเสธ" : "ยืนยันอนุมัติ"}
             </button>
             <button
               onClick={() => { setOpen(false); setNotes(""); setErrMsg(null); }}
@@ -661,6 +692,7 @@ export default function AdminSubmissionDetail() {
                     onOverride={(stepOrder, action, notes) =>
                       adminOverrideStep(sub.id, stepOrder, action, notes)
                     }
+                    onReturn={(notes) => returnToPrevStep(sub.id, notes)}
                   />
                 );
               })}
