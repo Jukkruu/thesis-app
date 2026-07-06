@@ -383,7 +383,10 @@ export default function AdminSubmissionDetail() {
   const student    = allUsers.find((u) => u.id === sub.studentId);
   const advisor    = allUsers.find((u) => u.id === sub.advisorId);
   const advisors   = allUsers.filter((u) => u.roles.includes("ADVISOR"));
-  const currentOrd        = sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
+  // When REJECTED, no step is treated as "current" — future pending steps aren't highlighted
+  const currentOrd        = sub.status === "REJECTED"
+    ? null
+    : sub.workflowSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const visibleSteps      = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
   const currentDisplayOrd = currentOrd !== null
     ? (visibleSteps.findIndex((s) => s.stepOrder === currentOrd) + 1) || null

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 type SubInfo = Pick<MockSubmission,
   "studentId" | "studentFullName" | "advisorId" | "headCommitteeId" | "coAdvisorIds" |
   "committeeIds" | "invitedCommitteeId" | "invitedProfName"
-> & { uploads?: MockUpload[] };
+> & { uploads?: MockUpload[]; status?: string };
 
 /** Resolve the list of people assigned to a step: [{ id, name }] */
 function resolveAssignees(
@@ -76,7 +76,10 @@ export function WorkflowTimeline({
   submission?: SubInfo;
 }) {
   const visibleSteps = steps.filter((s) => s.status !== "SKIPPED");
-  const currentOrder = visibleSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
+  // When submission is REJECTED, no step is "current" — the rejected step stands alone in red
+  const currentOrder = submission?.status === "REJECTED"
+    ? null
+    : visibleSteps.find((s) => s.status === "PENDING")?.stepOrder ?? null;
   const remainingCount = currentOrder !== null
     ? visibleSteps.filter((s) => s.status === "PENDING" && s.stepOrder > currentOrder).length
     : 0;
