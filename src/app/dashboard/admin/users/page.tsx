@@ -8,47 +8,25 @@ import { ROLE_LABELS, ROLE_DESC } from "@/lib/utils";
 import { DEMO_MODE } from "@/lib/config";
 import { Role } from "@/types";
 import {
-  Users, GraduationCap, BookOpen, Building2, ClipboardList,
-  Briefcase, School, ShieldCheck, ChevronRight, RotateCcw, Crown,
+  Users, GraduationCap, BookOpen, ShieldCheck, ChevronRight, RotateCcw, Crown,
   UserPlus, X, Loader2,
 } from "lucide-react";
 
 const ROLE_ICON: Record<Role, React.ReactNode> = {
-  SUPER_ADMIN:            <Crown         className="w-5 h-5 text-amber-500" />,
-  ADMIN:                  <ShieldCheck   className="w-5 h-5 text-orange-500" />,
-  STUDENT:                <GraduationCap className="w-5 h-5 text-blue-500" />,
-  ADVISOR:                <BookOpen      className="w-5 h-5 text-purple-500" />,
-  CO_ADVISOR:             <BookOpen      className="w-5 h-5 text-fuchsia-500" />,
-  PROGRAM_CHAIR:          <Building2     className="w-5 h-5 text-indigo-500" />,
-  HEAD_EXAM_COMMITTEE:    <ClipboardList className="w-5 h-5 text-orange-600" />,
-  EXAM_COMMITTEE:         <ClipboardList className="w-5 h-5 text-amber-500" />,
-  INVITED_EXAM_COMMITTEE: <ClipboardList className="w-5 h-5 text-pink-500" />,
-  DEPT_STAFF:             <Briefcase     className="w-5 h-5 text-teal-500" />,
-  FACULTY_DEAN:           <School        className="w-5 h-5 text-red-500" />,
-  GRADUATE_SCHOOL:        <GraduationCap className="w-5 h-5 text-green-500" />,
+  SUPER_ADMIN: <Crown         className="w-5 h-5 text-amber-500" />,
+  ADMIN:       <ShieldCheck   className="w-5 h-5 text-orange-500" />,
+  STUDENT:     <GraduationCap className="w-5 h-5 text-blue-500" />,
+  PROFESSOR:   <BookOpen      className="w-5 h-5 text-purple-500" />,
 };
 
 const ROLE_COLOR: Record<Role, string> = {
-  SUPER_ADMIN:            "bg-amber-50 border-amber-100 hover:border-amber-300",
-  ADMIN:                  "bg-orange-50 border-orange-100 hover:border-orange-300",
-  STUDENT:                "bg-blue-50 border-blue-100 hover:border-blue-300",
-  ADVISOR:                "bg-purple-50 border-purple-100 hover:border-purple-300",
-  CO_ADVISOR:             "bg-fuchsia-50 border-fuchsia-100 hover:border-fuchsia-300",
-  PROGRAM_CHAIR:          "bg-indigo-50 border-indigo-100 hover:border-indigo-300",
-  HEAD_EXAM_COMMITTEE:    "bg-orange-50 border-orange-100 hover:border-orange-300",
-  EXAM_COMMITTEE:         "bg-amber-50 border-amber-100 hover:border-amber-300",
-  INVITED_EXAM_COMMITTEE: "bg-pink-50 border-pink-100 hover:border-pink-300",
-  DEPT_STAFF:             "bg-teal-50 border-teal-100 hover:border-teal-300",
-  FACULTY_DEAN:           "bg-red-50 border-red-100 hover:border-red-300",
-  GRADUATE_SCHOOL:        "bg-green-50 border-green-100 hover:border-green-300",
+  SUPER_ADMIN: "bg-amber-50 border-amber-100 hover:border-amber-300",
+  ADMIN:       "bg-orange-50 border-orange-100 hover:border-orange-300",
+  STUDENT:     "bg-blue-50 border-blue-100 hover:border-blue-300",
+  PROFESSOR:   "bg-purple-50 border-purple-100 hover:border-purple-300",
 };
 
-// Only roles that exist in the database enum
-const DB_ROLES: Role[] = [
-  "STUDENT", "ADVISOR", "CO_ADVISOR", "PROGRAM_CHAIR",
-  "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE",
-  "ADMIN", "SUPER_ADMIN",
-];
+const DB_ROLES: Role[] = ["STUDENT", "PROFESSOR", "ADMIN", "SUPER_ADMIN"];
 
 const INPUT_CLS = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition placeholder:text-gray-300";
 
@@ -57,12 +35,12 @@ export default function AdminUsersPage() {
   const { showToast } = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "STUDENT" as Role, studentId: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", role: "STUDENT" as Role, studentId: "", password: "", isProgramChair: false });
   const [saving, setSaving] = useState(false);
 
   function closeModal() {
     setShowModal(false);
-    setForm({ name: "", email: "", role: "STUDENT", studentId: "", password: "" });
+    setForm({ name: "", email: "", role: "STUDENT", studentId: "", password: "", isProgramChair: false });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,6 +54,7 @@ export default function AdminUsersPage() {
           role: form.role,
           roles: [form.role],
           studentId: form.role === "STUDENT" && form.studentId.trim() ? form.studentId.trim() : undefined,
+          isProgramChair: form.role === "PROFESSOR" ? form.isProgramChair : false,
         },
         form.password || undefined,
       );
@@ -94,22 +73,17 @@ export default function AdminUsersPage() {
       const done = mine.filter((s) => s.status === "COMPLETED").length;
       return `${mine.length} คำร้อง · เสร็จสิ้น ${done}`;
     }
-    if (role === "ADVISOR") {
-      const related = submissions.filter((s) => s.advisorId === userId);
-      return `ที่ปรึกษา ${related.length} คำร้อง`;
+    if (role === "PROFESSOR") {
+      const advised = submissions.filter((s) => (s as any).advisorId === userId).length;
+      const acted = submissions.filter((s) =>
+        s.workflowSteps.some((st) => st.actedById === userId && (st.status === "APPROVED" || st.status === "REJECTED"))
+      ).length;
+      if (advised > 0) return `ที่ปรึกษา ${advised} · ดำเนินการแล้ว ${acted}`;
+      if (acted > 0) return `ดำเนินการแล้ว ${acted} คำร้อง`;
+      return "ยังไม่มีการดำเนินการ";
     }
-    if (role === "ADMIN") return "เข้าถึงได้ทุกรายการ";
-    const acted = submissions.filter((s) =>
-      s.workflowSteps.some(
-        (st) => st.role === role && (st.status === "APPROVED" || st.status === "REJECTED")
-      )
-    );
-    const pending = submissions.filter((s) =>
-      s.workflowSteps.find((st) => st.status === "PENDING")?.role === role
-    );
-    if (pending.length > 0) return `รอดำเนินการ ${pending.length} · ทำแล้ว ${acted.length}`;
-    if (acted.length === 0) return "ยังไม่มีการดำเนินการ";
-    return `ดำเนินการแล้ว ${acted.length} คำร้อง`;
+    if (role === "ADMIN" || role === "SUPER_ADMIN") return "เข้าถึงได้ทุกรายการ";
+    return "";
   }
 
   return (
@@ -252,7 +226,7 @@ export default function AdminUsersPage() {
               <FormField label="บทบาท *">
                 <select
                   value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value as Role, studentId: "" })}
+                  onChange={(e) => setForm({ ...form, role: e.target.value as Role, studentId: "", isProgramChair: false })}
                   className={INPUT_CLS}
                 >
                   {DB_ROLES.map((r) => (
@@ -260,6 +234,18 @@ export default function AdminUsersPage() {
                   ))}
                 </select>
               </FormField>
+
+              {form.role === "PROFESSOR" && (
+                <label className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="checkbox"
+                    checked={form.isProgramChair}
+                    onChange={(e) => setForm({ ...form, isProgramChair: e.target.checked })}
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                  <span className="text-sm text-gray-700">กำหนดเป็น <strong>ประธานหลักสูตร</strong> (มีได้เพียงคนเดียว)</span>
+                </label>
+              )}
 
               {form.role === "STUDENT" && (
                 <FormField label="รหัสนิสิต">

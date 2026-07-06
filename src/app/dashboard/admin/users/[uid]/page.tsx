@@ -173,7 +173,7 @@ export default function AdminUserProfilePage() {
                         </Link>
                       </p>
                     )}
-                    {!user.roles.includes("ADVISOR") && advisor && (
+                    {!user.roles.includes("PROFESSOR") && advisor && (
                       <p>ที่ปรึกษา: <span className="text-gray-700">{advisor.name}</span></p>
                     )}
                   </div>

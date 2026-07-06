@@ -1,10 +1,9 @@
 "use client";
 
-import { Role } from "@/types";
 import { ROLE_GRADIENT, ROLE_EMOJI, ROLE_LABELS } from "@/lib/utils";
 
 interface Props {
-  role: Role;
+  role: string;
   name: string;
   /** Big heading — the page purpose, e.g. "วิทยานิพนธ์ของฉัน" */
   title: string;

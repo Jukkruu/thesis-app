@@ -148,7 +148,7 @@ export default function StudentSubmissionDetail() {
     switch (currentStep.role) {
       case "ADVISOR":             return allUsers.find((u) => u.id === sub.advisorId)?.name ?? ROLE_LABELS[currentStep.role];
       case "HEAD_EXAM_COMMITTEE": return allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? ROLE_LABELS[currentStep.role];
-      case "PROGRAM_CHAIR":       return allUsers.find((u) => u.roles.includes("PROGRAM_CHAIR"))?.name ?? ROLE_LABELS[currentStep.role];
+      case "PROGRAM_CHAIR":       return allUsers.find((u) => (u as any).isProgramChair === true)?.name ?? ROLE_LABELS[currentStep.role];
       case "EXAM_COMMITTEE": {
         const memberIds = (currentStep.committeeMembers?.length ? currentStep.committeeMembers : (sub.committeeIds ?? [])) as string[];
         const done = ((currentStep.committeeActions ?? []) as any[]).filter((a) => a.decision === "APPROVED").length;

@@ -14,11 +14,10 @@ const DEMO_USERS = [
   { email: "superadmin@eng.chula.ac.th", name: "ผู้ดูแลระบบสูงสุด",           role: "SUPER_ADMIN" as Role },
   { email: "admin@eng.chula.ac.th",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", role: "ADMIN" as Role },
   { email: "student@eng.chula.ac.th",    name: "นายอานนท์ ใจดี",              role: "STUDENT" as Role },
-  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์",   role: "PROGRAM_CHAIR" as Role },
-  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร",      role: "ADVISOR" as Role },
-  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ",     role: "HEAD_EXAM_COMMITTEE" as Role },
-  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์",  role: "EXAM_COMMITTEE" as Role },
-  { email: "viboon.s@eng.chula.ac.th",   name: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ", role: "INVITED_EXAM_COMMITTEE" as Role },
+  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์ (ประธานหลักสูตร)", role: "PROFESSOR" as Role },
+  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร (ที่ปรึกษา)",        role: "PROFESSOR" as Role },
+  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ (ประธานกรรมการสอบ)", role: "PROFESSOR" as Role },
+  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์ (กรรมการสอบ)",   role: "PROFESSOR" as Role },
 ];
 
 // ─── Workflow as 5 phases (matches the official process diagram) ───────────────

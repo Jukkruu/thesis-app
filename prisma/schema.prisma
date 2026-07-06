@@ -8,15 +8,10 @@ datasource db {
 }
 
 enum Role {
-  STUDENT
-  ADVISOR
-  CO_ADVISOR
-  PROGRAM_CHAIR
-  HEAD_EXAM_COMMITTEE
-  EXAM_COMMITTEE
-  INVITED_EXAM_COMMITTEE
-  ADMIN
   SUPER_ADMIN
+  ADMIN
+  STUDENT
+  PROFESSOR
 }
 
 enum FormType {
@@ -66,8 +61,9 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
-  roles        Role[]
-  studentId    String?  @unique
+  roles          Role[]
+  studentId      String?  @unique
+  isProgramChair Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -128,7 +124,7 @@ model Submission {
 model WorkflowStep {
   id          String     @id @default(cuid())
   stepOrder   Int
-  role        Role
+  role        String
   status      StepStatus @default(PENDING)
   notes       String?
   actedAt     DateTime?

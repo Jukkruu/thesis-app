@@ -56,7 +56,7 @@ interface AppContextType {
   rejectCurrentStep: (submissionId: string, notes: string) => Promise<void>;
   returnToPrevStep: (submissionId: string, notes?: string) => Promise<void>;
   addUpload: (submissionId: string, formType: FormType, fileName: string, fileSize: number, fileContent?: string) => void;
-  getPendingCount: (role: Role) => number;
+  getPendingCount: (role: string) => number;
   studentResubmit: (submissionId: string) => Promise<void>;
   cancelSubmission: (submissionId: string) => Promise<void>;
   committeeSign: (submissionId: string, decision: "APPROVED" | "REJECTED", notes?: string) => Promise<void>;
@@ -210,7 +210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function getPendingCount(role: Role): number {
+  function getPendingCount(role: string): number {
     return submissions.filter((sub) => {
       const step = sub.workflowSteps.find((s) => s.status === "PENDING");
       if (step?.role !== role) return false;
@@ -225,7 +225,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!step.committeeMembers?.includes(user.id)) return false;
           return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
         default:
-          return user.roles.includes(role);
+          return user.roles.includes(role as any);
       }
     }).length;
   }

@@ -12,10 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const ALL_ROLES: Role[] = [
-  "SUPER_ADMIN", "ADMIN", "STUDENT", "ADVISOR", "CO_ADVISOR", "PROGRAM_CHAIR",
-  "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE",
-];
+const ALL_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "STUDENT", "PROFESSOR"];
 
 export default function SuperAdminPage() {
   const {
@@ -30,6 +27,7 @@ export default function SuperAdminPage() {
   const [newEmail,         setNewEmail]          = useState("");
   const [newRole,          setNewRole]           = useState<Role>("STUDENT");
   const [newStudentId,     setNewStudentId]      = useState("");
+  const [newIsProgramChair, setNewIsProgramChair] = useState(false);
   const [newPassword,      setNewPassword]       = useState("");
   const [newPwShow,        setNewPwShow]         = useState(false);
   const [newPwError,       setNewPwError]        = useState<string | null>(null);
@@ -81,9 +79,11 @@ export default function SuperAdminPage() {
       role:  newRole,
       roles: [newRole],
       ...(newRole === "STUDENT" && newStudentId.trim() ? { studentId: newStudentId.trim() } : {}),
+      isProgramChair: newRole === "PROFESSOR" ? newIsProgramChair : false,
     };
     superAdminAddUser(userData, newPassword);
     setNewName(""); setNewEmail(""); setNewRole("STUDENT"); setNewStudentId("");
+    setNewIsProgramChair(false);
     setNewPassword(""); setNewPwShow(false); setNewPwError(null);
     setShowAddForm(false);
   }
@@ -179,7 +179,7 @@ export default function SuperAdminPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">บทบาท *</label>
                 <select
                   value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as Role)}
+                  onChange={(e) => { setNewRole(e.target.value as Role); setNewIsProgramChair(false); }}
                   className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                 >
                   {ALL_ROLES.map((r) => (
@@ -197,6 +197,17 @@ export default function SuperAdminPage() {
                     placeholder="เช่น 64010099"
                   />
                 </div>
+              )}
+              {newRole === "PROFESSOR" && (
+                <label className="flex items-center gap-3 col-span-2 px-3 py-2.5 rounded-xl border border-amber-200 bg-white cursor-pointer hover:bg-amber-50 transition">
+                  <input
+                    type="checkbox"
+                    checked={newIsProgramChair}
+                    onChange={(e) => setNewIsProgramChair(e.target.checked)}
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                  <span className="text-sm text-gray-700">กำหนดเป็น <strong>ประธานหลักสูตร</strong> (มีได้เพียงคนเดียวในระบบ)</span>
+                </label>
               )}
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน *</label>

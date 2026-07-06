@@ -35,7 +35,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
 
   // Ownership guard — involvement-based: any role the user plays in this submission
   const authorized = !user ? false
-    : user.roles.some((r) => ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(r)) ? true
+    : user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)) || (user as any).isProgramChair === true ? true
     : sub.studentId === user.id
     || (sub as any).advisorId === user.id
     || ((sub.coAdvisorIds ?? []) as string[]).includes(user.id)
@@ -67,6 +67,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
       case "CO_ADVISOR":            return ((sub.coAdvisorIds ?? []) as string[]).includes(user.id);
       case "EXAM_COMMITTEE":        return ((sub.committeeIds ?? []) as string[]).includes(user.id);
+      case "PROGRAM_CHAIR":         return (user as any).isProgramChair === true;
       default:                      return user.roles.includes(currentStep.role as any);
     }
   })();

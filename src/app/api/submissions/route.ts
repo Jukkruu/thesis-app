@@ -68,7 +68,8 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
   const userRoles: string[] = (session.user as any).roles ?? [session.user.role as string];
-  const isPrivileged = userRoles.some((r) => ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(r));
+  const dbUserChair = await prisma.user.findUnique({ where: { id: userId }, select: { isProgramChair: true } });
+  const isPrivileged = userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)) || dbUserChair?.isProgramChair === true;
 
   let where: any = {};
   if (!isPrivileged) {

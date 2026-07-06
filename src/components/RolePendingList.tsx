@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { Role } from "@/types";
 import { SubmissionStatusBadge } from "./StatusBadge";
 import { DashboardHeader } from "./DashboardHeader";
 import { getStepName, formatDate } from "@/lib/utils";
@@ -10,7 +9,7 @@ import Link from "next/link";
 import { ChevronRight, Clock, CheckCircle2, History, FileText, Layers } from "lucide-react";
 
 interface Props {
-  role: Role;
+  role: string;
   title: string;
   basePath: string;
 }

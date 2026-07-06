@@ -420,7 +420,7 @@ export default function AdminSubmissionDetail() {
   const allUsers   = users;
   const student    = allUsers.find((u) => u.id === sub.studentId);
   const advisor    = allUsers.find((u) => u.id === sub.advisorId);
-  const advisors   = allUsers.filter((u) => u.roles.includes("ADVISOR"));
+  const advisors   = allUsers.filter((u) => u.roles.includes("PROFESSOR"));
   // When REJECTED, no step is treated as "current" — future pending steps aren't highlighted
   const currentOrd        = sub.status === "REJECTED"
     ? null
@@ -665,7 +665,7 @@ export default function AdminSubmissionDetail() {
                 else if (step.role === "CO_ADVISOR") assignedName = (sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid).join(", ") || null;
                 else if (step.role === "HEAD_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? null;
                 else if (step.role === "INVITED_EXAM_COMMITTEE") assignedName = allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? (sub.invitedProfName ?? null);
-                else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => u.roles.includes("PROGRAM_CHAIR"))?.name ?? null;
+                else if (step.role === "PROGRAM_CHAIR") assignedName = allUsers.find((u) => (u as any).isProgramChair === true)?.name ?? null;
 
                 // Committee sign breakdown
                 const committeeStatus = (step.role === "EXAM_COMMITTEE" || step.role === "CO_ADVISOR")

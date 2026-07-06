@@ -25,6 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           roles: user.roles as string[],
           role: (user.roles[0] ?? "") as string,
           studentId: user.studentId ?? undefined,
+          isProgramChair: user.isProgramChair,
         };
       },
     }),
@@ -36,8 +37,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.roles = (user as any).roles as string[];
         token.role = ((user as any).roles?.[0] ?? "") as string;
         token.studentId = (user as any).studentId as string | undefined;
+        token.isProgramChair = (user as any).isProgramChair as boolean | undefined;
       }
-      // Backward compat: if old token has role but no roles, derive roles
       if (!token.roles && token.role) {
         token.roles = [token.role as string];
       }
@@ -48,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.roles = (token.roles ?? [token.role]) as string[];
       session.user.role = ((token.roles as string[])?.[0] ?? token.role) as string;
       session.user.studentId = token.studentId as string | undefined;
+      session.user.isProgramChair = token.isProgramChair as boolean | undefined;
       return session;
     },
   },

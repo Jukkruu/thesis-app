@@ -6,10 +6,10 @@ import { randomBytes } from "crypto";
 
 function mapUser(u: any) {
   const roles: string[] = u.roles ?? (u.role ? [u.role] : []);
-  return { id: u.id, name: u.name, email: u.email, roles, role: roles[0] ?? "", studentId: u.studentId ?? undefined };
+  return { id: u.id, name: u.name, email: u.email, roles, role: roles[0] ?? "", studentId: u.studentId ?? undefined, isProgramChair: u.isProgramChair ?? false };
 }
 
-const FACULTY_ROLES = ["ADVISOR", "CO_ADVISOR", "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE", "PROGRAM_CHAIR"];
+const FACULTY_ROLES = ["PROFESSOR"];
 
 export async function GET() {
   const session = await auth();
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user || !postRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, email, role, studentId, password } = await req.json();
+  const { name, email, role, studentId, password, isProgramChair } = await req.json();
 
   if (!name?.trim()) return NextResponse.json({ error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
   if (!email?.trim()) return NextResponse.json({ error: "กรุณากรอกอีเมล" }, { status: 400 });
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       email: email.trim().toLowerCase(),
       roles: role ? [role] : [],
       studentId: studentId?.trim() || null,
+      isProgramChair: role === "PROFESSOR" ? (isProgramChair === true) : false,
       passwordHash,
     },
   });

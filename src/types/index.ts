@@ -1,16 +1,4 @@
-export type Role =
-  | "STUDENT"
-  | "ADVISOR"
-  | "CO_ADVISOR"
-  | "PROGRAM_CHAIR"
-  | "HEAD_EXAM_COMMITTEE"
-  | "EXAM_COMMITTEE"
-  | "INVITED_EXAM_COMMITTEE"
-  | "DEPT_STAFF"
-  | "FACULTY_DEAN"
-  | "GRADUATE_SCHOOL"
-  | "ADMIN"
-  | "SUPER_ADMIN";
+export type Role = "SUPER_ADMIN" | "ADMIN" | "STUDENT" | "PROFESSOR";
 
 export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED" | "FINANCE_DOC" | "EXAM_RESULT" | "INVITE_LETTER" | "VERY_GOOD_EVAL";
 export type ProgramType = "PHD" | "ME_MECH" | "ME_CPS";
@@ -25,6 +13,7 @@ export interface MockUser {
   roles: Role[];
   role: Role; // primary role = roles[0]
   studentId?: string;
+  isProgramChair?: boolean;
 }
 
 export interface MockUpload {
@@ -47,14 +36,14 @@ export interface CommitteeAction {
 export interface MockWorkflowStep {
   id: string;
   stepOrder: number;
-  role: Role;
+  role: string; // step role strings (ADVISOR, PROGRAM_CHAIR, etc.) — not same as user Role
   status: StepStatus;
   notes?: string;
   actedAt?: string;
   actedByName?: string;
-  // For multi-member committee steps (EXAM_COMMITTEE):
-  committeeMembers?: string[];        // assigned committee user IDs
-  committeeActions?: CommitteeAction[]; // per-member sign-offs
+  actedById?: string;
+  committeeMembers?: string[];
+  committeeActions?: CommitteeAction[];
 }
 
 export type NotificationType = "pending" | "approved" | "rejected" | "info";
@@ -81,23 +70,19 @@ export interface MockSubmission {
   uploads: MockUpload[];
   workflowSteps: MockWorkflowStep[];
   adminNote?: string;
-  // Student info
   studentFullName?: string;
   studentCode?: string;
   program?: ProgramType;
   studentEmail?: string;
   studentPhone?: string;
-  // Committee assignment
   headCommitteeId?: string;
   committeeIds?: string[];
   coAdvisorIds?: string[];
   invitedCommitteeId?: string;
-  // External (invited) professor free-text details
   invitedProfName?: string;
   invitedProfAffiliation?: string;
   invitedProfEmail?: string;
   invitedProfPhone?: string;
-  // Exam logistics
   examDate?: string;
   examTime?: string;
   roomNeeded?: boolean;

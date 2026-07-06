@@ -59,6 +59,9 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
       });
     }
     return;
+  } else if (role === "PROGRAM_CHAIR") {
+    const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
+    recipientId = chair?.id ?? null;
   } else {
     const user = await prisma.user.findFirst({ where: { roles: { has: role as any } } });
     recipientId = user?.id ?? null;
@@ -78,7 +81,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { id: userId, role } = session.user;
-  const isPrivileged = ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(role);
+  const getUser = await prisma.user.findUnique({ where: { id: userId }, select: { isProgramChair: true } });
+  const isPrivileged = ["ADMIN", "SUPER_ADMIN"].includes(role) || getUser?.isProgramChair === true;
   const isInvolved =
     sub.studentId === userId ||
     sub.advisorId === userId ||
@@ -102,7 +106,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id: userId, name: userName } = session.user;
 
   // Always look up roles from DB — JWT role can be stale after a role change
-  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { roles: true } });
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { roles: true, isProgramChair: true } });
   const userRoles: string[] = dbUser?.roles as string[] ?? (session.user as any).roles ?? [session.user.role as string];
   const role: string = userRoles[0] ?? "";
 
@@ -126,7 +130,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (step.role === "CO_ADVISOR")            return (sub.coAdvisorIds as string[]).includes(userId);
       if (step.role === "HEAD_EXAM_COMMITTEE")   return sub.headCommitteeId === userId;
       if (step.role === "INVITED_EXAM_COMMITTEE")return sub.invitedCommitteeId === userId;
-      return userRoles.includes(step.role); // ADMIN, SUPER_ADMIN, PROGRAM_CHAIR, EXAM_COMMITTEE
+      if (step.role === "PROGRAM_CHAIR")         return dbUser?.isProgramChair === true;
+      return userRoles.includes(step.role); // ADMIN, SUPER_ADMIN, EXAM_COMMITTEE
     })();
     if (!canApprove) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

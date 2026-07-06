@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { FormType, Role, StepStatus, SubmissionStatus } from "@/types";
+import { FormType, StepStatus, SubmissionStatus } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,66 +28,41 @@ export const PROGRAM_LABELS: Record<string, string> = {
   ME_CPS:  "หลักสูตรวิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาระบบกายภาพที่เชื่อมประสานด้วยเครือข่ายไซเบอร์",
 };
 
-export const ROLE_LABELS: Record<Role, string> = {
+// User-level role labels (4 simplified roles)
+// Also includes step-role labels (ADVISOR, PROGRAM_CHAIR, etc.) for WorkflowStep display
+export const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN:           "ผู้ดูแลระบบสูงสุด",
+  ADMIN:                 "เจ้าหน้าที่ภาควิชา",
   STUDENT:               "นักศึกษา",
+  PROFESSOR:             "อาจารย์",
+  // Step role display labels:
   ADVISOR:               "อาจารย์ที่ปรึกษา",
   CO_ADVISOR:            "อาจารย์ที่ปรึกษาร่วม",
   PROGRAM_CHAIR:         "ประธานหลักสูตร",
   HEAD_EXAM_COMMITTEE:   "ประธานกรรมการสอบ",
   EXAM_COMMITTEE:        "กรรมการสอบ",
   INVITED_EXAM_COMMITTEE:"กรรมการภายนอก",
-  DEPT_STAFF:            "เจ้าหน้าที่ภาควิชา",
-  FACULTY_DEAN:          "คณบดี",
-  GRADUATE_SCHOOL:       "บัณฑิตวิทยาลัย",
-  ADMIN:                 "ผู้ดูแลระบบ",
-  SUPER_ADMIN:           "ผู้ดูแลระบบสูงสุด",
 };
 
-// Emoji per role — kept as full static values so Tailwind never purges anything
-export const ROLE_EMOJI: Record<Role, string> = {
-  STUDENT:               "🎓",
-  ADVISOR:               "👨‍🏫",
-  CO_ADVISOR:            "👩‍🏫",
-  PROGRAM_CHAIR:         "🏛️",
-  HEAD_EXAM_COMMITTEE:   "⭐",
-  EXAM_COMMITTEE:        "📋",
-  INVITED_EXAM_COMMITTEE:"🔏",
-  DEPT_STAFF:            "🗂️",
-  FACULTY_DEAN:          "🏫",
-  GRADUATE_SCHOOL:       "🎯",
-  ADMIN:                 "🛡️",
-  SUPER_ADMIN:           "👑",
+export const ROLE_EMOJI: Record<string, string> = {
+  SUPER_ADMIN: "👑",
+  ADMIN:       "🛡️",
+  STUDENT:     "🎓",
+  PROFESSOR:   "👨‍🏫",
 };
 
-// Gradient (for headers / banners) per role — static strings for Tailwind
-export const ROLE_GRADIENT: Record<Role, string> = {
-  STUDENT:               "from-blue-500 to-indigo-600",
-  ADVISOR:               "from-violet-500 to-purple-600",
-  CO_ADVISOR:            "from-fuchsia-500 to-violet-600",
-  PROGRAM_CHAIR:         "from-indigo-500 to-blue-600",
-  HEAD_EXAM_COMMITTEE:   "from-orange-500 to-amber-600",
-  EXAM_COMMITTEE:        "from-amber-400 to-orange-500",
-  INVITED_EXAM_COMMITTEE:"from-pink-500 to-rose-600",
-  DEPT_STAFF:            "from-teal-500 to-emerald-600",
-  FACULTY_DEAN:          "from-rose-500 to-red-600",
-  GRADUATE_SCHOOL:       "from-emerald-500 to-green-600",
-  ADMIN:                 "from-slate-700 to-gray-900",
-  SUPER_ADMIN:           "from-yellow-400 to-amber-600",
+export const ROLE_GRADIENT: Record<string, string> = {
+  SUPER_ADMIN: "from-yellow-400 to-amber-600",
+  ADMIN:       "from-slate-700 to-gray-900",
+  STUDENT:     "from-blue-500 to-indigo-600",
+  PROFESSOR:   "from-violet-500 to-purple-600",
 };
 
-export const ROLE_DESC: Record<Role, string> = {
-  STUDENT:               "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
-  ADVISOR:               "ตรวจสอบและอนุมัติหัวข้อ ลงนามเอกสาร",
-  CO_ADVISOR:            "ลงนามต่อจากอาจารย์ที่ปรึกษาหลัก (ถ้ามี)",
-  PROGRAM_CHAIR:         "ลงนามในระยะที่ 1 2 3 และ 5",
-  HEAD_EXAM_COMMITTEE:   "ลงนามก่อนกรรมการสอบ — ระยะที่ 2 3 และ 5",
-  EXAM_COMMITTEE:        "ลงนามประเมินวิทยานิพนธ์ตามลำดับ",
-  INVITED_EXAM_COMMITTEE:"กรรมการภายนอก ลงนามเฉพาะระยะที่ 5",
-  DEPT_STAFF:            "ออกหนังสือเชิญกรรมการสอบ (บ.2)",
-  FACULTY_DEAN:          "อนุมัติวิทยานิพนธ์ระดับคณะ (บ.4)",
-  GRADUATE_SCHOOL:       "รับวิทยานิพนธ์ฉบับสมบูรณ์",
-  ADMIN:                 "ดูภาพรวมและจัดการคำร้องทั้งหมด",
-  SUPER_ADMIN:           "ควบคุมระบบทั้งหมด รวมถึงการจัดการผู้ใช้และสิทธิ์",
+export const ROLE_DESC: Record<string, string> = {
+  SUPER_ADMIN: "ควบคุมระบบทั้งหมด รวมถึงการจัดการผู้ใช้และสิทธิ์",
+  ADMIN:       "ดูภาพรวมและจัดการคำร้องทั้งหมด",
+  STUDENT:     "ยื่นหัวข้อ อัปโหลดเอกสาร ติดตามสถานะ",
+  PROFESSOR:   "ที่ปรึกษา / กรรมการสอบ — ลงนามเอกสารตามที่ได้รับมอบหมาย",
 };
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
