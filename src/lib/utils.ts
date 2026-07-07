@@ -46,17 +46,29 @@ export const ROLE_LABELS: Record<string, string> = {
 };
 
 export const ROLE_EMOJI: Record<string, string> = {
-  SUPER_ADMIN: "👑",
-  ADMIN:       "🛡️",
-  STUDENT:     "🎓",
-  PROFESSOR:   "👨‍🏫",
+  SUPER_ADMIN:            "👑",
+  ADMIN:                  "🛡️",
+  STUDENT:                "🎓",
+  PROFESSOR:              "👨‍🏫",
+  ADVISOR:                "👨‍🏫",
+  CO_ADVISOR:             "👨‍🏫",
+  PROGRAM_CHAIR:          "🏛️",
+  HEAD_EXAM_COMMITTEE:    "📋",
+  EXAM_COMMITTEE:         "📋",
+  INVITED_EXAM_COMMITTEE: "🎓",
 };
 
 export const ROLE_GRADIENT: Record<string, string> = {
-  SUPER_ADMIN: "from-yellow-400 to-amber-600",
-  ADMIN:       "from-slate-700 to-gray-900",
-  STUDENT:     "from-blue-500 to-indigo-600",
-  PROFESSOR:   "from-violet-500 to-purple-600",
+  SUPER_ADMIN:            "from-yellow-400 to-amber-600",
+  ADMIN:                  "from-slate-700 to-gray-900",
+  STUDENT:                "from-blue-500 to-indigo-600",
+  PROFESSOR:              "from-violet-500 to-purple-600",
+  ADVISOR:                "from-violet-500 to-purple-600",
+  CO_ADVISOR:             "from-purple-500 to-fuchsia-600",
+  PROGRAM_CHAIR:          "from-indigo-600 to-blue-700",
+  HEAD_EXAM_COMMITTEE:    "from-orange-500 to-amber-600",
+  EXAM_COMMITTEE:         "from-teal-500 to-cyan-600",
+  INVITED_EXAM_COMMITTEE: "from-sky-500 to-blue-600",
 };
 
 export const ROLE_DESC: Record<string, string> = {
