@@ -1,90 +1,69 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Bell, Clock, CheckCircle2, XCircle, Info, AlertTriangle, X } from "lucide-react";
-import { MockNotification, NotificationType } from "@/types";
+import { Bell, Clock, CheckCircle2, XCircle, Info, AlertTriangle, X, CheckCheck } from "lucide-react";
+import { NotificationType, Role } from "@/types";
+import { ROLE_ROUTES } from "@/lib/roleRoutes";
+import type { MockNotification } from "@/types";
 
 function timeAgo(dateStr: string): string {
   const diff  = Date.now() - new Date(dateStr).getTime();
   const mins  = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days  = Math.floor(diff / 86400000);
-  if (mins < 1)   return "เมื่อกี้";
-  if (mins < 60)  return `${mins} นาทีที่แล้ว`;
+  if (mins  < 1)  return "เมื่อกี้";
+  if (mins  < 60) return `${mins} นาทีที่แล้ว`;
   if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`;
-  if (days < 30)  return `${days} วันที่แล้ว`;
+  if (days  < 30) return `${days} วันที่แล้ว`;
   return `${Math.floor(days / 30)} เดือนที่แล้ว`;
 }
 
-const STYLES: Record<NotificationType, { bg: string; dot: string; icon: React.ReactNode }> = {
-  pending:  { bg: "bg-orange-50", dot: "bg-orange-400", icon: <Clock          className="w-4 h-4 text-orange-500" /> },
-  approved: { bg: "bg-green-50",  dot: "bg-green-500",  icon: <CheckCircle2   className="w-4 h-4 text-green-600" /> },
-  rejected: { bg: "bg-red-50",    dot: "bg-red-500",    icon: <XCircle        className="w-4 h-4 text-red-500"   /> },
-  info:     { bg: "bg-blue-50",   dot: "bg-blue-400",   icon: <Info           className="w-4 h-4 text-blue-500"  /> },
-  warning:  { bg: "bg-amber-50",  dot: "bg-amber-500",  icon: <AlertTriangle  className="w-4 h-4 text-amber-500" /> },
+const TYPE_STYLE: Record<NotificationType, { accent: string; icon: React.ReactNode }> = {
+  pending:  { accent: "border-l-orange-400", icon: <Clock         className="w-5 h-5 text-orange-500" /> },
+  approved: { accent: "border-l-green-500",  icon: <CheckCircle2  className="w-5 h-5 text-green-600" /> },
+  rejected: { accent: "border-l-red-500",    icon: <XCircle       className="w-5 h-5 text-red-500"   /> },
+  info:     { accent: "border-l-blue-400",   icon: <Info          className="w-5 h-5 text-blue-500"  /> },
+  warning:  { accent: "border-l-amber-500",  icon: <AlertTriangle className="w-5 h-5 text-amber-500" /> },
 };
 
 export function NotificationBell() {
-  const { user, notifications, unreadCount, markNotificationRead } = useApp();
+  const { user, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useApp();
   const router  = useRouter();
-  const [open, setOpen]     = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+  const btnRef  = useRef<HTMLButtonElement>(null);
+  const [open,    setOpen]    = useState(false);
   const [mounted, setMounted] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [panelTop, setPanelTop] = useState(0);
 
   useEffect(() => setMounted(true), []);
 
-  const mine = notifications
-    .filter((n) => n.recipientId === user?.id)
-    .slice(0, 20);
-
-  const reposition = useCallback(() => {
-    if (!btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    const mobile = window.innerWidth < 640;
-    const width  = mobile ? window.innerWidth - 16 : Math.min(380, window.innerWidth - 24);
-    const left   = mobile ? 8 : Math.min(Math.max(12, r.right - width), window.innerWidth - width - 12);
-    setCoords({ top: r.bottom + 8, left, width });
-  }, []);
-
-  function toggle() {
-    if (!open) reposition();
-    setOpen((v) => !v);
-  }
-
-  // Reposition on resize; close on Escape
   useEffect(() => {
     if (!open) return;
-    function onResize() { reposition(); }
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
-    window.addEventListener("resize", onResize);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, reposition]);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const mine = notifications.filter((n) => n.recipientId === user?.id).slice(0, 30);
+
+  function toggle() {
+    if (!open && btnRef.current) {
+      setPanelTop(btnRef.current.getBoundingClientRect().bottom + 6);
+    }
+    setOpen((v) => !v);
+  }
 
   function handleClick(notif: MockNotification) {
     markNotificationRead(notif.id);
     setOpen(false);
     if (!user) return;
-    if (user.roles.includes("STUDENT"))                               router.push(`/dashboard/student/${notif.submissionId}`);
-    else if (user.roles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) router.push(`/dashboard/admin/${notif.submissionId}`);
-    else {
-      const seg: Record<string, string> = {
-        ADVISOR: "advisor", CO_ADVISOR: "co-advisor", PROGRAM_CHAIR: "program-chair",
-        HEAD_EXAM_COMMITTEE: "head-exam-committee", EXAM_COMMITTEE: "exam-committee",
-        INVITED_EXAM_COMMITTEE: "invited-exam-committee",
-        DEPT_STAFF: "dept-staff", FACULTY_DEAN: "faculty-dean", GRADUATE_SCHOOL: "graduate-school",
-      };
-      const dest = user.roles.map((r) => seg[r]).find(Boolean) ?? "admin";
-      router.push(`/dashboard/${dest}/${notif.submissionId}`);
-    }
+    const base = ROLE_ROUTES[user.role as Role] ?? "/dashboard/student";
+    router.push(`${base}/${notif.submissionId}`);
   }
+
+  const isMobile = mounted && window.innerWidth < 640;
 
   return (
     <>
@@ -103,54 +82,81 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* Dropdown via portal — never clipped by the sidebar */}
-      {mounted && open && coords && createPortal(
+      {mounted && open && createPortal(
         <>
-          {/* Transparent click-catcher */}
-          <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
-
+          {/* Backdrop */}
           <div
-            className="fixed z-[100] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
-            style={{ top: coords.top, left: coords.left, width: coords.width }}
+            className="fixed inset-0 z-[90] bg-black/25"
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Panel */}
+          <div
+            className="fixed z-[100] bg-white shadow-2xl flex flex-col"
+            style={
+              isMobile
+                ? { top: panelTop, left: 0, right: 0, bottom: 0, borderRadius: "16px 16px 0 0" }
+                : { top: panelTop, right: 12, width: 380, borderRadius: 16, maxHeight: "80vh" }
+            }
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h3 className="font-semibold text-gray-800">
-                การแจ้งเตือน
-                {unreadCount > 0 && <span className="ml-2 text-sm font-normal text-orange-600">({unreadCount} ใหม่)</span>}
-              </h3>
-              <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-4 h-4" />
-              </button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-gray-900">การแจ้งเตือน</p>
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => markAllNotificationsRead()}
+                    className="flex items-center gap-1 text-xs text-blue-600 font-medium px-3 py-1.5 rounded-xl hover:bg-blue-50 transition"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    อ่านทั้งหมด
+                  </button>
+                )}
+                <button
+                  onClick={() => setOpen(false)}
+                  className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* List */}
-            <div className="max-h-[75vh] overflow-y-auto divide-y divide-gray-50">
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
               {mine.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 space-y-2">
-                  <Bell className="w-8 h-8 mx-auto opacity-25" />
-                  <p className="text-sm">ยังไม่มีการแจ้งเตือน</p>
+                <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-300">
+                  <Bell className="w-12 h-12" />
+                  <p className="text-sm text-gray-400">ยังไม่มีการแจ้งเตือน</p>
                 </div>
               ) : (
                 mine.map((notif) => {
-                  const s = STYLES[notif.type];
+                  const s = TYPE_STYLE[notif.type];
                   return (
                     <button
                       key={notif.id}
                       onClick={() => handleClick(notif)}
-                      className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition flex items-start gap-3 ${!notif.isRead ? s.bg : ""}`}
+                      className={`w-full text-left flex items-start gap-3 px-5 py-4 border-l-4 transition active:bg-gray-50 ${
+                        notif.isRead ? "bg-white border-l-transparent hover:bg-gray-50" : `bg-blue-50/40 ${s.accent} hover:bg-blue-50/70`
+                      }`}
                     >
-                      <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-gray-100">
-                        {s.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold text-gray-900" : "text-gray-700"}`}>
+                      <div className="shrink-0 mt-0.5">{s.icon}</div>
+                      <div className="flex-1 min-w-0 space-y-0.5 text-left">
+                        <p className={`text-sm leading-snug ${notif.isRead ? "text-gray-600" : "font-semibold text-gray-900"}`}>
                           {notif.message}
                         </p>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">{notif.detail}</p>
-                        <p className="text-xs text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
+                        <p className="text-xs text-gray-500 truncate">{notif.detail}</p>
+                        <p className="text-xs text-gray-400">{timeAgo(notif.createdAt)}</p>
                       </div>
-                      {!notif.isRead && <div className={`w-2 h-2 rounded-full shrink-0 mt-2 ${s.dot}`} />}
+                      {!notif.isRead && (
+                        <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2" />
+                      )}
                     </button>
                   );
                 })
