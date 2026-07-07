@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, GraduationCap, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, GraduationCap, ChevronDown } from "lucide-react";
 
 // ─── Workflow phases ──────────────────────────────────────────────────────────
 interface Step  { emoji: string; label: string; role: string }
@@ -94,156 +94,123 @@ export default function LoginPage() {
   const busy = submitting;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-gray-50 flex flex-col items-center px-4 py-10">
-      <div className="w-full max-w-5xl space-y-10">
+    <div className="bg-gradient-to-b from-indigo-50 via-white to-gray-50">
 
-        {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-200">
-            <GraduationCap className="w-9 h-9 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
-            <p className="text-gray-500 mt-1.5 text-base">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
-          </div>
-        </div>
+      {/* ── LOGIN HERO — fills the viewport ───────────────────────────── */}
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-7">
 
-        {/* ── Login form ────────────────────────────────────────────────── */}
-        <div className="mx-auto w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-7 space-y-5">
-          <h2 className="font-bold text-gray-800 text-xl">เข้าสู่ระบบ</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block font-medium text-gray-700 mb-1.5 text-sm">อีเมล</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="your@email.com"
-                autoComplete="email"
-              />
+          {/* Brand */}
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-200">
+              <GraduationCap className="w-9 h-9 text-white" />
             </div>
             <div>
-              <label className="block font-medium text-gray-700 mb-1.5 text-sm">รหัสผ่าน</label>
-              <div className="relative">
+              <h1 className="text-3xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
+              <p className="text-gray-500 mt-1.5">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
+            </div>
+          </div>
+
+          {/* Login card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-7 space-y-5">
+            <h2 className="font-bold text-gray-800 text-xl">เข้าสู่ระบบ</h2>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block font-medium text-gray-700 mb-1.5 text-sm">อีเมล</label>
                 <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
-                  placeholder="รหัสผ่าน"
-                  autoComplete="current-password"
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="your@email.com"
+                  autoComplete="email"
                 />
-                <button type="button" onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600" tabIndex={-1}>
-                  {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
               </div>
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
-            )}
-
-            <button type="submit" disabled={busy}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60">
-              <LogIn className="w-5 h-5" />
-              {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-            </button>
-          </form>
-
-          <div className="flex items-center justify-between text-sm">
-            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">สร้างบัญชีใหม่</Link>
-            <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">ลืมรหัสผ่าน?</Link>
-          </div>
-        </div>
-
-        {/* ── Workflow timeline ─────────────────────────────────────────── */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-10">
-          <div className="text-center mb-9">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-50 px-3 py-1 rounded-full mb-3">
-              ขั้นตอนการทำงาน
-            </span>
-            <h2 className="font-bold text-gray-900 text-2xl sm:text-3xl">เส้นทางสู่การอนุมัติวิทยานิพนธ์</h2>
-            <p className="text-gray-500 mt-2">5 ระยะ · 8 บทบาท · เอกสารส่งต่อให้ผู้รับผิดชอบถัดไปโดยอัตโนมัติ</p>
-          </div>
-
-          <ol className="relative max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">คำร้องโครงร่าง (PROPOSAL)</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-
-            {PHASES.map((phase, pi) => {
-              const t = PHASE_THEME[pi];
-              const prevType = pi > 0 ? PHASES[pi - 1].type : null;
-              const showDivider = prevType !== null && prevType !== phase.type;
-              return (
-                <li key={phase.no} className="relative flex gap-4 sm:gap-6">
-                  {showDivider && (
-                    <div className="absolute -top-4 left-0 right-0 flex items-center gap-3">
-                      <div className="flex-1 h-px bg-gray-200" />
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">คำร้องสอบวิทยานิพนธ์ (THESIS DEFENSE)</span>
-                      <div className="flex-1 h-px bg-gray-200" />
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center">
-                    <div className={`relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${t.grad} flex items-center justify-center shadow-lg text-white font-bold text-xl shrink-0`}>
-                      {phase.no}
-                    </div>
-                    <div className={`w-1 flex-1 my-2 rounded-full ${t.line}`} />
-                  </div>
-
-                  <div className={`flex-1 min-w-0 ${showDivider ? "pt-4 pb-8" : "pb-8"}`}>
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className={`text-xs font-bold uppercase tracking-wide ${t.text}`}>ระยะที่ {phase.no}</span>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
-                        {phase.type === "PROPOSAL" ? "PROPOSAL" : "THESIS DEFENSE"}
-                      </span>
-                      {phase.docs.map((d) => (
-                        <span key={d} className={`text-xs font-medium px-2 py-0.5 rounded-md ${t.chip}`}>{d}</span>
-                      ))}
-                    </div>
-                    <h3 className="font-bold text-gray-800 text-lg leading-snug mb-3">{phase.title}</h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {phase.steps.map((step, si) => (
-                        <div key={si} className="flex items-center gap-2">
-                          <div className="flex items-center gap-2.5 bg-gray-50 hover:bg-white hover:shadow-sm border border-gray-200 rounded-xl pl-2 pr-3.5 py-2 transition">
-                            <span className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-base shrink-0">
-                              {step.emoji}
-                            </span>
-                            <div className="leading-tight">
-                              <p className="text-sm font-semibold text-gray-800">{step.label}</p>
-                              <p className="text-xs text-gray-400">{step.role}</p>
-                            </div>
-                          </div>
-                          {si < phase.steps.length - 1 && (
-                            <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-
-            <li className="relative flex gap-4 sm:gap-6">
-              <div className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shrink-0">
-                <CheckCircle2 className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1 flex items-center">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl px-5 py-4 w-full">
-                  <p className="font-bold text-green-800">สำเร็จการศึกษา 🎉</p>
-                  <p className="text-sm text-green-600 mt-0.5">วิทยานิพนธ์ได้รับการอนุมัติครบทุกขั้นตอน</p>
+              <div>
+                <label className="block font-medium text-gray-700 mb-1.5 text-sm">รหัสผ่าน</label>
+                <div className="relative">
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+                    placeholder="รหัสผ่าน"
+                    autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600" tabIndex={-1}>
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
-            </li>
-          </ol>
-        </div>
 
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
+              )}
+
+              <button type="submit" disabled={busy}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60">
+                <LogIn className="w-5 h-5" />
+                {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+              </button>
+            </form>
+
+            <div className="flex items-center justify-between text-sm">
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">สร้างบัญชีใหม่</Link>
+              <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">ลืมรหัสผ่าน?</Link>
+            </div>
+          </div>
+
+          {/* Scroll hint */}
+          <div className="flex flex-col items-center gap-1 text-gray-400 text-xs">
+            <span>ดูขั้นตอนการทำงาน</span>
+            <ChevronDown className="w-4 h-4 animate-bounce" />
+          </div>
+        </div>
       </div>
+
+      {/* ── WORKFLOW — compact secondary section below the fold ───────── */}
+      <div className="border-t border-gray-100 bg-gray-50 px-4 py-10">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 text-center">
+            เส้นทางสู่การอนุมัติวิทยานิพนธ์ · 5 ระยะ · 8 บทบาท
+          </p>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {PHASES.map((phase, pi) => {
+              const t = PHASE_THEME[pi];
+              return (
+                <div key={phase.no} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${t.grad} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+                      {phase.no}
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium">
+                      {phase.type === "PROPOSAL" ? "PROPOSAL" : "THESIS"}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700 leading-snug">{phase.title}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {phase.docs.map((d) => (
+                      <span key={d} className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${t.chip}`}>{d}</span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {phase.steps.map((s, si) => (
+                      <span key={si} title={`${s.label} · ${s.role}`} className="text-base leading-none">{s.emoji}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-xs text-gray-300 pt-2">
+            เอกสารส่งต่ออัตโนมัติ · ลงนามออนไลน์ · ติดตามสถานะแบบเรียลไทม์
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 }
