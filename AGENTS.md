@@ -11,7 +11,7 @@ A role-based thesis approval workflow app. **Fully live** — Next.js 16 App Rou
 ## Stack & deployment
 - **DB**: Prisma + `@prisma/adapter-pg` → Supabase PostgreSQL. Client in `src/lib/prisma.ts` (singleton always cached on `globalThis` — both dev and Vercel production).
 - **Auth**: NextAuth v5, magic-link only (no passwords). `src/lib/auth.ts`.
-- **Email**: Resend via `src/lib/email.ts` — `sendStepEmail()` on every step advance, `sendFinanceEmail()` at PROPOSAL step 3 (called directly, not via HTTP). Emails are sent to the real recipient's address. Magic links are **one-time use** and valid for 48 hours.
+- **Email**: Resend via `src/lib/email.ts` — `sendStepEmail()` on every step advance, `sendFinanceEmail()` at PROPOSAL step 3 (called directly, not via HTTP). All emails route to `outanagon2549@gmail.com` (test override); email body shows the intended recipient's name + email. Magic links are **one-time use** and valid for 48 hours.
 - **Storage**: Supabase Storage bucket `thesis-files`. Upload API at `POST /api/upload`.
 - **Deploy**: Vercel, auto-deploys on push to `main` (GitHub: Jukkruu/thesis-app).
 
