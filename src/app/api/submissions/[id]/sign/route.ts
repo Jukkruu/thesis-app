@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (["COMPLETED", "CANCELLED"].includes(sub.status))
     return NextResponse.json({ error: "คำร้องนี้ปิดแล้ว ไม่สามารถลงนามได้" }, { status: 400 });
 
-  // Find the pending step this user is actually assigned to (involvement-based, not role-based)
+  // Find the pending step this user is assigned to (involvement-based)
   const step = sub.workflowSteps.find(
     (s: any) =>
       s.status === "PENDING" &&
@@ -46,125 +46,183 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   );
   if (!step) return NextResponse.json({ error: "Not assigned or no pending step" }, { status: 403 });
   const userRole = step.role as string;
+  const stepRoleLabel = ROLE_LABELS[userRole as keyof typeof ROLE_LABELS] ?? userRole;
 
-  const prevActions: any[] = (step.committeeActions as any[]) ?? [];
-  if (prevActions.some((a) => a.userId === userId))
+  // Quick pre-tx check (double-click guard; re-checked inside tx)
+  const prevActionsCheck: any[] = (step.committeeActions as any[]) ?? [];
+  if (prevActionsCheck.some((a) => a.userId === userId))
     return NextResponse.json({ error: "Already signed" }, { status: 400 });
 
-  // Enforce sequential order: all members before this one must have approved first
+  // Enforce sequential order: all members before this one must have approved
   const memberIndex = (step.committeeMembers as string[]).indexOf(userId);
-  const prevMembers = (step.committeeMembers as string[]).slice(0, memberIndex);
-  const notYetSigned = prevMembers.filter(
-    (mid) => prevActions.find((a) => a.userId === mid)?.decision !== "APPROVED"
-  );
-  if (notYetSigned.length > 0) {
+  const notYetSigned = (step.committeeMembers as string[])
+    .slice(0, memberIndex)
+    .filter((mid) => prevActionsCheck.find((a) => a.userId === mid)?.decision !== "APPROVED");
+  if (notYetSigned.length > 0)
     return NextResponse.json({ error: "รอลำดับก่อนหน้าลงนามและอัปโหลดก่อน" }, { status: 400 });
-  }
 
   const now = new Date();
-  const newActions = [...prevActions, { userId, name: userName, decision, notes, actedAt: now.toISOString() }];
 
-  if (decision === "REJECTED") {
-    // Mark current step REJECTED, stay on this step — student must fix and resubmit
-    await prisma.workflowStep.update({
-      where: { id: step.id },
-      data: { status: "REJECTED", committeeActions: newActions, actedAt: now, actedByName: userName, actedById: userId },
-    });
-    await prisma.submission.update({ where: { id: submissionId }, data: { status: "REJECTED" } });
+  // Outcome state (populated inside the transaction, read outside for notifications)
+  let outcome: "REJECTED" | "PARTIAL" | "ALL_APPROVED" = "PARTIAL";
+  let nextMemberId: string | undefined;
+  let isComplete = false;
 
+  // Serializable transaction — prevents concurrent-write race on committeeActions JSON column.
+  // Two simultaneous requests for the same member will both re-read inside the tx; the second
+  // will find their userId already present and abort before writing.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const freshStep = await tx.workflowStep.findUnique({
+        where: { id: step.id },
+        select: { committeeActions: true, committeeMembers: true },
+      });
+      const prevActions = (freshStep?.committeeActions as any[]) ?? [];
+
+      // Re-check inside tx (catches the race that the pre-tx check misses)
+      if (prevActions.some((a: any) => a.userId === userId)) throw new Error("ALREADY_SIGNED");
+
+      const newActions = [
+        ...prevActions,
+        { userId, name: userName, decision, notes, actedAt: now.toISOString() },
+      ];
+      const members = (freshStep?.committeeMembers as string[]) ?? [];
+
+      if (decision === "REJECTED") {
+        await tx.workflowStep.update({
+          where: { id: step.id },
+          data: {
+            status: "REJECTED",
+            committeeActions: newActions,
+            actedAt: now,
+            actedByName: userName,
+            actedById: userId,
+          },
+        });
+        await tx.submission.update({ where: { id: submissionId }, data: { status: "REJECTED" } });
+        outcome = "REJECTED";
+        return;
+      }
+
+      const allApproved = members.every(
+        (mid: string) => newActions.find((a: any) => a.userId === mid)?.decision === "APPROVED"
+      );
+
+      if (!allApproved) {
+        await tx.workflowStep.update({ where: { id: step.id }, data: { committeeActions: newActions } });
+        outcome = "PARTIAL";
+        nextMemberId = members.find(
+          (mid: string) => !newActions.find((a: any) => a.userId === mid && a.decision === "APPROVED")
+        );
+        return;
+      }
+
+      // All members approved — advance the step
+      await tx.workflowStep.update({
+        where: { id: step.id },
+        data: {
+          status: "APPROVED",
+          committeeActions: newActions,
+          actedAt: now,
+          actedByName: userRole === "CO_ADVISOR" ? "อาจารย์ที่ปรึกษาร่วมครบทุกท่าน" : "กรรมการสอบครบทุกท่าน",
+          actedById: userId, // Fix: was missing — audit trail now records final approver
+        },
+      });
+
+      // Count remaining PENDING steps (from DB, not stale sub)
+      const pendingCount = await tx.workflowStep.count({ where: { submissionId, status: "PENDING" } });
+      isComplete = pendingCount === 0;
+      await tx.submission.update({
+        where: { id: submissionId },
+        data: { status: isComplete ? "COMPLETED" : "IN_PROGRESS" },
+      });
+      outcome = "ALL_APPROVED";
+    }, { isolationLevel: "Serializable" });
+  } catch (e: any) {
+    if (e.message === "ALREADY_SIGNED")
+      return NextResponse.json({ error: "Already signed" }, { status: 400 });
+    throw e;
+  }
+
+  // ── Post-transaction: notifications & emails ──────────────────────────────────
+
+  const currentStepName = getStepName(step.stepOrder, sub.submissionType) || stepRoleLabel;
+
+  if (outcome === "REJECTED") {
+    // Use the actual step-role label so student knows who rejected, not generic "กรรมการ"
     const rejectionNote = notes
-      ? `กรรมการปฏิเสธ — "${notes}" — กรุณาแก้ไขและยื่นใหม่`
-      : `ปฏิเสธโดย ${userName} — กรุณาแก้ไขและยื่นใหม่`;
+      ? `${stepRoleLabel}ปฏิเสธ — "${notes}" — กรุณาแก้ไขและยื่นใหม่`
+      : `ปฏิเสธโดย${stepRoleLabel} (${userName}) — กรุณาแก้ไขและยื่นใหม่`;
     await prisma.notification.create({
       data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
     });
     try {
-      const currentStepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role as keyof typeof ROLE_LABELS];
       await sendStepEmail({ role: "STUDENT", sub, stepName: currentStepName });
     } catch (e) { console.error("[email/reject/committee]", e); }
-  } else {
-    const allApproved = (step.committeeMembers as string[] ?? []).every(
-      (mid) => newActions.find((a) => a.userId === mid)?.decision === "APPROVED"
-    );
+  }
 
-    if (!allApproved) {
-      await prisma.workflowStep.update({ where: { id: step.id }, data: { committeeActions: newActions } });
-
-      // Chain: notify + email only the next unsigned member in sequence
-      const members = step.committeeMembers as string[];
-      const nextMemberId = members.find(
-        (mid) => !newActions.find((a: any) => a.userId === mid && a.decision === "APPROVED")
-      );
-      if (nextMemberId) {
-        const currentStepName = getStepName(step.stepOrder, sub.submissionType) || ROLE_LABELS[step.role as keyof typeof ROLE_LABELS];
-        await prisma.notification.create({
-          data: { recipientId: nextMemberId, message: `ถึงคิวของท่าน: ${currentStepName}`, detail: sub.title, submissionId, type: "pending" },
-        });
-        try {
-          await sendStepEmail({ role: userRole, sub, stepName: currentStepName, specificMemberId: nextMemberId });
-        } catch (e) { console.error("[email/committee-chain]", e); }
-      }
-    } else {
-      await prisma.workflowStep.update({
-        where: { id: step.id },
-        data: { status: "APPROVED", committeeActions: newActions, actedAt: now, actedByName: step.role === "CO_ADVISOR" ? "อาจารย์ที่ปรึกษาร่วมครบทุกท่าน" : "กรรมการสอบครบทุกท่าน" },
+  else if (outcome === "PARTIAL") {
+    if (nextMemberId) {
+      await prisma.notification.create({
+        data: { recipientId: nextMemberId, message: `ถึงคิวของท่าน: ${currentStepName}`, detail: sub.title, submissionId, type: "pending" },
       });
-      const remaining = sub.workflowSteps.filter((s: any) => s.id !== step.id && s.status === "PENDING");
-      const isComplete = remaining.length === 0;
-      await prisma.submission.update({ where: { id: submissionId }, data: { status: isComplete ? "COMPLETED" : "IN_PROGRESS" } });
+      try {
+        await sendStepEmail({ role: userRole, sub, stepName: currentStepName, specificMemberId: nextMemberId });
+      } catch (e) { console.error("[email/committee-chain]", e); }
+    }
+  }
 
-      if (isComplete) {
-        await prisma.notification.create({
-          data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId, type: "approved" },
-        });
-      } else {
-        const nextStep = sub.workflowSteps.find((s: any) => s.stepOrder > step.stepOrder && s.status === "PENDING");
-        if (nextStep) {
-          const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
-          const msg = `ถึงคิวของท่าน: ${stepName}`;
+  else { // ALL_APPROVED
+    if (isComplete) {
+      await prisma.notification.create({
+        data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId, type: "approved" },
+      });
+    } else {
+      // Notify the next step's assignee using submission-specific IDs
+      const nextStep = sub.workflowSteps.find((s: any) => s.stepOrder > step.stepOrder && s.status === "PENDING");
+      if (nextStep) {
+        const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
+        const msg = `ถึงคิวของท่าน: ${stepName}`;
+        const nextRole = nextStep.role as string;
 
-          // Resolve recipient by role using submission-specific IDs (same logic as notifyRole in main route)
-          let recipientId: string | null = null;
-          let specificMemberId: string | undefined;
-          const nextRole = nextStep.role as string;
+        let recipientId: string | null = null;
+        let specificMemberId: string | undefined;
 
-          if (nextRole === "STUDENT") {
-            recipientId = sub.studentId;
-          } else if (nextRole === "ADVISOR") {
-            recipientId = (sub as any).advisorId ?? null;
-          } else if (nextRole === "HEAD_EXAM_COMMITTEE") {
-            recipientId = (sub as any).headCommitteeId ?? null;
-          } else if (nextRole === "INVITED_EXAM_COMMITTEE") {
-            recipientId = (sub as any).invitedCommitteeId ?? null;
-          } else if (nextRole === "PROGRAM_CHAIR") {
-            const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
-            recipientId = chair?.id ?? null;
-          } else if (nextRole === "CO_ADVISOR") {
-            // Only notify first co-advisor — subsequent ones are notified in chain as each approves
-            const coIds: string[] = (sub as any).coAdvisorIds ?? [];
-            specificMemberId = coIds[0];
-            if (coIds[0]) recipientId = coIds[0];
-          } else if (nextRole === "EXAM_COMMITTEE") {
-            const firstId: string | undefined = (sub as any).committeeIds?.[0];
-            specificMemberId = firstId;
-            if (firstId) recipientId = firstId;
-          } else if (nextRole === "ADMIN" || nextRole === "SUPER_ADMIN") {
-            const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
-            if (admins.length) {
-              await prisma.notification.createMany({
-                data: admins.map((a: any) => ({ recipientId: a.id, message: msg, detail: sub.title, submissionId, type: "pending" })),
-              });
-              recipientId = null;
-            }
+        if (nextRole === "STUDENT") {
+          recipientId = sub.studentId;
+        } else if (nextRole === "ADVISOR") {
+          recipientId = (sub as any).advisorId ?? null;
+        } else if (nextRole === "HEAD_EXAM_COMMITTEE") {
+          recipientId = (sub as any).headCommitteeId ?? null;
+        } else if (nextRole === "INVITED_EXAM_COMMITTEE") {
+          recipientId = (sub as any).invitedCommitteeId ?? null;
+        } else if (nextRole === "PROGRAM_CHAIR") {
+          const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
+          recipientId = chair?.id ?? null;
+        } else if (nextRole === "CO_ADVISOR") {
+          const coIds: string[] = (sub as any).coAdvisorIds ?? [];
+          specificMemberId = coIds[0];
+          if (coIds[0]) recipientId = coIds[0];
+        } else if (nextRole === "EXAM_COMMITTEE") {
+          const firstId: string | undefined = (sub as any).committeeIds?.[0];
+          specificMemberId = firstId;
+          if (firstId) recipientId = firstId;
+        } else if (nextRole === "ADMIN" || nextRole === "SUPER_ADMIN") {
+          const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
+          if (admins.length) {
+            await prisma.notification.createMany({
+              data: admins.map((a: any) => ({ recipientId: a.id, message: msg, detail: sub.title, submissionId, type: "pending" })),
+            });
           }
-
-          if (recipientId) {
-            await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
-          }
-          try {
-            await sendStepEmail({ role: nextRole, sub, stepName, specificMemberId });
-          } catch (e) { console.error("[email/step]", e); }
+          recipientId = null;
         }
+
+        if (recipientId) {
+          await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
+        }
+        try {
+          await sendStepEmail({ role: nextRole, sub, stepName, specificMemberId });
+        } catch (e) { console.error("[email/step]", e); }
       }
     }
   }

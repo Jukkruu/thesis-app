@@ -237,7 +237,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
       // Notify all admins when PROPOSAL fully completes
       if (sub.submissionType === "PROPOSAL") {
-        const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
+        const adminUsers = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
         if (adminUsers.length) {
           await prisma.notification.createMany({
             data: adminUsers.map((a) => ({ recipientId: a.id, message: "กระบวนการ Proposal เสร็จสมบูรณ์แล้ว", detail: sub.title, submissionId: id, type: "approved" })),
@@ -269,7 +269,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // After THESIS step 6 (PROGRAM_CHAIR sign B2), notify all admins to collect + send to Faculty
       if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
         try {
-          const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
+          const adminUsers = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
           if (adminUsers.length) {
             await prisma.notification.createMany({
               data: adminUsers.map((a) => ({ recipientId: a.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" })),
@@ -324,7 +324,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           carPlate: (sub as any).carPlate,
         });
         // Notify all admins that finance email was sent
-        const adminUsers = await prisma.user.findMany({ where: { roles: { has: "ADMIN" } } });
+        const adminUsers = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
         if (adminUsers.length) {
           await prisma.notification.createMany({
             data: adminUsers.map((a) => ({ recipientId: a.id, message: "ส่งอีเมลแจ้งฝ่ายการเงินแล้ว", detail: sub.title, submissionId: id, type: "info" })),
@@ -345,7 +345,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
 
-    const byLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
+    // Use the step's role label so the message names the actual role (e.g. "อาจารย์ที่ปรึกษาร่วม"),
+    // not the user's DB role ("อาจารย์") which is the same for all faculty types.
+    const stepRoleLabel = ROLE_LABELS[step.role as keyof typeof ROLE_LABELS] ?? step.role;
+    const byLabel = stepRoleLabel;
     const rejectionNote = body.notes
       ? `ส่งกลับเพื่อแก้ไข — "${body.notes}"`
       : `ส่งกลับโดย ${byLabel}`;
