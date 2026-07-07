@@ -3,13 +3,29 @@ import { encode } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
 const DEMO_EMAILS = new Set([
+  // Admin
   "superadmin@eng.chula.ac.th",
   "admin@eng.chula.ac.th",
+  "suphap.m@chula.ac.th",
+  // Students
   "student@eng.chula.ac.th",
+  "6733100421@student.chula.ac.th",
+  "outanagon2549@gmail.com",
+  // Program Chair
   "niphon.w@eng.chula.ac.th",
+  // Advisors
   "angkee.s@eng.chula.ac.th",
+  "ratchatin.c@eng.chula.ac.th",
+  "pairod.s@eng.chula.ac.th",
+  // Head Exam Committee
   "alongkorn.p@eng.chula.ac.th",
+  "chanat.r@eng.chula.ac.th",
+  // Exam Committee
   "sunhapos.c@eng.chula.ac.th",
+  "werayut.s@eng.chula.ac.th",
+  "nuksit.n@eng.chula.ac.th",
+  "pairat.t@eng.chula.ac.th",
+  // Invited Exam Committee
   "viboon.s@eng.chula.ac.th",
 ]);
 
