@@ -139,7 +139,13 @@ export function WorkflowTimeline({
               </span>
 
               {/* Content */}
-              <div className={cn("rounded-xl p-3", isCurrent && "bg-blue-50 border border-blue-200")}>
+              <div className={cn(
+                "rounded-xl p-3 border",
+                isCurrent              ? "bg-blue-50 border-blue-200"
+                : step.status === "APPROVED" ? "bg-gray-50 border-gray-100"
+                : step.status === "REJECTED" ? "bg-red-50 border-red-200"
+                : "bg-white border-gray-200"
+              )}>
                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
                   <span className="text-xs text-gray-400 font-medium">ขั้นที่ {index + 1}</span>
                   <span className={cn("font-semibold", isCurrent ? "text-blue-800" : "text-gray-800")}>
