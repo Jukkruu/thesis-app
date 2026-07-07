@@ -6,32 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Eye, EyeOff, LogIn, GraduationCap, Sparkles, ArrowRight,
-  CheckCircle2, ExternalLink, ChevronRight,
-} from "lucide-react";
-import { Role } from "@/types";
-
-interface DemoUser {
-  email: string;
-  name: string;
-  roleLabel: string;
-  dashboard: string;
-  color: string;
-  emoji: string;
-}
-
-const DEMO_USERS: DemoUser[] = [
-  { email: "superadmin@eng.chula.ac.th", name: "ผู้ดูแลระบบสูงสุด",           roleLabel: "Super Admin",        dashboard: "/dashboard/super-admin",         color: "from-yellow-400 to-amber-500",   emoji: "👑" },
-  { email: "admin@eng.chula.ac.th",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", roleLabel: "เจ้าหน้าที่ภาควิชา",  dashboard: "/dashboard/admin",               color: "from-slate-600 to-gray-800",     emoji: "🛡️" },
-  { email: "suphap.m@chula.ac.th",       name: "สุภาพ หมุดอุบล",              roleLabel: "เจ้าหน้าที่ภาควิชา",  dashboard: "/dashboard/admin",               color: "from-slate-600 to-gray-800",     emoji: "🛡️" },
-  { email: "student@eng.chula.ac.th",    name: "นายอานนท์ ใจดี",              roleLabel: "นิสิต",              dashboard: "/dashboard/student",             color: "from-blue-500 to-indigo-600",    emoji: "🎓" },
-  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์",   roleLabel: "ประธานหลักสูตร",     dashboard: "/dashboard/program-chair",       color: "from-violet-500 to-purple-600",  emoji: "🏛️" },
-  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร",     roleLabel: "อาจารย์ที่ปรึกษา",   dashboard: "/dashboard/advisor",             color: "from-violet-500 to-purple-600",  emoji: "👨‍🏫" },
-  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ",     roleLabel: "ประธานกรรมการสอบ",   dashboard: "/dashboard/head-exam-committee", color: "from-rose-500 to-pink-600",      emoji: "⭐" },
-  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์", roleLabel: "กรรมการสอบ",         dashboard: "/dashboard/exam-committee",      color: "from-teal-500 to-cyan-600",      emoji: "📋" },
-  { email: "viboon.s@eng.chula.ac.th",   name: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ", roleLabel: "กรรมการภายนอก",  dashboard: "/dashboard/invited-exam-committee", color: "from-orange-500 to-amber-600", emoji: "🌐" },
-];
+import { Eye, EyeOff, LogIn, GraduationCap, ArrowRight, CheckCircle2 } from "lucide-react";
 
 // ─── Workflow phases ──────────────────────────────────────────────────────────
 interface Step  { emoji: string; label: string; role: string }
@@ -101,7 +76,6 @@ export default function LoginPage() {
   const [showPw, setShowPw]         = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) router.replace(ROLE_ROUTES[user.role]);
@@ -117,21 +91,7 @@ export default function LoginPage() {
     if (result?.error) { setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); return; }
   }
 
-  async function quickLogin(u: DemoUser) {
-    setLoadingEmail(u.email);
-    const res = await fetch("/api/auth/demo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: u.email }),
-    });
-    if (res.ok) {
-      window.location.href = u.dashboard;
-    } else {
-      setLoadingEmail(null);
-    }
-  }
-
-  const busy = submitting || !!loadingEmail;
+  const busy = submitting;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-gray-50 flex flex-col items-center px-4 py-10">
@@ -195,51 +155,6 @@ export default function LoginPage() {
           <div className="flex items-center justify-between text-sm">
             <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">สร้างบัญชีใหม่</Link>
             <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">ลืมรหัสผ่าน?</Link>
-          </div>
-        </div>
-
-        {/* ── Demo shortcuts ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-bold text-gray-800">ทดสอบระบบ</p>
-                <p className="text-xs text-gray-500">คลิกที่บทบาทเพื่อเข้าสู่ระบบทันที — ไม่ต้องใส่รหัสผ่าน</p>
-              </div>
-            </div>
-            <Link href="/demo"
-              className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition">
-              <ExternalLink className="w-3.5 h-3.5" />
-              ดูทั้งหมด
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {DEMO_USERS.map((u) => {
-              const isLoading = loadingEmail === u.email;
-              return (
-                <button
-                  key={u.email}
-                  onClick={() => quickLogin(u)}
-                  disabled={busy}
-                  className="group flex items-center gap-3 p-3.5 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm transition text-left disabled:opacity-60 w-full"
-                >
-                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${u.color} flex items-center justify-center text-xl shrink-0 shadow-sm`}>
-                    {isLoading
-                      ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin block" />
-                      : u.emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 text-sm truncate leading-snug">{u.name}</p>
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{u.roleLabel}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition shrink-0" />
-                </button>
-              );
-            })}
           </div>
         </div>
 
