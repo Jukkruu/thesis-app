@@ -3,95 +3,105 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
-import { ROLE_LABELS, ROLE_EMOJI, ROLE_GRADIENT } from "@/lib/utils";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, GraduationCap, Sparkles, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Eye, EyeOff, LogIn, GraduationCap, Sparkles, ArrowRight,
+  CheckCircle2, ExternalLink, ChevronRight,
+} from "lucide-react";
 import { Role } from "@/types";
 
-const DEMO_USERS = [
-  { email: "superadmin@eng.chula.ac.th", name: "ผู้ดูแลระบบสูงสุด",           role: "SUPER_ADMIN" as Role },
-  { email: "admin@eng.chula.ac.th",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", role: "ADMIN" as Role },
-  { email: "student@eng.chula.ac.th",    name: "นายอานนท์ ใจดี",              role: "STUDENT" as Role },
-  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์ (ประธานหลักสูตร)", role: "PROFESSOR" as Role },
-  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร (ที่ปรึกษา)",        role: "PROFESSOR" as Role },
-  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ (ประธานกรรมการสอบ)", role: "PROFESSOR" as Role },
-  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์ (กรรมการสอบ)",   role: "PROFESSOR" as Role },
+interface DemoUser {
+  email: string;
+  name: string;
+  roleLabel: string;
+  dashboard: string;
+  color: string;
+  emoji: string;
+}
+
+const DEMO_USERS: DemoUser[] = [
+  { email: "superadmin@eng.chula.ac.th", name: "ผู้ดูแลระบบสูงสุด",           roleLabel: "Super Admin",        dashboard: "/dashboard/super-admin",         color: "from-yellow-400 to-amber-500",   emoji: "👑" },
+  { email: "admin@eng.chula.ac.th",      name: "พี่โบ้ (เจ้าหน้าที่ภาควิชา)", roleLabel: "เจ้าหน้าที่ภาควิชา",  dashboard: "/dashboard/admin",               color: "from-slate-600 to-gray-800",     emoji: "🛡️" },
+  { email: "suphap.m@chula.ac.th",       name: "สุภาพ หมุดอุบล",              roleLabel: "เจ้าหน้าที่ภาควิชา",  dashboard: "/dashboard/admin",               color: "from-slate-600 to-gray-800",     emoji: "🛡️" },
+  { email: "student@eng.chula.ac.th",    name: "นายอานนท์ ใจดี",              roleLabel: "นิสิต",              dashboard: "/dashboard/student",             color: "from-blue-500 to-indigo-600",    emoji: "🎓" },
+  { email: "niphon.w@eng.chula.ac.th",   name: "รศ.ดร.นิพนธ์ วรรณโสภาคย์",   roleLabel: "ประธานหลักสูตร",     dashboard: "/dashboard/program-chair",       color: "from-violet-500 to-purple-600",  emoji: "🏛️" },
+  { email: "angkee.s@eng.chula.ac.th",   name: "รศ.ดร.อังคีร์ ศรีภคากร",     roleLabel: "อาจารย์ที่ปรึกษา",   dashboard: "/dashboard/advisor",             color: "from-violet-500 to-purple-600",  emoji: "👨‍🏫" },
+  { email: "alongkorn.p@eng.chula.ac.th",name: "รศ.ดร.อลงกรณ์ พิมพ์พิณ",     roleLabel: "ประธานกรรมการสอบ",   dashboard: "/dashboard/head-exam-committee", color: "from-rose-500 to-pink-600",      emoji: "⭐" },
+  { email: "sunhapos.c@eng.chula.ac.th", name: "ผศ.ดร.สัณหพศ จันทรานุวัฒน์", roleLabel: "กรรมการสอบ",         dashboard: "/dashboard/exam-committee",      color: "from-teal-500 to-cyan-600",      emoji: "📋" },
+  { email: "viboon.s@eng.chula.ac.th",   name: "ศ.ดร.วิบูลย์ แสงวีระพันธุ์ศิริ", roleLabel: "กรรมการภายนอก",  dashboard: "/dashboard/invited-exam-committee", color: "from-orange-500 to-amber-600", emoji: "🌐" },
 ];
 
-// ─── Workflow as 5 phases (matches the official process diagram) ───────────────
-
-interface Step { emoji: string; label: string; role: string; }
-interface Phase { no: number; title: string; docs: string[]; steps: Step[]; type: "PROPOSAL" | "THESIS"; }
+// ─── Workflow phases ──────────────────────────────────────────────────────────
+interface Step  { emoji: string; label: string; role: string }
+interface Phase { no: number; title: string; docs: string[]; steps: Step[]; type: "PROPOSAL" | "THESIS" }
 
 const PHASES: Phase[] = [
   {
     no: 1, title: "เสนอหัวข้อโครงร่างวิทยานิพนธ์", docs: ["บ.วศ.1ก", "บ.วศ.1ข"], type: "PROPOSAL",
     steps: [
-      { emoji: "🎓", label: "ยื่นหัวข้อ", role: "นักศึกษา" },
-      { emoji: "🛡️", label: "ตรวจสอบ", role: "เจ้าหน้าที่" },
-      { emoji: "🏛️", label: "ลงนาม", role: "ประธานหลักสูตร" },
+      { emoji: "🎓", label: "ยื่นหัวข้อ",   role: "นักศึกษา" },
+      { emoji: "🛡️", label: "ตรวจสอบ",      role: "เจ้าหน้าที่" },
+      { emoji: "🏛️", label: "ลงนาม",        role: "ประธานหลักสูตร" },
     ],
   },
   {
     no: 2, title: "แต่งตั้งคณะกรรมการสอบ", docs: ["บ.วศ.1ค", "บ.วศ.1ง"], type: "PROPOSAL",
     steps: [
-      { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
-      { emoji: "⭐", label: "ลงนาม", role: "ประธานกรรมการสอบ" },
-      { emoji: "👨‍🏫", label: "ลงนาม", role: "อาจารย์ที่ปรึกษา" },
-      { emoji: "📋", label: "ลงนามตามลำดับ", role: "กรรมการสอบ" },
-      { emoji: "🏛️", label: "ลงนาม", role: "ประธานหลักสูตร" },
+      { emoji: "🎓", label: "อัปโหลดเอกสาร",  role: "นักศึกษา" },
+      { emoji: "⭐", label: "ลงนาม",          role: "ประธานกรรมการสอบ" },
+      { emoji: "👨‍🏫", label: "ลงนาม",         role: "อาจารย์ที่ปรึกษา" },
+      { emoji: "📋", label: "ลงนามตามลำดับ",  role: "กรรมการสอบ" },
+      { emoji: "🏛️", label: "ลงนาม",         role: "ประธานหลักสูตร" },
     ],
   },
   {
     no: 3, title: "ประเมินวิทยานิพนธ์ก่อนสอบ", docs: ["บ.2", "บ.3"], type: "THESIS",
     steps: [
-      { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
-      { emoji: "📋", label: "ลงนามแยกกัน", role: "กรรมการสอบ" },
-      { emoji: "👨‍🏫", label: "ลงนาม บ.2", role: "อาจารย์ที่ปรึกษา" },
-      { emoji: "⭐", label: "ลงนาม บ.2", role: "ประธานกรรมการสอบ" },
-      { emoji: "🏛️", label: "ลงนาม", role: "ประธานหลักสูตร" },
+      { emoji: "🎓", label: "อัปโหลดเอกสาร",  role: "นักศึกษา" },
+      { emoji: "📋", label: "ลงนามแยกกัน",    role: "กรรมการสอบ" },
+      { emoji: "👨‍🏫", label: "ลงนาม บ.2",     role: "อาจารย์ที่ปรึกษา" },
+      { emoji: "⭐", label: "ลงนาม บ.2",      role: "ประธานกรรมการสอบ" },
+      { emoji: "🏛️", label: "ลงนาม",         role: "ประธานหลักสูตร" },
     ],
   },
   {
     no: 4, title: "คณะออกเอกสารสอบ", docs: ["ใบเชิญ", "แบบรายงาน"], type: "THESIS",
     steps: [
       { emoji: "🛡️", label: "รับเอกสารจากคณะ", role: "เจ้าหน้าที่" },
-      { emoji: "🎓", label: "รับเอกสาร", role: "นักศึกษา" },
+      { emoji: "🎓", label: "รับเอกสาร",        role: "นักศึกษา" },
     ],
   },
   {
-    no: 5, title: "ลงนามหลังสอบป้องกัน", docs: ["ใบรายงานผล", "แบบรายงานนำเสนอ"], type: "THESIS",
+    no: 5, title: "ลงนามหลังสอบป้องกัน", docs: ["ใบรายงานผล", "แบบรายงาน"], type: "THESIS",
     steps: [
-      { emoji: "🎓", label: "อัปโหลดเอกสาร", role: "นักศึกษา" },
-      { emoji: "👨‍🏫", label: "ลงนาม", role: "อาจารย์ที่ปรึกษา" },
-      { emoji: "👩‍🏫", label: "ลงนาม", role: "อาจารย์ที่ปรึกษาร่วม (ถ้ามี)" },
-      { emoji: "⭐", label: "ลงนาม", role: "ประธานกรรมการสอบ" },
-      { emoji: "📋", label: "ลงนาม", role: "กรรมการสอบ" },
-      { emoji: "🔏", label: "ลงนาม", role: "กรรมการภายนอก" },
-      { emoji: "🏛️", label: "ลงนาม", role: "ประธานหลักสูตร" },
+      { emoji: "🎓", label: "อัปโหลดเอกสาร",         role: "นักศึกษา" },
+      { emoji: "👨‍🏫", label: "ลงนาม",                 role: "อาจารย์ที่ปรึกษา" },
+      { emoji: "⭐", label: "ลงนาม",                  role: "ประธานกรรมการสอบ" },
+      { emoji: "📋", label: "ลงนาม",                  role: "กรรมการสอบ" },
+      { emoji: "🏛️", label: "ลงนาม",                 role: "ประธานหลักสูตร" },
     ],
   },
 ];
 
-// Static color classes per phase (Tailwind-safe)
 const PHASE_THEME = [
-  { grad: "from-blue-500 to-indigo-600",   text: "text-blue-600",   line: "bg-blue-200",   chip: "bg-blue-50 text-blue-700" },
-  { grad: "from-teal-500 to-emerald-600",  text: "text-teal-600",   line: "bg-teal-200",   chip: "bg-teal-50 text-teal-700" },
-  { grad: "from-amber-500 to-orange-600",  text: "text-amber-600",  line: "bg-amber-200",  chip: "bg-amber-50 text-amber-700" },
-  { grad: "from-purple-500 to-fuchsia-600",text: "text-purple-600", line: "bg-purple-200", chip: "bg-purple-50 text-purple-700" },
-  { grad: "from-rose-500 to-red-600",      text: "text-rose-600",   line: "bg-rose-200",   chip: "bg-rose-50 text-rose-700" },
+  { grad: "from-blue-500 to-indigo-600",    text: "text-blue-600",   line: "bg-blue-200",   chip: "bg-blue-50 text-blue-700" },
+  { grad: "from-teal-500 to-emerald-600",   text: "text-teal-600",   line: "bg-teal-200",   chip: "bg-teal-50 text-teal-700" },
+  { grad: "from-amber-500 to-orange-600",   text: "text-amber-600",  line: "bg-amber-200",  chip: "bg-amber-50 text-amber-700" },
+  { grad: "from-purple-500 to-fuchsia-600", text: "text-purple-600", line: "bg-purple-200", chip: "bg-purple-50 text-purple-700" },
+  { grad: "from-rose-500 to-red-600",       text: "text-rose-600",   line: "bg-rose-200",   chip: "bg-rose-50 text-rose-700" },
 ];
 
 export default function LoginPage() {
   const { user } = useApp();
   const router = useRouter();
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [showPw, setShowPw]         = useState(false);
+  const [error, setError]           = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) router.replace(ROLE_ROUTES[user.role]);
@@ -105,130 +115,135 @@ export default function LoginPage() {
     const result = await signIn("credentials", { email: email.trim().toLowerCase(), password, redirect: false });
     setSubmitting(false);
     if (result?.error) { setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); return; }
-    // redirect handled by useEffect above after session updates
   }
 
-  async function quickLogin(email: string, role: Role) {
-    setSubmitting(true);
+  async function quickLogin(u: DemoUser) {
+    setLoadingEmail(u.email);
     const res = await fetch("/api/auth/demo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: u.email }),
     });
     if (res.ok) {
-      window.location.href = ROLE_ROUTES[role];
+      window.location.href = u.dashboard;
     } else {
-      setSubmitting(false);
+      setLoadingEmail(null);
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-gray-50 to-gray-50 flex flex-col items-center px-4 py-10">
-      <div className="w-full max-w-5xl space-y-8">
+  const busy = submitting || !!loadingEmail;
 
-        {/* Hero header */}
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-gray-50 flex flex-col items-center px-4 py-10">
+      <div className="w-full max-w-5xl space-y-10">
+
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-200">
             <GraduationCap className="w-9 h-9 text-white" />
           </div>
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
-            <p className="text-gray-500 mt-1.5">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
+            <p className="text-gray-500 mt-1.5 text-base">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
           </div>
         </div>
 
-        {/* Login + demo */}
-        <div className="grid gap-6 items-start lg:grid-cols-2">
-          {/* Login form */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-            <h2 className="font-semibold text-gray-800 text-lg">เข้าสู่ระบบ</h2>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block font-medium text-gray-700 mb-1.5">อีเมล</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="your@email.com"
-                  autoComplete="email"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
-                <div className="relative">
-                  <input
-                    type={showPw ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
-                    placeholder="รหัสผ่าน"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
-                  >
-                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60"
-              >
-                <LogIn className="w-5 h-5" />
-                {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-              </button>
-            </form>
-
-            <div className="flex items-center justify-between pt-1 text-sm">
-              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-                สร้างบัญชีใหม่
-              </Link>
-              <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">
-                ลืมรหัสผ่าน?
-              </Link>
+        {/* ── Login form ────────────────────────────────────────────────── */}
+        <div className="mx-auto w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-7 space-y-5">
+          <h2 className="font-bold text-gray-800 text-xl">เข้าสู่ระบบ</h2>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1.5 text-sm">อีเมล</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="your@email.com"
+                autoComplete="email"
+              />
             </div>
+            <div>
+              <label className="block font-medium text-gray-700 mb-1.5 text-sm">รหัสผ่าน</label>
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+                  placeholder="รหัสผ่าน"
+                  autoComplete="current-password"
+                />
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600" tabIndex={-1}>
+                  {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
+            )}
+
+            <button type="submit" disabled={busy}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60">
+              <LogIn className="w-5 h-5" />
+              {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+            </button>
+          </form>
+
+          <div className="flex items-center justify-between text-sm">
+            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">สร้างบัญชีใหม่</Link>
+            <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">ลืมรหัสผ่าน?</Link>
+          </div>
+        </div>
+
+        {/* ── Demo shortcuts ────────────────────────────────────────────── */}
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-5">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-800">ทดสอบระบบ</p>
+                <p className="text-xs text-gray-500">คลิกที่บทบาทเพื่อเข้าสู่ระบบทันที — ไม่ต้องใส่รหัสผ่าน</p>
+              </div>
+            </div>
+            <Link href="/demo"
+              className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition">
+              <ExternalLink className="w-3.5 h-3.5" />
+              ดูทั้งหมด
+            </Link>
           </div>
 
-          {/* Demo shortcuts — click to log in instantly by role */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-            <div className="flex items-center gap-2 text-gray-500">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <p className="text-sm font-semibold uppercase tracking-wide">ทดสอบระบบ — คลิกเข้าใช้ตามบทบาท</p>
-            </div>
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-              {DEMO_USERS.map((u) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {DEMO_USERS.map((u) => {
+              const isLoading = loadingEmail === u.email;
+              return (
                 <button
                   key={u.email}
-                  onClick={() => quickLogin(u.email, u.role)}
-                  disabled={submitting}
-                  className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-md transition text-left disabled:opacity-60"
+                  onClick={() => quickLogin(u)}
+                  disabled={busy}
+                  className="group flex items-center gap-3 p-3.5 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm transition text-left disabled:opacity-60 w-full"
                 >
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${ROLE_GRADIENT[u.role]} flex items-center justify-center shrink-0 text-lg`}>
-                    {ROLE_EMOJI[u.role]}
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${u.color} flex items-center justify-center text-xl shrink-0 shadow-sm`}>
+                    {isLoading
+                      ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin block" />
+                      : u.emoji}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-800 truncate">{u.name}</p>
-                    <p className="text-sm text-gray-500 truncate">{ROLE_LABELS[u.role]}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm truncate leading-snug">{u.name}</p>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{u.roleLabel}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition shrink-0" />
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* WORKFLOW — premium 5-phase timeline */}
+        {/* ── Workflow timeline ─────────────────────────────────────────── */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 sm:p-10">
           <div className="text-center mb-9">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-50 px-3 py-1 rounded-full mb-3">
@@ -239,19 +254,18 @@ export default function LoginPage() {
           </div>
 
           <ol className="relative max-w-2xl mx-auto">
-            {/* PROPOSAL section header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">คำร้องโครงร่าง (PROPOSAL)</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
+
             {PHASES.map((phase, pi) => {
               const t = PHASE_THEME[pi];
               const prevType = pi > 0 ? PHASES[pi - 1].type : null;
               const showDivider = prevType !== null && prevType !== phase.type;
               return (
                 <li key={phase.no} className="relative flex gap-4 sm:gap-6">
-                  {/* Section divider between PROPOSAL and THESIS */}
                   {showDivider && (
                     <div className="absolute -top-4 left-0 right-0 flex items-center gap-3">
                       <div className="flex-1 h-px bg-gray-200" />
@@ -259,7 +273,6 @@ export default function LoginPage() {
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
                   )}
-                  {/* Left rail: node + connector */}
                   <div className="flex flex-col items-center">
                     <div className={`relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${t.grad} flex items-center justify-center shadow-lg text-white font-bold text-xl shrink-0`}>
                       {phase.no}
@@ -267,24 +280,17 @@ export default function LoginPage() {
                     <div className={`w-1 flex-1 my-2 rounded-full ${t.line}`} />
                   </div>
 
-                  {/* Content */}
                   <div className={`flex-1 min-w-0 ${showDivider ? "pt-4 pb-8" : "pb-8"}`}>
-                    {/* Eyebrow + doc badges */}
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       <span className={`text-xs font-bold uppercase tracking-wide ${t.text}`}>ระยะที่ {phase.no}</span>
                       <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
                         {phase.type === "PROPOSAL" ? "PROPOSAL" : "THESIS DEFENSE"}
                       </span>
                       {phase.docs.map((d) => (
-                        <span key={d} className={`text-xs font-medium px-2 py-0.5 rounded-md ${t.chip}`}>
-                          {d}
-                        </span>
+                        <span key={d} className={`text-xs font-medium px-2 py-0.5 rounded-md ${t.chip}`}>{d}</span>
                       ))}
                     </div>
-
                     <h3 className="font-bold text-gray-800 text-lg leading-snug mb-3">{phase.title}</h3>
-
-                    {/* Step pills */}
                     <div className="flex flex-wrap items-center gap-2">
                       {phase.steps.map((step, si) => (
                         <div key={si} className="flex items-center gap-2">
@@ -308,7 +314,6 @@ export default function LoginPage() {
               );
             })}
 
-            {/* Finish milestone */}
             <li className="relative flex gap-4 sm:gap-6">
               <div className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shrink-0">
                 <CheckCircle2 className="w-7 h-7 text-white" />
