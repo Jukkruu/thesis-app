@@ -264,7 +264,7 @@ export default function AdminUsersPage() {
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="เว้นว่างเพื่อใช้ค่าเริ่มต้น (password123)"
+                  placeholder="เว้นว่างเพื่อให้ระบบสร้างรหัสผ่านให้อัตโนมัติ"
                   className={INPUT_CLS}
                 />
               </FormField>

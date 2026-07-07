@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
 
   // Verify the caller is involved in this submission (or is an admin/super_admin/program_chair)
   const sessionRoles: string[] = (session.user as any).roles ?? [session.user.role as string];
-  const isAdminRole = sessionRoles.some((r) => ["ADMIN", "SUPER_ADMIN", "PROGRAM_CHAIR"].includes(r));
+  const sessionIsProgramChair = (session.user as any).isProgramChair === true;
+  const isAdminRole = sessionRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)) || sessionIsProgramChair;
   if (!isAdminRole) {
     const subCheck = await prisma.submission.findUnique({ where: { id: submissionId } });
     if (!subCheck) return NextResponse.json({ error: "Submission not found" }, { status: 404 });

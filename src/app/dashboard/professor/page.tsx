@@ -26,8 +26,14 @@ export default function ProfessorDashboard() {
     if (step.role === "INVITED_EXAM_COMMITTEE")return (sub as any).invitedCommitteeId === user?.id;
     if (step.role === "PROGRAM_CHAIR")         return true; // API only gives chairs subs with PROGRAM_CHAIR steps
     // EXAM_COMMITTEE or CO_ADVISOR — sequential committee signing
-    return (step.committeeMembers ?? []).includes(user?.id ?? "") &&
-           !(step.committeeActions ?? []).some((a) => a.userId === user?.id);
+    const members = step.committeeMembers ?? [];
+    const idx = members.indexOf(user?.id ?? "");
+    if (idx === -1) return false;
+    if ((step.committeeActions ?? []).some((a: any) => a.userId === user?.id)) return false;
+    const prevNotApproved = members.slice(0, idx).some(
+      (mid: string) => !(step.committeeActions ?? []).some((a: any) => a.userId === mid && a.decision === "APPROVED")
+    );
+    return !prevNotApproved;
   });
 
   const history = submissions.filter((sub) => {

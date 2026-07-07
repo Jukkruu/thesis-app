@@ -36,7 +36,7 @@ function resolvePendingName(
   switch (step.role) {
     case "ADVISOR":             return users.find((u) => u.id === sub.advisorId)?.name ?? ROLE_LABELS[step.role];
     case "HEAD_EXAM_COMMITTEE": return users.find((u) => u.id === sub.headCommitteeId)?.name ?? ROLE_LABELS[step.role];
-    case "PROGRAM_CHAIR":       return users.find((u) => u.roles.includes("PROGRAM_CHAIR"))?.name ?? ROLE_LABELS[step.role];
+    case "PROGRAM_CHAIR":       return users.find((u) => (u as any).isProgramChair === true)?.name ?? ROLE_LABELS[step.role];
     case "EXAM_COMMITTEE": {
       const memberIds = step.committeeMembers?.length ? step.committeeMembers : (sub.committeeIds ?? []);
       const done = (step.committeeActions ?? []).filter((a) => a.decision === "APPROVED").length;
