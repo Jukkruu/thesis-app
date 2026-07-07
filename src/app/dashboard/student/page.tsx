@@ -59,26 +59,26 @@ export default function StudentDashboard() {
       {/* Quick stats */}
       {mine.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4">
             <div className="flex items-center justify-between text-gray-400">
               <Layers className="w-5 h-5" />
-              <span className="text-3xl font-bold text-gray-900">{mine.length}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-gray-900">{mine.length}</span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">ทั้งหมด</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">ทั้งหมด</p>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 sm:p-4">
             <div className="flex items-center justify-between text-blue-500">
               <Clock className="w-5 h-5" />
-              <span className="text-3xl font-bold text-blue-700">{inProgress}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-blue-700">{inProgress}</span>
             </div>
-            <p className="text-sm text-blue-600 mt-1">กำลังดำเนินการ</p>
+            <p className="text-xs sm:text-sm text-blue-600 mt-1">กำลังดำเนินการ</p>
           </div>
-          <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
+          <div className="bg-green-50 border border-green-100 rounded-2xl p-3 sm:p-4">
             <div className="flex items-center justify-between text-green-500">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="text-3xl font-bold text-green-700">{completed}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-green-700">{completed}</span>
             </div>
-            <p className="text-sm text-green-600 mt-1">เสร็จสิ้น</p>
+            <p className="text-xs sm:text-sm text-green-600 mt-1">เสร็จสิ้น</p>
           </div>
         </div>
       )}
@@ -133,7 +133,7 @@ export default function StudentDashboard() {
                 {/* Accent bar */}
                 <div className={`w-1.5 shrink-0 ${accent}`} />
 
-                <div className="flex items-center gap-4 p-5 flex-1 min-w-0">
+                <div className="flex items-center gap-3 p-4 sm:p-5 flex-1 min-w-0">
                 {/* Status icon */}
                 <div className="shrink-0">
                   {sub.status === "COMPLETED"  && <CheckCircle2 className="w-8 h-8 text-green-500" />}

@@ -120,7 +120,7 @@ export function WorkflowTimeline({
           return (
             <li
               key={step.id}
-              className={cn("ml-6 pb-7 last:pb-0", isFuture && "opacity-40")}
+              className={cn("ml-5 sm:ml-6 pb-4 sm:pb-6 last:pb-0", isFuture && "opacity-40")}
             >
               {/* Timeline dot */}
               <span

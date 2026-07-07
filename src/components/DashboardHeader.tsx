@@ -17,7 +17,7 @@ export function DashboardHeader({ role, name, title, highlight }: Props) {
   });
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${ROLE_GRADIENT[role]} p-6 sm:p-7 text-white shadow-lg`}>
+    <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${ROLE_GRADIENT[role]} p-5 sm:p-7 text-white shadow-lg`}>
       {/* Decorative circles */}
       <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full" />
       <div className="absolute -bottom-12 -right-2 w-32 h-32 bg-white/5 rounded-full" />
@@ -34,8 +34,8 @@ export function DashboardHeader({ role, name, title, highlight }: Props) {
         </div>
 
         {highlight && (
-          <div className="shrink-0 text-center bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20">
-            <p className="text-3xl font-bold leading-none">{highlight.value}</p>
+          <div className="shrink-0 text-center bg-white/15 backdrop-blur-sm rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 border border-white/20">
+            <p className="text-2xl sm:text-3xl font-bold leading-none">{highlight.value}</p>
             <p className="text-xs text-white/80 mt-1">{highlight.label}</p>
           </div>
         )}
