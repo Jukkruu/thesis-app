@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, UserPlus, Mail, CheckCircle2 } from "lucide-react";
+import { GraduationCap, UserPlus, Mail, CheckCircle2, BookOpen, ArrowLeft, ShieldAlert } from "lucide-react";
+
+type RoleChoice = "STUDENT" | "PROFESSOR" | null;
 
 export default function RegisterPage() {
-  const [name, setName]         = useState("");
-  const [email, setEmail]       = useState("");
-  const [error, setError]       = useState<string | null>(null);
+  const [role, setRole]             = useState<RoleChoice>(null);
+  const [name, setName]             = useState("");
+  const [email, setEmail]           = useState("");
+  const [error, setError]           = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]         = useState(false);
+  const [done, setDone]             = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,10 +30,7 @@ export default function RegisterPage() {
 
     setSubmitting(false);
 
-    if (res.ok) {
-      setDone(true);
-      return;
-    }
+    if (res.ok) { setDone(true); return; }
 
     const data = await res.json().catch(() => ({}));
     setError(data.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
@@ -51,33 +51,54 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {done ? (
-          /* Success state */
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
+        {/* Role picker */}
+        {!role && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-7 space-y-5">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">ลงทะเบียนสำเร็จ!</h2>
-              <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                ระบบส่งรหัสผ่านและลิงก์เข้าสู่ระบบไปที่<br />
-                <strong className="text-gray-800">{email}</strong><br />
-                แล้ว กรุณาตรวจสอบอีเมลของคุณ
-              </p>
+              <h2 className="font-bold text-gray-800 text-xl">สร้างบัญชีใหม่</h2>
+              <p className="text-gray-500 text-sm mt-1">กรุณาเลือกประเภทผู้ใช้</p>
             </div>
-            <Link
-              href="/login"
-              className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              ไปยังหน้าเข้าสู่ระบบ →
-            </Link>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setRole("STUDENT")}
+                className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-200 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-gray-800 text-sm">นิสิต</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Student</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setRole("PROFESSOR")}
+                className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-200 group-hover:scale-110 transition-transform">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-gray-800 text-sm">อาจารย์ / บุคลากร</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Professor / Staff</p>
+                </div>
+              </button>
+            </div>
           </div>
-        ) : (
-          /* Registration form */
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-            <div className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-blue-600" />
-              <h2 className="font-semibold text-gray-800 text-lg">สร้างบัญชีใหม่</h2>
+        )}
+
+        {/* Student: registration form */}
+        {role === "STUDENT" && !done && (
+          <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => { setRole(null); setError(null); }}
+                className="text-gray-400 hover:text-gray-600 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className="font-bold text-gray-800 text-xl">สร้างบัญชีใหม่</h2>
+                <p className="text-xs font-medium text-blue-600 mt-0.5">นิสิต (Student)</p>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -95,7 +116,6 @@ export default function RegisterPage() {
                   autoFocus
                 />
               </div>
-
               <div>
                 <label className="block font-medium text-gray-700 mb-1.5 text-sm">
                   อีเมล <span className="text-red-500">*</span>
@@ -114,32 +134,75 @@ export default function RegisterPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-                  {error}
-                </p>
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</p>
               )}
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60"
-              >
+              <button type="submit" disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60">
                 <UserPlus className="w-5 h-5" />
                 {submitting ? "กำลังสร้างบัญชี..." : "ลงทะเบียน"}
               </button>
             </form>
 
-            <p className="text-sm text-gray-500 text-center">
-              ระบบจะส่งรหัสผ่านไปที่อีเมลของคุณโดยอัตโนมัติ
-            </p>
+            <p className="text-sm text-gray-500 text-center">ระบบจะส่งรหัสผ่านไปที่อีเมลของคุณโดยอัตโนมัติ</p>
+          </div>
+        )}
+
+        {/* Student: success */}
+        {role === "STUDENT" && done && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">ลงทะเบียนสำเร็จ!</h2>
+              <p className="text-gray-500 mt-2 text-sm leading-relaxed">
+                ระบบส่งรหัสผ่านและลิงก์เข้าสู่ระบบไปที่<br />
+                <strong className="text-gray-800">{email}</strong><br />
+                แล้ว กรุณาตรวจสอบอีเมลของคุณ
+              </p>
+            </div>
+            <Link href="/login" className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+              ไปยังหน้าเข้าสู่ระบบ →
+            </Link>
+          </div>
+        )}
+
+        {/* Professor: contact admin */}
+        {role === "PROFESSOR" && (
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setRole(null)}
+                className="text-gray-400 hover:text-gray-600 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className="font-bold text-gray-800 text-xl">สร้างบัญชีใหม่</h2>
+                <p className="text-xs font-medium text-emerald-600 mt-0.5">อาจารย์ / บุคลากร (Professor / Staff)</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-4 py-4 text-center">
+              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+                <ShieldAlert className="w-7 h-7 text-amber-600" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-semibold text-gray-800">บัญชีอาจารย์ต้องสร้างโดยผู้ดูแลระบบ</p>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  กรุณาติดต่อเจ้าหน้าที่ภาควิชา<br />เพื่อให้เพิ่มบัญชีผู้ใช้ให้ท่าน
+                </p>
+              </div>
+              <Link href="/login"
+                className="mt-1 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition">
+                ไปยังหน้าเข้าสู่ระบบ
+              </Link>
+            </div>
           </div>
         )}
 
         <p className="text-center text-sm text-gray-500">
           มีบัญชีแล้ว?{" "}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-            เข้าสู่ระบบ
-          </Link>
+          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">เข้าสู่ระบบ</Link>
         </p>
 
       </div>
