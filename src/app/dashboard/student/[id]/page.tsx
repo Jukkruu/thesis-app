@@ -488,7 +488,9 @@ export default function StudentSubmissionDetail() {
                   <Upload className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-gray-800 text-sm">อัปโหลดเอกสาร</h2>
+                  <h2 className="font-semibold text-gray-800 text-sm">
+                    {suggested?.label ?? getStepName(currentStep?.stepOrder ?? 0, subType) ?? "อัปโหลดเอกสาร"}
+                  </h2>
                   <p className="text-xs text-gray-400">เลือกไฟล์ PDF แล้วกดปุ่มส่ง</p>
                 </div>
               </div>
