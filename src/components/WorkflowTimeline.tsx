@@ -146,17 +146,19 @@ export function WorkflowTimeline({
                 : step.status === "REJECTED" ? "bg-red-50 border-red-200"
                 : "bg-white border-gray-200"
               )}>
-                <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                  <span className="text-xs text-gray-400 font-medium">ขั้นที่ {index + 1}</span>
-                  <span className={cn("font-semibold", isCurrent ? "text-blue-800" : "text-gray-800")}>
+                <div className="space-y-1 mb-0.5">
+                  <p className="text-xs text-gray-400 font-medium">ขั้นที่ {index + 1}</p>
+                  <p className={cn("font-semibold leading-snug", isCurrent ? "text-blue-800" : "text-gray-800")}>
                     {getStepName(step.stepOrder, submissionType) || ROLE_LABELS[step.role]}
-                  </span>
-                  <StepStatusBadge status={step.status} />
-                  {isCurrent && (
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                      ● กำลังดำเนินการ
-                    </span>
-                  )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StepStatusBadge status={step.status} />
+                    {isCurrent && (
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                        ● กำลังดำเนินการ
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Single-role acted info */}
