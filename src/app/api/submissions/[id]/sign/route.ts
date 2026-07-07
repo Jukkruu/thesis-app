@@ -63,16 +63,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const now = new Date();
 
-  // Outcome state (populated inside the transaction, read outside for notifications)
-  let outcome: "REJECTED" | "PARTIAL" | "ALL_APPROVED" = "PARTIAL";
-  let nextMemberId: string | undefined;
-  let isComplete = false;
-
   // Serializable transaction — prevents concurrent-write race on committeeActions JSON column.
   // Two simultaneous requests for the same member will both re-read inside the tx; the second
   // will find their userId already present and abort before writing.
+  let txResult!: { outcome: "REJECTED" | "PARTIAL" | "ALL_APPROVED"; nextMemberId?: string; isComplete: boolean };
   try {
-    await prisma.$transaction(async (tx) => {
+    txResult = await prisma.$transaction(async (tx) => {
       const freshStep = await tx.workflowStep.findUnique({
         where: { id: step.id },
         select: { committeeActions: true, committeeMembers: true },
@@ -100,8 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           },
         });
         await tx.submission.update({ where: { id: submissionId }, data: { status: "REJECTED" } });
-        outcome = "REJECTED";
-        return;
+        return { outcome: "REJECTED" as const, isComplete: false };
       }
 
       const allApproved = members.every(
@@ -110,11 +105,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       if (!allApproved) {
         await tx.workflowStep.update({ where: { id: step.id }, data: { committeeActions: newActions } });
-        outcome = "PARTIAL";
-        nextMemberId = members.find(
+        const nextMemberId = members.find(
           (mid: string) => !newActions.find((a: any) => a.userId === mid && a.decision === "APPROVED")
         );
-        return;
+        return { outcome: "PARTIAL" as const, nextMemberId, isComplete: false };
       }
 
       // All members approved — advance the step
@@ -125,24 +119,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           committeeActions: newActions,
           actedAt: now,
           actedByName: userRole === "CO_ADVISOR" ? "อาจารย์ที่ปรึกษาร่วมครบทุกท่าน" : "กรรมการสอบครบทุกท่าน",
-          actedById: userId, // Fix: was missing — audit trail now records final approver
+          actedById: userId,
         },
       });
 
       // Count remaining PENDING steps (from DB, not stale sub)
       const pendingCount = await tx.workflowStep.count({ where: { submissionId, status: "PENDING" } });
-      isComplete = pendingCount === 0;
+      const isComplete = pendingCount === 0;
       await tx.submission.update({
         where: { id: submissionId },
         data: { status: isComplete ? "COMPLETED" : "IN_PROGRESS" },
       });
-      outcome = "ALL_APPROVED";
+      return { outcome: "ALL_APPROVED" as const, isComplete };
     }, { isolationLevel: "Serializable" });
   } catch (e: any) {
     if (e.message === "ALREADY_SIGNED")
       return NextResponse.json({ error: "Already signed" }, { status: 400 });
     throw e;
   }
+
+  const { outcome, nextMemberId, isComplete } = txResult;
 
   // ── Post-transaction: notifications & emails ──────────────────────────────────
 
