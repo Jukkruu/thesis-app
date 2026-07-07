@@ -60,7 +60,8 @@ export function NotificationBell() {
     setOpen(false);
     if (!user) return;
     const base = ROLE_ROUTES[user.role as Role] ?? "/dashboard/student";
-    router.push(`${base}/${notif.submissionId}`);
+    if (notif.submissionId) router.push(`${base}/${notif.submissionId}`);
+    else router.push(base);
   }
 
   const isMobile = mounted && window.innerWidth < 640;

@@ -174,6 +174,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId, type: "approved" },
       });
     } else {
+      // Notify student that their submission progressed
+      await prisma.notification.create({
+        data: { recipientId: sub.studentId, message: `คำร้องคืบหน้า — ${stepRoleLabel}อนุมัติ: ${currentStepName}`, detail: sub.title, submissionId, type: "info" },
+      });
       // Notify the next step's assignee using submission-specific IDs
       const nextStep = sub.workflowSteps.find((s: any) => s.stepOrder > step.stepOrder && s.status === "PENDING");
       if (nextStep) {

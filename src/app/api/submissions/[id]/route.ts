@@ -541,11 +541,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         } catch (e) { console.error("[email/override-next]", e); }
       }
       // Always notify student when admin overrides
-      const overrideMsg = decision === "APPROVED"
+      const isComplete = !hasPending && !hasRejected;
+      const overrideMsg = isComplete && decision === "APPROVED"
+        ? "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉"
+        : decision === "APPROVED"
         ? `ผู้ดูแลระบบอนุมัติขั้นตอนที่ ${stepOrder} แทน — คำร้องของท่านคืบหน้าแล้ว`
         : `ผู้ดูแลระบบรีเซตขั้นตอนที่ ${stepOrder} — กรุณาตรวจสอบคำร้องของท่าน`;
       await prisma.notification.create({
-        data: { recipientId: sub.studentId, message: overrideMsg, detail: sub.title, submissionId: id, type: decision === "APPROVED" ? "info" : "rejected" },
+        data: { recipientId: sub.studentId, message: overrideMsg, detail: sub.title, submissionId: id, type: isComplete ? "approved" : decision === "APPROVED" ? "info" : "rejected" },
       });
     }
 
