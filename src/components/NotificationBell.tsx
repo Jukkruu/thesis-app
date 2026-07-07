@@ -44,10 +44,10 @@ export function NotificationBell() {
   const reposition = useCallback(() => {
     if (!btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
-    const width = Math.min(352, window.innerWidth - 24);
-    // Anchor near the bell, but keep fully on-screen
-    const left = Math.min(Math.max(12, r.left), window.innerWidth - width - 12);
-    setCoords({ top: r.bottom + 10, left, width });
+    const mobile = window.innerWidth < 640;
+    const width  = mobile ? window.innerWidth - 16 : Math.min(380, window.innerWidth - 24);
+    const left   = mobile ? 8 : Math.min(Math.max(12, r.right - width), window.innerWidth - width - 12);
+    setCoords({ top: r.bottom + 8, left, width });
   }, []);
 
   function toggle() {
@@ -125,7 +125,7 @@ export function NotificationBell() {
             </div>
 
             {/* List */}
-            <div className="max-h-[70vh] overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-[75vh] overflow-y-auto divide-y divide-gray-50">
               {mine.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 space-y-2">
                   <Bell className="w-8 h-8 mx-auto opacity-25" />
