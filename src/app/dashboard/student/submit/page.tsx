@@ -381,24 +381,6 @@ export default function NewSubmissionPage() {
         ย้อนกลับ
       </Link>
 
-      {/* Warning: no staff accounts yet */}
-      {(advisors.length === 0 || headCandidates.length === 0 || committees.length === 0) && (
-        <div className="bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 flex items-start gap-3">
-          <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
-          <div className="text-sm text-amber-800 space-y-0.5">
-            <p className="font-semibold">บัญชีผู้ใช้ยังไม่ครบ</p>
-            <p className="text-amber-700">
-              {[
-                advisors.length === 0 && "อาจารย์ที่ปรึกษา",
-                headCandidates.length === 0 && "ประธานกรรมการสอบ",
-                committees.length === 0 && "กรรมการสอบ",
-              ].filter(Boolean).join(", ")}
-              {" "}ยังไม่มีในระบบ — กรุณาให้ผู้ดูแลระบบเพิ่มบัญชีผู้ใช้ก่อนยื่นคำร้อง
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Draft restore banner */}
       {showDraftBanner && (
         <div className="bg-amber-50 border border-amber-300 rounded-2xl px-4 py-4 flex items-start gap-3">
