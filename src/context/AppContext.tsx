@@ -104,6 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         roles: ((session.user as any).roles ?? [session.user.role as string]) as Role[],
         role: (((session.user as any).roles as string[])?.[0] ?? session.user.role) as Role,
         studentId: session.user.studentId,
+        isProgramChair: (session.user as any).isProgramChair ?? false,
       }
     : null;
 
@@ -201,10 +202,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case "ADVISOR":               return (sub as any).advisorId === user.id;
       case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
       case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
+      case "PROGRAM_CHAIR":         return user.isProgramChair === true;
       case "CO_ADVISOR":
-      case "EXAM_COMMITTEE":
+      case "EXAM_COMMITTEE": {
         if (!step.committeeMembers?.includes(user.id)) return false;
-        return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+        if ((step.committeeActions ?? []).some((a) => a.userId === user.id)) return false;
+        // Only the next unsigned member can act (sequential)
+        const members = step.committeeMembers ?? [];
+        const idx = members.indexOf(user.id);
+        const prevUnsigned = members.slice(0, idx).some(
+          (mid) => !(step.committeeActions ?? []).some((a) => a.userId === mid && a.decision === "APPROVED")
+        );
+        return !prevUnsigned;
+      }
       default:
         return user.roles.includes(step.role as Role);
     }
@@ -220,10 +230,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         case "ADVISOR":               return (sub as any).advisorId === user.id;
         case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
         case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
+        case "PROGRAM_CHAIR":         return user.isProgramChair === true;
         case "CO_ADVISOR":
-        case "EXAM_COMMITTEE":
+        case "EXAM_COMMITTEE": {
           if (!step.committeeMembers?.includes(user.id)) return false;
-          return !(step.committeeActions ?? []).some((a) => a.userId === user.id);
+          if ((step.committeeActions ?? []).some((a) => a.userId === user.id)) return false;
+          const members = step.committeeMembers ?? [];
+          const idx = members.indexOf(user.id);
+          const prevUnsigned = members.slice(0, idx).some(
+            (mid) => !(step.committeeActions ?? []).some((a) => a.userId === mid && a.decision === "APPROVED")
+          );
+          return !prevUnsigned;
+        }
         default:
           return user.roles.includes(role as any);
       }

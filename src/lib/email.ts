@@ -106,7 +106,21 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
 
   const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
-  const basePath = ROLE_ROUTES[role as Role] ?? "/dashboard";
+
+  // Map workflow step-role strings to actual dashboard paths.
+  // ROLE_ROUTES only covers the 4 top-level DB roles (STUDENT/ADMIN/SUPER_ADMIN/PROFESSOR).
+  const STEP_ROLE_DASHBOARD: Record<string, string> = {
+    STUDENT:                "/dashboard/student",
+    ADVISOR:                "/dashboard/advisor",
+    CO_ADVISOR:             "/dashboard/advisor",
+    HEAD_EXAM_COMMITTEE:    "/dashboard/head-exam-committee",
+    EXAM_COMMITTEE:         "/dashboard/exam-committee",
+    INVITED_EXAM_COMMITTEE: "/dashboard/invited-exam-committee",
+    PROGRAM_CHAIR:          "/dashboard/program-chair",
+    ADMIN:                  "/dashboard/admin",
+    SUPER_ADMIN:            "/dashboard/super-admin",
+  };
+  const basePath = STEP_ROLE_DASHBOARD[role] ?? ROLE_ROUTES[role as Role] ?? "/dashboard";
   const redirectTo = `${basePath}/${sub.id}`;
 
   for (const recipient of recipients) {

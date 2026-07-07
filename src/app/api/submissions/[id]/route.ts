@@ -123,6 +123,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const step = sub.workflowSteps.find((s: any) => s.status === "PENDING");
     if (!step) return NextResponse.json({ error: "No pending step" }, { status: 400 });
 
+    // CO_ADVISOR and EXAM_COMMITTEE use sequential committee signing via /sign — block here
+    if (step.role === "CO_ADVISOR" || step.role === "EXAM_COMMITTEE") {
+      return NextResponse.json(
+        { error: "กรุณาใช้เส้นทาง /sign สำหรับการลงนามแบบคณะกรรมการ" },
+        { status: 400 }
+      );
+    }
+
     // Involvement-based approval check
     const canApprove = (() => {
       if (step.role === "STUDENT")               return sub.studentId === userId;
@@ -550,7 +558,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role))
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { roles: true } });
+  const deleteRoles = (dbUser?.roles ?? []) as string[];
+  if (!deleteRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
   await prisma.submission.delete({ where: { id } });

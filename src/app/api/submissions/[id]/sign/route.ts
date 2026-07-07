@@ -122,24 +122,48 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (nextStep) {
           const stepName = getStepName(nextStep.stepOrder, sub.submissionType) || ROLE_LABELS[nextStep.role as keyof typeof ROLE_LABELS];
           const msg = `ถึงคิวของท่าน: ${stepName}`;
-          if (nextStep.role === "CO_ADVISOR") {
+
+          // Resolve recipient by role using submission-specific IDs (same logic as notifyRole in main route)
+          let recipientId: string | null = null;
+          let specificMemberId: string | undefined;
+          const nextRole = nextStep.role as string;
+
+          if (nextRole === "STUDENT") {
+            recipientId = sub.studentId;
+          } else if (nextRole === "ADVISOR") {
+            recipientId = (sub as any).advisorId ?? null;
+          } else if (nextRole === "HEAD_EXAM_COMMITTEE") {
+            recipientId = (sub as any).headCommitteeId ?? null;
+          } else if (nextRole === "INVITED_EXAM_COMMITTEE") {
+            recipientId = (sub as any).invitedCommitteeId ?? null;
+          } else if (nextRole === "PROGRAM_CHAIR") {
+            const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
+            recipientId = chair?.id ?? null;
+          } else if (nextRole === "CO_ADVISOR") {
+            // Only notify first co-advisor — subsequent ones are notified in chain as each approves
             const coIds: string[] = (sub as any).coAdvisorIds ?? [];
-            if (coIds.length) {
+            specificMemberId = coIds[0];
+            if (coIds[0]) recipientId = coIds[0];
+          } else if (nextRole === "EXAM_COMMITTEE") {
+            const firstId: string | undefined = (sub as any).committeeIds?.[0];
+            specificMemberId = firstId;
+            if (firstId) recipientId = firstId;
+          } else if (nextRole === "ADMIN" || nextRole === "SUPER_ADMIN") {
+            const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
+            if (admins.length) {
               await prisma.notification.createMany({
-                data: coIds.map((uid: string) => ({ recipientId: uid, message: msg, detail: sub.title, submissionId, type: "pending" })),
+                data: admins.map((a: any) => ({ recipientId: a.id, message: msg, detail: sub.title, submissionId, type: "pending" })),
               });
-            }
-          } else {
-            let recipientId: string | null = nextStep.role === "ADVISOR" ? (sub as any).advisorId : null;
-            if (!recipientId) {
-              const u = await prisma.user.findFirst({ where: { roles: { has: nextStep.role as any } } });
-              recipientId = u?.id ?? null;
-            }
-            if (recipientId) {
-              await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
+              recipientId = null;
             }
           }
-          try { await sendStepEmail({ role: nextStep.role, sub, stepName }); } catch (e) { console.error("[email/step]", e); }
+
+          if (recipientId) {
+            await prisma.notification.create({ data: { recipientId, message: msg, detail: sub.title, submissionId, type: "pending" } });
+          }
+          try {
+            await sendStepEmail({ role: nextRole, sub, stepName, specificMemberId });
+          } catch (e) { console.error("[email/step]", e); }
         }
       }
     }
