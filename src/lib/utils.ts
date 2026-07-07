@@ -16,8 +16,9 @@ export const FORM_LABELS: Record<FormType, string> = {
   B4:            "บ.4 — ลงนามอนุมัติวิทยานิพนธ์",
   THESIS:        "วิทยานิพนธ์ฉบับสมบูรณ์",
   SIGNED:        "แบบรายงานการเสนอผลงานทางวิชาการของนิสิต",
-  FINANCE_DOC:   "เอกสารการเงิน",
-  EXAM_RESULT:   "ใบรายงานผลการสอบวิทยานิพนธ์",
+  FINANCE_DOC:    "เอกสารการเงิน",
+  FINANCE_ATTACH: "เอกสารการเงินแนบกรรมการสอบ",
+  EXAM_RESULT:    "ใบรายงานผลการสอบวิทยานิพนธ์",
   INVITE_LETTER: "หนังสือเชิญกรรมการสอบ",
   VERY_GOOD_EVAL:"แบบประเมินวิทยานิพนธ์ดีมาก",
 };
@@ -90,8 +91,9 @@ export const FORM_SHORT: Record<FormType, string> = {
   B4:            "บ.4",
   THESIS:        "วิทยานิพนธ์",
   SIGNED:        "แบบรายงานฯ",
-  FINANCE_DOC:   "การเงิน",
-  EXAM_RESULT:   "ใบรายงานผล",
+  FINANCE_DOC:    "การเงิน",
+  FINANCE_ATTACH: "เอกสารการเงินแนบ",
+  EXAM_RESULT:    "ใบรายงานผล",
   INVITE_LETTER: "หนังสือเชิญ",
   VERY_GOOD_EVAL:"แบบประเมินดีมาก",
 };

@@ -1,6 +1,6 @@
 export type Role = "SUPER_ADMIN" | "ADMIN" | "STUDENT" | "PROFESSOR";
 
-export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED" | "FINANCE_DOC" | "EXAM_RESULT" | "INVITE_LETTER" | "VERY_GOOD_EVAL";
+export type FormType = "BW1A" | "BW1B" | "B1C" | "B1D" | "B2" | "B3" | "B4" | "THESIS" | "SIGNED" | "FINANCE_DOC" | "FINANCE_ATTACH" | "EXAM_RESULT" | "INVITE_LETTER" | "VERY_GOOD_EVAL";
 export type ProgramType = "PHD" | "ME_MECH" | "ME_CPS";
 export type SubmissionType = "PROPOSAL" | "THESIS_DEFENSE";
 export type StepStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";

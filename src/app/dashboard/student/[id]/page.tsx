@@ -22,11 +22,11 @@ type StepSuggestion = { forms: FormType[]; label: string; multiUpload?: boolean;
 // Per-type step suggestions — keyed by submissionType → stepOrder
 const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
   PROPOSAL: {
-    1: { forms: ["BW1A", "BW1B"], label: "บ.วศ.1ก (ที่อาจารย์ที่ปรึกษาลงนามแล้ว) + บ.วศ.1ข" },
+    1: { forms: ["BW1A", "BW1B", "FINANCE_ATTACH"], label: "บ.วศ.1ก + บ.วศ.1ข + เอกสารการเงินแนบกรรมการสอบ" },
     4: { forms: ["B1C", "B1D"], adminForms: ["FINANCE_DOC"], label: "บ.วศ.1ค + บ.วศ.1ง (กรอกข้อมูลครบถ้วน)" },
   },
   THESIS_DEFENSE: {
-    1:  { forms: ["B2", "B3"],     label: "บ.2 (ลายเซ็นนิสิต) + บ.3 (กรอกข้อมูลครบถ้วน)" },
+    1:  { forms: ["B2", "B3", "FINANCE_ATTACH"], label: "บ.2 + บ.3 + เอกสารการเงินแนบกรรมการสอบ" },
     9:  { forms: ["SIGNED"],       label: "แบบรายงานการเสนอผลงานฯ (กรอกข้อมูลและลงนามโดยนิสิต)" },
     16: { forms: ["B4", "THESIS"], label: "บ.4 (กรอกครบถ้วน) + วิทยานิพนธ์ฉบับสมบูรณ์ (จาก e-thesis พร้อม barcode)" },
   },
@@ -35,11 +35,11 @@ const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
 // Per-type submit button labels
 const SUBMIT_LABEL: Record<string, Record<number, string>> = {
   PROPOSAL: {
-    1: "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข",
+    1: "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข + เอกสารการเงิน",
     4: "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
   },
   THESIS_DEFENSE: {
-    1:  "ส่งเอกสาร บ.2 + บ.3",
+    1:  "ส่งเอกสาร บ.2 + บ.3 + เอกสารการเงิน",
     9:  "ส่งแบบรายงานฯ",
     16: "ส่ง บ.4 + วิทยานิพนธ์",
   },
@@ -47,14 +47,20 @@ const SUBMIT_LABEL: Record<string, Record<number, string>> = {
 
 // Non-SIGNED forms allowed for early upload per submission type
 const ALL_STUDENT_FORMS: Record<string, FormType[]> = {
-  PROPOSAL:       ["BW1A", "BW1B", "B1C", "B1D"],
-  THESIS_DEFENSE: ["B2", "B3", "B4", "THESIS"],
+  PROPOSAL:       ["BW1A", "BW1B", "FINANCE_ATTACH", "B1C", "B1D"],
+  THESIS_DEFENSE: ["B2", "B3", "FINANCE_ATTACH", "B4", "THESIS"],
 };
 
 // Warnings shown above the uploader — reminder of what must be done BEFORE uploading
+const FINANCE_ATTACH_TEMPLATE: Record<string, string> = {
+  PROPOSAL:       "/templates/finance-attach-proposal.docx",
+  THESIS_DEFENSE: "/templates/finance-attach-thesis.docx",
+};
+
 const FORM_UPLOAD_WARNINGS: Partial<Record<FormType, string>> = {
-  BW1A:  "กรอกข้อมูลให้ครบถ้วน และให้อาจารย์ที่ปรึกษาลงนามก่อนอัปโหลด",
-  BW1B:  "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
+  BW1A:           "กรอกข้อมูลให้ครบถ้วน และให้อาจารย์ที่ปรึกษาลงนามก่อนอัปโหลด",
+  BW1B:           "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
+  FINANCE_ATTACH: "ดาวน์โหลดแบบฟอร์ม กรอกข้อมูลให้ครบถ้วน แล้วอัปโหลดไฟล์ที่กรอกเสร็จแล้ว",
   B1C:   "กรอกข้อมูลให้ครบถ้วน — กรรมการจะลงนามผ่านระบบหลังอัปโหลด",
   B1D:   "กรอกข้อมูลให้ครบถ้วนก่อนอัปโหลด",
   B2:    "กรอกข้อมูลให้ครบถ้วนและลงนามโดยนิสิตก่อนอัปโหลด",
@@ -538,8 +544,19 @@ export default function StudentSubmissionDetail() {
                   const existing = effectiveUploads
                     .filter((u) => u.formType === ft)
                     .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0] ?? null;
+                  const templateUrl = ft === "FINANCE_ATTACH" ? FINANCE_ATTACH_TEMPLATE[subType] : null;
                   return (
                     <div key={`${ft}-${idx}`} className="space-y-1">
+                      {templateUrl && (
+                        <a
+                          href={templateUrl}
+                          download
+                          className="flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-2 hover:bg-blue-100 transition w-full"
+                        >
+                          <Upload className="w-3.5 h-3.5 shrink-0" />
+                          ดาวน์โหลดแบบฟอร์มเอกสารการเงินแนบกรรมการสอบ (.docx)
+                        </a>
+                      )}
                       {FORM_UPLOAD_WARNINGS[ft] && (
                         <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
