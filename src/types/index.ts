@@ -46,7 +46,7 @@ export interface MockWorkflowStep {
   committeeActions?: CommitteeAction[];
 }
 
-export type NotificationType = "pending" | "approved" | "rejected" | "info";
+export type NotificationType = "pending" | "approved" | "rejected" | "info" | "warning";
 
 export interface MockNotification {
   id: string;

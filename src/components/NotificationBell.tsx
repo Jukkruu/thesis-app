@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Bell, Clock, CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { Bell, Clock, CheckCircle2, XCircle, Info, AlertTriangle, X } from "lucide-react";
 import { MockNotification, NotificationType } from "@/types";
 
 function timeAgo(dateStr: string): string {
@@ -20,10 +20,11 @@ function timeAgo(dateStr: string): string {
 }
 
 const STYLES: Record<NotificationType, { bg: string; dot: string; icon: React.ReactNode }> = {
-  pending:  { bg: "bg-orange-50", dot: "bg-orange-400", icon: <Clock        className="w-4 h-4 text-orange-500" /> },
-  approved: { bg: "bg-green-50",  dot: "bg-green-500",  icon: <CheckCircle2 className="w-4 h-4 text-green-600" /> },
-  rejected: { bg: "bg-red-50",    dot: "bg-red-500",    icon: <XCircle      className="w-4 h-4 text-red-500"   /> },
-  info:     { bg: "bg-blue-50",   dot: "bg-blue-400",   icon: <Info         className="w-4 h-4 text-blue-500"  /> },
+  pending:  { bg: "bg-orange-50", dot: "bg-orange-400", icon: <Clock          className="w-4 h-4 text-orange-500" /> },
+  approved: { bg: "bg-green-50",  dot: "bg-green-500",  icon: <CheckCircle2   className="w-4 h-4 text-green-600" /> },
+  rejected: { bg: "bg-red-50",    dot: "bg-red-500",    icon: <XCircle        className="w-4 h-4 text-red-500"   /> },
+  info:     { bg: "bg-blue-50",   dot: "bg-blue-400",   icon: <Info           className="w-4 h-4 text-blue-500"  /> },
+  warning:  { bg: "bg-amber-50",  dot: "bg-amber-500",  icon: <AlertTriangle  className="w-4 h-4 text-amber-500" /> },
 };
 
 export function NotificationBell() {
