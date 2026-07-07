@@ -144,15 +144,15 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
 
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to:   ["outanagon2549@gmail.com"],
+      to:   [recipient.email],
       subject: `[ระบบจัดการวิทยานิพนธ์] ${stepName} — ${sub.title}`,
       html: buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink),
     });
 
     if (error) {
-      console.error(`[email/step] Resend error (intended: ${recipient.email}):`, JSON.stringify(error));
+      console.error(`[email/step] Resend error for ${recipient.email}:`, JSON.stringify(error));
     } else {
-      console.log(`[email/step] Sent to outanagon2549@gmail.com (intended: ${recipient.email})`);
+      console.log(`[email/step] Sent to ${recipient.email}`);
     }
   }
 }
@@ -225,6 +225,7 @@ export interface WelcomeEmailData {
   name: string;
   email: string;
   password: string;
+  role?: string;
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
@@ -238,12 +239,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
     where: { userId: data.userId, expiresAt: { lt: new Date() } },
   });
 
+  const redirectTo = ROLE_ROUTES[data.role as Role] ?? "/dashboard/student";
   const rawToken = randomBytes(32).toString("hex");
   await prisma.magicToken.create({
     data: {
       token: rawToken,
       userId: data.userId,
-      redirectTo: "/dashboard/student",
+      redirectTo,
       expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });
@@ -251,15 +253,15 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.email],
     subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
     html: buildWelcomeHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/welcome] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+    console.error(`[email/welcome] Resend error for ${data.email}:`, JSON.stringify(error));
   } else {
-    console.log(`[email/welcome] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+    console.log(`[email/welcome] Sent to ${data.email}`);
   }
 }
 
@@ -337,15 +339,15 @@ export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Pr
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.email],
     subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
     html: buildForgotPasswordHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/forgot-pw] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+    console.error(`[email/forgot-pw] Resend error for ${data.email}:`, JSON.stringify(error));
   } else {
-    console.log(`[email/forgot-pw] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+    console.log(`[email/forgot-pw] Sent to ${data.email}`);
   }
 }
 
@@ -548,15 +550,15 @@ export async function sendExamReminderEmail(data: ExamReminderEmailData): Promis
 
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.recipientEmail],
     subject,
     html: buildExamReminderHtml(data, magicLink),
   });
 
   if (error) {
-    console.error(`[email/exam-reminder] Resend error (intended: ${data.recipientEmail}):`, JSON.stringify(error));
+    console.error(`[email/exam-reminder] Resend error for ${data.recipientEmail}:`, JSON.stringify(error));
   } else {
-    console.log(`[email/exam-reminder] Sent to outanagon2549@gmail.com (intended: ${data.recipientEmail})`);
+    console.log(`[email/exam-reminder] Sent to ${data.recipientEmail}`);
   }
 }
 

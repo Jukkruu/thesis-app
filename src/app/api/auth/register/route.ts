@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await sendWelcomeEmail({ userId: user.id, name: user.name, email: user.email, password });
+  await sendWelcomeEmail({ userId: user.id, name: user.name, email: user.email, password, role });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
