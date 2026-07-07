@@ -35,13 +35,13 @@ const SUGGESTED_BY_STEP: Record<string, Record<number, StepSuggestion>> = {
 // Per-type submit button labels
 const SUBMIT_LABEL: Record<string, Record<number, string>> = {
   PROPOSAL: {
-    1: "ส่งเอกสาร บ.วศ.1ก + บ.วศ.1ข + เอกสารการเงิน",
-    4: "ส่งเอกสาร บ.วศ.1ค + บ.วศ.1ง",
+    1: "ส่งต่อ",
+    4: "ส่งต่อ",
   },
   THESIS_DEFENSE: {
-    1:  "ส่งเอกสาร บ.2 + บ.3 + เอกสารการเงิน",
-    9:  "ส่งแบบรายงานฯ",
-    16: "ส่ง บ.4 + วิทยานิพนธ์",
+    1:  "ส่งต่อ",
+    9:  "ส่งต่อ",
+    16: "ส่งต่อ",
   },
 };
 
