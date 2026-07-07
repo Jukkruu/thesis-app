@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const name: string = body.name ?? "";
   const email: string = body.email ?? "";
+  const role: string = body.role === "PROFESSOR" ? "PROFESSOR" : "STUDENT";
 
   if (!name.trim()) return NextResponse.json({ error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
   if (!email.trim()) return NextResponse.json({ error: "กรุณากรอกอีเมล" }, { status: 400 });
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     data: {
       name: name.trim(),
       email: normalizedEmail,
-      roles: ["STUDENT"],
+      roles: [role as any],
       passwordHash,
     },
   });

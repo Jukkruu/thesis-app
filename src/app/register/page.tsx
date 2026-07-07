@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, UserPlus, Mail, CheckCircle2, BookOpen, ArrowLeft, ShieldAlert } from "lucide-react";
+import { GraduationCap, UserPlus, Mail, CheckCircle2, BookOpen, ArrowLeft } from "lucide-react";
 
 type RoleChoice = "STUDENT" | "PROFESSOR" | null;
 
@@ -25,7 +25,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role }),
     });
 
     setSubmitting(false);
@@ -35,6 +35,11 @@ export default function RegisterPage() {
     const data = await res.json().catch(() => ({}));
     setError(data.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
   }
+
+  const isStudent = role === "STUDENT";
+  const accent = isStudent
+    ? { border: "border-blue-200", ring: "focus:ring-blue-500", text: "text-blue-600", label: "นิสิต (Student)", btn: "from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" }
+    : { border: "border-emerald-200", ring: "focus:ring-emerald-500", text: "text-emerald-600", label: "อาจารย์ / บุคลากร (Professor / Staff)", btn: "from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700" };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-gray-50 to-gray-50 flex flex-col items-center justify-center px-4 py-10">
@@ -87,17 +92,17 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Student: registration form */}
-        {role === "STUDENT" && !done && (
-          <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-6 space-y-5">
+        {/* Registration form */}
+        {role && !done && (
+          <div className={`bg-white rounded-2xl border ${accent.border} shadow-sm p-6 space-y-5`}>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => { setRole(null); setError(null); }}
+              <button type="button" onClick={() => { setRole(null); setError(null); setName(""); setEmail(""); }}
                 className="text-gray-400 hover:text-gray-600 transition">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
                 <h2 className="font-bold text-gray-800 text-xl">สร้างบัญชีใหม่</h2>
-                <p className="text-xs font-medium text-blue-600 mt-0.5">นิสิต (Student)</p>
+                <p className={`text-xs font-medium mt-0.5 ${accent.text}`}>{accent.label}</p>
               </div>
             </div>
 
@@ -110,7 +115,7 @@ export default function RegisterPage() {
                   type="text"
                   value={name}
                   onChange={(e) => { setName(e.target.value); setError(null); }}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 ${accent.ring}`}
                   placeholder="เช่น นายสมชาย ใจดี"
                   autoComplete="name"
                   autoFocus
@@ -126,7 +131,7 @@ export default function RegisterPage() {
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                    className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-base focus:outline-none focus:ring-2 ${accent.ring}`}
                     placeholder="your@email.com"
                     autoComplete="email"
                   />
@@ -138,7 +143,7 @@ export default function RegisterPage() {
               )}
 
               <button type="submit" disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition text-base shadow-sm disabled:opacity-60">
+                className={`w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r ${accent.btn} text-white font-semibold rounded-xl transition text-base shadow-sm disabled:opacity-60`}>
                 <UserPlus className="w-5 h-5" />
                 {submitting ? "กำลังสร้างบัญชี..." : "ลงทะเบียน"}
               </button>
@@ -148,8 +153,8 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Student: success */}
-        {role === "STUDENT" && done && (
+        {/* Success */}
+        {done && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -165,38 +170,6 @@ export default function RegisterPage() {
             <Link href="/login" className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
               ไปยังหน้าเข้าสู่ระบบ →
             </Link>
-          </div>
-        )}
-
-        {/* Professor: contact admin */}
-        {role === "PROFESSOR" && (
-          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setRole(null)}
-                className="text-gray-400 hover:text-gray-600 transition">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h2 className="font-bold text-gray-800 text-xl">สร้างบัญชีใหม่</h2>
-                <p className="text-xs font-medium text-emerald-600 mt-0.5">อาจารย์ / บุคลากร (Professor / Staff)</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-                <ShieldAlert className="w-7 h-7 text-amber-600" />
-              </div>
-              <div className="space-y-1.5">
-                <p className="font-semibold text-gray-800">บัญชีอาจารย์ต้องสร้างโดยผู้ดูแลระบบ</p>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  กรุณาติดต่อเจ้าหน้าที่ภาควิชา<br />เพื่อให้เพิ่มบัญชีผู้ใช้ให้ท่าน
-                </p>
-              </div>
-              <Link href="/login"
-                className="mt-1 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition">
-                ไปยังหน้าเข้าสู่ระบบ
-              </Link>
-            </div>
           </div>
         )}
 
