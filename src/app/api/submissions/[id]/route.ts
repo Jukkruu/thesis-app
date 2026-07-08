@@ -399,9 +399,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // not the user's DB role ("อาจารย์") which is the same for all faculty types.
     const stepRoleLabel = ROLE_LABELS[step.role as keyof typeof ROLE_LABELS] ?? step.role;
     const byLabel = stepRoleLabel;
-    const rejectionNote = body.notes
-      ? `ส่งกลับเพื่อแก้ไข — "${body.notes}"`
-      : `ส่งกลับโดย ${byLabel}`;
 
     const isPrivileged = userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r));
 
@@ -424,7 +421,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Mark current step REJECTED, stay on this step — student must fix and resubmit
     await prisma.workflowStep.update({
       where: { id: step.id },
-      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: rejectionNote },
+      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes?.trim() || null },
     });
     await prisma.submission.update({ where: { id }, data: { status: "REJECTED" } });
 
@@ -455,13 +452,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!prevStep) return NextResponse.json({ error: "ไม่สามารถส่งกลับได้ — นี่คือขั้นตอนแรก" }, { status: 400 });
 
     const byLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
-    const returnNote = body.notes
+    const notifyNote = body.notes
       ? `ส่งกลับโดย ${byLabel} — "${body.notes}"`
       : `ส่งกลับโดย ${byLabel}`;
 
     await prisma.workflowStep.update({
       where: { id: step.id },
-      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: returnNote },
+      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes?.trim() || null },
     });
     await prisma.workflowStep.update({
       where: { id: prevStep.id },
@@ -469,13 +466,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
 
-    await notifyRole(prevStep.role, sub, returnNote, "rejected");
+    await notifyRole(prevStep.role, sub, notifyNote, "rejected");
     try {
       const prevStepName = getStepName(prevStep.stepOrder, sub.submissionType) || ROLE_LABELS[prevStep.role as keyof typeof ROLE_LABELS];
       await sendStepEmail({ role: prevStep.role, sub, stepName: prevStepName });
     } catch (e) { console.error("[email/return_to_prev]", e); }
     await prisma.notification.create({
-      data: { recipientId: sub.studentId, message: returnNote, detail: sub.title, submissionId: id, type: "rejected" },
+      data: { recipientId: sub.studentId, message: notifyNote, detail: sub.title, submissionId: id, type: "rejected" },
     });
   }
 
