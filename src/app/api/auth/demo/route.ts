@@ -30,6 +30,10 @@ const DEMO_EMAILS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
+  if (process.env.DEMO_MODE !== "true") {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
+
   const { email } = await req.json().catch(() => ({}));
   if (!email || !DEMO_EMAILS.has(email)) {
     return NextResponse.json({ error: "Not a demo account" }, { status: 403 });

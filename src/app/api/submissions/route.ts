@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email";
@@ -116,8 +117,7 @@ export async function POST(req: NextRequest) {
       invitedCommitteeId = existing.id;
     } else {
       const tempPassword = randomBytes(8).toString("hex");
-      const { createHash } = await import("crypto");
-      const passwordHash = createHash("sha256").update(tempPassword).digest("hex");
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
       const created = await prisma.user.create({
         data: {
           email: data.invitedProfEmail,
