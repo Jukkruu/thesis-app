@@ -127,7 +127,7 @@ export default function ProfessorDashboard() {
                         {isPendingTab && currentStep && (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full">
                             <Clock className="w-3 h-3" />
-                            {ROLE_LABELS[currentStep.role] ?? currentStep.role}
+                            อาจารย์
                             {" — "}
                             {getStepName(currentStep.stepOrder, sub.submissionType) || `ขั้นที่ ${currentStep.stepOrder}`}
                           </span>
