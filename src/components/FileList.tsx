@@ -63,12 +63,14 @@ function buildGroups(uploads: MockUpload[]): Group[] {
   return groups;
 }
 
+const MAIN_FORM_TYPES = new Set<FormType>(["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS"]);
+
 interface Props {
   uploads: MockUpload[];
   submissionTitle: string;
   title?: string;
   compact?: boolean;
-  hideHistory?: boolean; // show only latest version per type, no history toggle
+  hideHistory?: boolean;
 }
 
 export function FileList({ uploads, submissionTitle, title = "เอกสารแนบ", compact = false, hideHistory = false }: Props) {
@@ -77,6 +79,8 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
   if (!uploads.length) return null;
 
   const groups = buildGroups(uploads);
+  const mainGroups  = groups.filter((g) => MAIN_FORM_TYPES.has(g.formType));
+  const otherGroups = groups.filter((g) => !MAIN_FORM_TYPES.has(g.formType));
 
   function toggle(key: string) {
     setOpenHistory((prev) => {
@@ -86,73 +90,85 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
     });
   }
 
-  return (
-    <div className={`bg-white rounded-2xl border border-gray-200 ${compact ? "p-4" : "p-5"} space-y-3`}>
-      <h2 className="font-semibold text-gray-800">{title}</h2>
-      <div className="space-y-2">
-        {groups.map(({ formType, latest, history }) => {
-          const key = `${formType}-${latest.id}`;
-          const isOpen = openHistory.has(key);
-          const label = fileLabel(formType, latest.fileName);
-          const desc  = fileDesc(formType);
-          const isSignedType = formType === "SIGNED";
+  function renderGroup({ formType, latest, history }: Group) {
+    const key = `${formType}-${latest.id}`;
+    const isOpen = openHistory.has(key);
+    const label = fileLabel(formType, latest.fileName);
+    const desc  = fileDesc(formType);
+    const isSignedType = formType === "SIGNED";
 
-          return (
-            <div key={key} className="rounded-xl border border-gray-100 overflow-hidden">
-              {/* Latest / primary row */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50">
-                <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-800 leading-snug truncate">{label}</p>
-                  {desc && <p className="text-xs text-gray-500 truncate">{desc}</p>}
-                  <p className="text-xs text-gray-400 truncate">
-                    {isSignedType
-                      ? `${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`
-                      : `${latest.fileName} · ${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => previewFile(latest.fileUrl, latest.fileName)}
-                  className="shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  ดูเอกสาร
-                </button>
-              </div>
+    return (
+      <div key={key} className="rounded-xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 bg-gray-50">
+          <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-800 leading-snug truncate">{label}</p>
+            {desc && <p className="text-xs text-gray-500 truncate">{desc}</p>}
+            <p className="text-xs text-gray-400 truncate">
+              {isSignedType
+                ? `${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`
+                : `${latest.fileName} · ${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`}
+            </p>
+          </div>
+          <button
+            onClick={() => previewFile(latest.fileUrl, latest.fileName)}
+            className="shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            ดูเอกสาร
+          </button>
+        </div>
 
-              {/* History */}
-              {!hideHistory && history.length > 0 && (
-                <>
-                  <button
-                    onClick={() => toggle(key)}
-                    className="w-full flex items-center gap-1.5 px-4 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition border-t border-gray-100"
-                  >
-                    <History className="w-3.5 h-3.5" />
-                    ประวัติ ({history.length} เวอร์ชันก่อนหน้า)
-                    {isOpen ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
-                  </button>
-                  {isOpen && (
-                    <div className="divide-y divide-gray-100 bg-white border-t border-gray-100">
-                      {history.map((u) => (
-                        <div key={u.id} className="flex items-center gap-3 px-4 py-2.5">
-                          <FileText className="w-3.5 h-3.5 text-gray-300 shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-gray-500 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
-                            <p className="text-xs text-gray-400">{formatDate(u.uploadedAt)}</p>
-                          </div>
-                          <button onClick={() => previewFile(u.fileUrl, u.fileName)}>
-                            <Eye className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
-                          </button>
-                        </div>
-                      ))}
+        {!hideHistory && history.length > 0 && (
+          <>
+            <button
+              onClick={() => toggle(key)}
+              className="w-full flex items-center gap-1.5 px-4 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition border-t border-gray-100"
+            >
+              <History className="w-3.5 h-3.5" />
+              ประวัติ ({history.length} เวอร์ชันก่อนหน้า)
+              {isOpen ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+            </button>
+            {isOpen && (
+              <div className="divide-y divide-gray-100 bg-white border-t border-gray-100">
+                {history.map((u) => (
+                  <div key={u.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <FileText className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-500 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
+                      <p className="text-xs text-gray-400">{formatDate(u.uploadedAt)}</p>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
+                    <button onClick={() => previewFile(u.fileUrl, u.fileName)}>
+                      <Eye className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
+    );
+  }
+
+  return (
+    <div className={`bg-white rounded-2xl border border-gray-200 ${compact ? "p-4" : "p-5"} space-y-4`}>
+      <h2 className="font-semibold text-gray-800">{title} ({uploads.length} ไฟล์)</h2>
+
+      {mainGroups.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">เอกสารหลัก</p>
+          {mainGroups.map(renderGroup)}
+        </div>
+      )}
+
+      {otherGroups.length > 0 && (
+        <div className="space-y-2">
+          {mainGroups.length > 0 && <div className="border-t border-gray-100" />}
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">เอกสารแนบอื่น ๆ</p>
+          {otherGroups.map(renderGroup)}
+        </div>
+      )}
     </div>
   );
 }
