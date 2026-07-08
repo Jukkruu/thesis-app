@@ -414,6 +414,8 @@ export interface FinanceEmailData {
   roomNeeded?: boolean;
   parkingNeeded?: boolean;
   carPlate?: string;
+  financeAttachUrl?: string;
+  financeAttachName?: string;
 }
 
 export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
@@ -430,7 +432,22 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     advisorName, headCommitteeName, committeeNames,
     invitedProfName, invitedProfAffiliation, invitedProfEmail, invitedProfPhone,
     examDate, examTime, roomNeeded, parkingNeeded, carPlate,
+    financeAttachUrl, financeAttachName,
   } = data;
+
+  // Fetch finance attachment file if available
+  let attachments: { filename: string; content: Buffer }[] | undefined;
+  if (financeAttachUrl) {
+    try {
+      const res = await fetch(financeAttachUrl);
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer();
+        attachments = [{ filename: financeAttachName ?? "finance_attachment.pdf", content: Buffer.from(arrayBuffer) }];
+      }
+    } catch (e) {
+      console.warn("[email/finance] Could not fetch finance attachment:", e);
+    }
+  }
 
   const committeeRows = [
     headCommitteeName ? `<tr><td style="padding:10px 14px;font-weight:600;color:#6b7280;width:40%;">ประธานกรรมการสอบ</td><td style="padding:10px 14px;color:#111827;">${escapeHtml(headCommitteeName)}</td></tr>` : "",
@@ -444,6 +461,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
     to: [financeEmail],
     subject: `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${escapeHtml(studentName)}`,
+    ...(attachments ? { attachments } : {}),
     html: `
       <div style="font-family:'Sarabun',sans-serif;max-width:640px;margin:0 auto;padding:24px;">
         <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">

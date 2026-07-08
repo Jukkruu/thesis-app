@@ -294,13 +294,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "PROPOSAL") {
       try {
         const invitedId = (sub as any).invitedCommitteeId as string | null | undefined;
-        const [advisorUser, headUser, committeeUsers, invitedUser] = await Promise.all([
+        const [advisorUser, headUser, committeeUsers, invitedUser, financeAttach] = await Promise.all([
           sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
           sub.headCommitteeId ? prisma.user.findUnique({ where: { id: sub.headCommitteeId }, select: { name: true } }) : null,
           (sub.committeeIds as string[] | undefined)?.length
             ? prisma.user.findMany({ where: { id: { in: sub.committeeIds as string[] } }, select: { name: true } })
             : Promise.resolve([]),
           invitedId ? prisma.user.findUnique({ where: { id: invitedId }, select: { name: true, email: true } }) : null,
+          prisma.formUpload.findFirst({ where: { submissionId: id, formType: "FINANCE_ATTACH" }, orderBy: { uploadedAt: "desc" }, select: { fileUrl: true, fileName: true } }),
         ]);
         await sendFinanceEmail({
           studentName: sub.studentFullName ?? sub.studentId ?? "-",
@@ -322,6 +323,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           roomNeeded: (sub as any).roomNeeded,
           parkingNeeded: (sub as any).parkingNeeded,
           carPlate: (sub as any).carPlate,
+          financeAttachUrl: financeAttach?.fileUrl ?? undefined,
+          financeAttachName: financeAttach?.fileName ?? undefined,
         });
         // Notify all admins that finance email was sent
         const adminUsers = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
