@@ -548,39 +548,43 @@ export default function AdminSubmissionDetail() {
             {/* Committee */}
             {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
               <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการ</div>
-              <div className="space-y-2">
-                {advisor && <AdminInfoRow label="อาจารย์ที่ปรึกษา" value={advisor.name} />}
-                {sub.headCommitteeId && (
-                  <AdminInfoRow label="ประธานกรรมการสอบ" value={allUsers.find((u) => u.id === sub.headCommitteeId)?.name ?? sub.headCommitteeId!} />
-                )}
-                {(sub.coAdvisorIds?.length ?? 0) > 0 && (
-                  <AdminInfoRow
-                    label="อาจารย์ที่ปรึกษาร่วม"
-                    value={(sub.coAdvisorIds ?? []).map((uid: string) => allUsers.find((u) => u.id === uid)?.name ?? uid).join(", ")}
-                  />
-                )}
-                {(sub.committeeIds?.length ?? 0) > 0 && (
-                  <div className="flex gap-4">
-                    <p className="text-xs text-gray-400 w-32 shrink-0 pt-0.5">กรรมการสอบ</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(sub.committeeIds ?? []).map((uid: string) => (
-                        <span key={uid} className="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-lg">
-                          {allUsers.find((u) => u.id === uid)?.name ?? uid}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการและผู้เกี่ยวข้อง</div>
+              <div className="space-y-1.5">
+                {([
+                  { label: "อาจารย์ที่ปรึกษา",  ids: sub.advisorId ? [sub.advisorId] : [] },
+                  { label: "อาจารย์ที่ปรึกษาร่วม", ids: sub.coAdvisorIds ?? [] },
+                  { label: "ประธานหลักสูตร",     ids: (sub as any).programChairId ? [(sub as any).programChairId] : [] },
+                  { label: "ประธานกรรมการสอบ",  ids: sub.headCommitteeId ? [sub.headCommitteeId] : [] },
+                  { label: "กรรมการสอบ",         ids: sub.committeeIds ?? [] },
+                ] as { label: string; ids: string[] }[]).flatMap(({ label, ids }) =>
+                  ids.map((uid, i) => {
+                    const u = allUsers.find((x) => x.id === uid);
+                    return (
+                      <div key={`${label}-${uid}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1 border-b border-gray-50 last:border-0">
+                        <p className="text-xs text-gray-400 w-32 shrink-0">{ids.length > 1 ? `${label} ${i + 1}` : label}</p>
+                        <p className="text-sm font-medium text-gray-800">{u?.name ?? uid}</p>
+                        {u?.email && (
+                          <a href={`mailto:${u.email}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline">
+                            {u.email}
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
                 {(sub.invitedProfName || sub.invitedCommitteeId) && (
-                  <div className="space-y-2 pt-1">
-                    <AdminInfoRow
-                      label="กรรมการภายนอก"
-                      value={sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId!}
-                    />
-                    {sub.invitedProfAffiliation && <AdminInfoRow label="สังกัด" value={sub.invitedProfAffiliation} />}
-                    {sub.invitedProfEmail && <AdminInfoRow label="อีเมลกรรมการภายนอก" value={sub.invitedProfEmail} />}
-                    {sub.invitedProfPhone && <AdminInfoRow label="เบอร์โทรกรรมการภายนอก" value={sub.invitedProfPhone} />}
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1">
+                    <p className="text-xs text-gray-400 w-32 shrink-0">กรรมการภายนอก</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}
+                      {sub.invitedProfAffiliation && <span className="text-gray-400 font-normal"> · {sub.invitedProfAffiliation}</span>}
+                    </p>
+                    {sub.invitedProfEmail && (
+                      <a href={`mailto:${sub.invitedProfEmail}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline">
+                        {sub.invitedProfEmail}
+                      </a>
+                    )}
+                    {sub.invitedProfPhone && <span className="text-xs text-gray-500">📞 {sub.invitedProfPhone}</span>}
                   </div>
                 )}
               </div>

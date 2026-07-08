@@ -223,11 +223,11 @@ function buildHtml(
         <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
       </div>
 
-      <p style="color:#374151;font-size:16px;">เรียน ${rName} <span style="color:#6b7280;font-size:14px;">(${rLabel})</span>,</p>
-      <p style="color:#374151;">ขณะนี้ถึงขั้นตอนที่ต้องการการดำเนินการจากท่าน กรุณาคลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบและดำเนินการได้ทันที</p>
+      <p style="color:#374151;font-size:16px;">เรียน ${rName} <span style="color:#6b7280;font-size:14px;">(${rLabel})</span></p>
+      <p style="color:#374151;">ด้วยคำร้องวิทยานิพนธ์ของนิสิตตามรายละเอียดด้านล่าง ได้ดำเนินมาถึงขั้นตอนที่ต้องได้รับการพิจารณาดำเนินการจากท่าน จึงใคร่ขอความอนุเคราะห์ท่านเข้าสู่ระบบเพื่อดำเนินการในส่วนที่เกี่ยวข้อง</p>
 
       <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
-        <p style="margin:0 0 4px;font-weight:700;color:#1e40af;font-size:13px;">ขั้นตอนที่ต้องดำเนินการ</p>
+        <p style="margin:0 0 4px;font-weight:700;color:#1e40af;font-size:13px;">ขั้นตอนที่ขอความอนุเคราะห์ดำเนินการ</p>
         <p style="margin:0;color:#1d4ed8;font-size:16px;font-weight:600;">${sName}</p>
       </div>
 
@@ -254,9 +254,12 @@ function buildHtml(
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
       </div>
 
+      <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการ และขอขอบพระคุณมา ณ โอกาสนี้</p>
+      <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
+
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
-        อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
-        กรุณาอย่าตอบกลับอีเมลนี้
+        อีเมลฉบับนี้ส่งจากระบบจัดการวิทยานิพนธ์โดยอัตโนมัติ กรุณาอย่าตอบกลับ<br>
+        หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ภาควิชาวิศวกรรมเครื่องกล
       </p>
     </div>
   `;
@@ -286,13 +289,13 @@ function buildRejectedHtml(
         <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
       </div>
 
-      <p style="color:#374151;font-size:16px;">เรียน ${rName} <span style="color:#6b7280;font-size:14px;">(${rLabel})</span>,</p>
-      <p style="color:#374151;">คำร้องวิทยานิพนธ์ของท่านถูกปฏิเสธในขั้นตอน <strong>${sName}</strong> กรุณาแก้ไขและยื่นใหม่</p>
+      <p style="color:#374151;font-size:16px;">เรียน ${rName} <span style="color:#6b7280;font-size:14px;">(${rLabel})</span></p>
+      <p style="color:#374151;">ขอเรียนแจ้งให้ทราบว่า คำร้องวิทยานิพนธ์ของท่านไม่ผ่านการพิจารณาในขั้นตอน <strong>${sName}</strong> จึงใคร่ขอให้ท่านตรวจสอบและแก้ไขเอกสารตามข้อเสนอแนะด้านล่าง แล้วยื่นคำร้องใหม่ผ่านระบบอีกครั้ง</p>
 
       <div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
-        <p style="margin:0 0 4px;font-weight:700;color:#b91c1c;font-size:13px;">ขั้นตอนที่ถูกปฏิเสธ</p>
+        <p style="margin:0 0 4px;font-weight:700;color:#b91c1c;font-size:13px;">ขั้นตอนที่ไม่ผ่านการพิจารณา</p>
         <p style="margin:0;color:#dc2626;font-size:16px;font-weight:600;">${sName}</p>
-        ${note ? `<p style="margin:8px 0 0;color:#7f1d1d;font-size:14px;">เหตุผล: ${note}</p>` : ""}
+        ${note ? `<p style="margin:8px 0 0;color:#7f1d1d;font-size:14px;">ข้อเสนอแนะ: ${note}</p>` : ""}
       </div>
 
       <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:15px;">
@@ -317,6 +320,9 @@ function buildRejectedHtml(
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
       </div>
+
+      <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดทราบและดำเนินการแก้ไข</p>
+      <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
         อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
@@ -377,11 +383,11 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
         <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
       </div>
 
-      <p style="color:#374151;font-size:16px;">ยินดีต้อนรับ ${rName}!</p>
-      <p style="color:#374151;">บัญชีของคุณในระบบจัดการวิทยานิพนธ์ถูกสร้างเรียบร้อยแล้ว กรุณาบันทึกข้อมูลด้านล่างเพื่อใช้เข้าสู่ระบบในครั้งถัดไป</p>
+      <p style="color:#374151;font-size:16px;">เรียน ${rName}</p>
+      <p style="color:#374151;">ระบบจัดการวิทยานิพนธ์ได้สร้างบัญชีผู้ใช้งานสำหรับท่านเรียบร้อยแล้ว กรุณาเก็บรักษาข้อมูลด้านล่างไว้สำหรับการเข้าสู่ระบบในครั้งถัดไป</p>
 
       <div style="background:#f0fdf4;border-left:4px solid #22c55e;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
-        <p style="margin:0 0 8px;font-weight:700;color:#166534;font-size:13px;">ข้อมูลบัญชีของคุณ</p>
+        <p style="margin:0 0 8px;font-weight:700;color:#166534;font-size:13px;">ข้อมูลบัญชีของท่าน</p>
         <p style="margin:0 0 6px;color:#374151;font-size:15px;"><strong>อีเมล:</strong> ${rEmail}</p>
         <p style="margin:0;color:#374151;font-size:15px;"><strong>รหัสผ่าน:</strong> <code style="background:#e5e7eb;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;letter-spacing:0.05em;">${rPass}</code></p>
       </div>
@@ -396,6 +402,8 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
           หลังจากนั้นให้ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ
         </p>
       </div>
+
+      <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
         อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
@@ -456,8 +464,8 @@ function buildForgotPasswordHtml(name: string, email: string, password: string, 
         <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
       </div>
 
-      <p style="color:#374151;font-size:16px;">เรียน ${rName},</p>
-      <p style="color:#374151;">มีการขอรีเซ็ตรหัสผ่านสำหรับบัญชีของคุณ รหัสผ่านใหม่ของคุณคือ:</p>
+      <p style="color:#374151;font-size:16px;">เรียน ${rName}</p>
+      <p style="color:#374151;">ตามที่ท่านได้แจ้งขอรีเซ็ตรหัสผ่านสำหรับบัญชีผู้ใช้งานระบบจัดการวิทยานิพนธ์ ระบบได้ออกรหัสผ่านใหม่ให้ท่านเรียบร้อยแล้ว ดังนี้</p>
 
       <div style="background:#fefce8;border-left:4px solid #eab308;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
         <p style="margin:0 0 8px;font-weight:700;color:#713f12;font-size:13px;">รหัสผ่านใหม่</p>
@@ -600,6 +608,9 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
         </table>
 
         <p style="color:#6b7280;font-size:12px;margin-top:8px;">รหัสคำร้อง: ${escapeHtml(submissionId)}</p>
+
+        <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดทราบและดำเนินการในส่วนที่เกี่ยวข้อง</p>
+        <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
 
         <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
           อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
