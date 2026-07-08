@@ -152,15 +152,15 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
       : buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink);
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to:   ["outanagon2549@gmail.com"],
+      to:   [recipient.email],
       subject,
       html,
     });
 
     if (error) {
-      console.error(`[email/step] Resend error (intended: ${recipient.email}):`, JSON.stringify(error));
+      console.error(`[email/step] Resend error (${recipient.email}):`, JSON.stringify(error));
     } else {
-      console.log(`[email/step] Sent to outanagon2549@gmail.com (intended: ${recipient.email})`);
+      console.log(`[email/step] Sent to ${recipient.email}`);
     }
   }
 }
@@ -325,15 +325,15 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.email],
     subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
     html: buildWelcomeHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/welcome] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+    console.error(`[email/welcome] Resend error (${data.email}):`, JSON.stringify(error));
   } else {
-    console.log(`[email/welcome] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+    console.log(`[email/welcome] Sent to ${data.email}`);
   }
 }
 
@@ -411,15 +411,15 @@ export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Pr
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.email],
     subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
     html: buildForgotPasswordHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/forgot-pw] Resend error (intended: ${data.email}):`, JSON.stringify(error));
+    console.error(`[email/forgot-pw] Resend error (${data.email}):`, JSON.stringify(error));
   } else {
-    console.log(`[email/forgot-pw] Sent to outanagon2549@gmail.com (intended: ${data.email})`);
+    console.log(`[email/forgot-pw] Sent to ${data.email}`);
   }
 }
 
@@ -498,7 +498,11 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     return;
   }
 
-  const financeEmail = process.env.FINANCE_EMAIL ?? "outanagon2549@gmail.com";
+  const financeEmail = process.env.FINANCE_EMAIL;
+  if (!financeEmail) {
+    console.warn("[email/finance] FINANCE_EMAIL env var not set — skipping");
+    return;
+  }
   const {
     studentName, studentCode, studentEmail, studentPhone,
     program, thesisTitle, submissionId,
@@ -641,15 +645,15 @@ export async function sendExamReminderEmail(data: ExamReminderEmailData): Promis
 
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: ["outanagon2549@gmail.com"],
+    to: [data.recipientEmail],
     subject,
     html: buildExamReminderHtml(data, magicLink),
   });
 
   if (error) {
-    console.error(`[email/exam-reminder] Resend error (intended: ${data.recipientEmail}):`, JSON.stringify(error));
+    console.error(`[email/exam-reminder] Resend error (${data.recipientEmail}):`, JSON.stringify(error));
   } else {
-    console.log(`[email/exam-reminder] Sent to outanagon2549@gmail.com (intended: ${data.recipientEmail})`);
+    console.log(`[email/exam-reminder] Sent to ${data.recipientEmail}`);
   }
 }
 
