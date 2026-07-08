@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, submissions, needsMyAction } = useApp();
@@ -41,6 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-sm font-medium text-blue-600 mt-0.5">{user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <LanguageToggle />
           <NotificationBell />
           <button
             onClick={() => setSidebarOpen(false)}
@@ -131,6 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="font-bold text-gray-900 text-sm truncate">ระบบจัดการวิทยานิพนธ์</p>
           <p className="text-xs text-blue-600 font-medium">{user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}</p>
         </div>
+        <LanguageToggle />
         <NotificationBell />
         {pendingCount > 0 && (
           <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
