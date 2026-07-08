@@ -40,7 +40,9 @@ function resolveAssignees(
       return name ? [{ id: sub.invitedCommitteeId ?? "ext", name }] : [];
     }
     case "PROGRAM_CHAIR": {
-      const u = users.find((u) => (u as any).isProgramChair === true);
+      const u = (sub as any).programChairId
+        ? find((sub as any).programChairId)
+        : users.find((u) => (u as any).isProgramChair === true);
       return u ? [{ id: u.id, name: u.name }] : [];
     }
     case "ADMIN": {

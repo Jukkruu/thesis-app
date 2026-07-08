@@ -1,216 +1,41 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
-import { PROGRAM_LABELS } from "@/lib/utils";
-import { MockUser, ProgramType, SubmissionType } from "@/types";
-import { ArrowLeft, User, Users, CalendarDays, Info, Search, X, Check, ChevronDown, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
+import { PROGRAM_LABELS, ROLE_LABELS } from "@/lib/utils";
+import { ProgramType, SubmissionType } from "@/types";
+import { ArrowLeft, User, Users, CalendarDays, Info, X, Plus, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
-// ─── Searchable single-select ─────────────────────────────────────────────────
+// ─── Committee person entry ───────────────────────────────────────────────────
 
-function SearchableSelect({
-  options, value, onChange, placeholder,
-}: {
-  options: MockUser[];
-  value: string;
-  onChange: (id: string) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen]   = useState(false);
-  const [query, setQuery] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
+const PERSON_ROLES = [
+  "ADVISOR",
+  "CO_ADVISOR",
+  "HEAD_EXAM_COMMITTEE",
+  "EXAM_COMMITTEE",
+  "INVITED_EXAM_COMMITTEE",
+  "PROGRAM_CHAIR",
+] as const;
 
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
-
-  const selected = options.find((o) => o.id === value);
-  const filtered = options.filter((o) =>
-    !query || o.name.toLowerCase().includes(query.toLowerCase())
-  );
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => { setOpen((v) => !v); setQuery(""); }}
-        className="w-full flex items-center justify-between border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-      >
-        <span className={selected ? "text-gray-900" : "text-gray-400"}>
-          {selected ? selected.name : placeholder}
-        </span>
-        <div className="flex items-center gap-1 shrink-0">
-          {selected && (
-            <span
-              role="button"
-              onClick={(e) => { e.stopPropagation(); onChange(""); }}
-              className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-            >
-              <X className="w-3.5 h-3.5" />
-            </span>
-          )}
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
-        </div>
-      </button>
-
-      {open && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg">
-              <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="ค้นหาชื่ออาจารย์..."
-                className="flex-1 text-sm bg-transparent focus:outline-none"
-              />
-            </div>
-          </div>
-          <ul className="max-h-48 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-gray-400 text-center">
-                {options.length === 0
-                  ? "ยังไม่มีข้อมูลในระบบ — กรุณาติดต่อผู้ดูแลระบบ"
-                  : "ไม่พบชื่อที่ค้นหา"}
-              </li>
-            ) : (
-              filtered.map((o) => (
-                <li key={o.id}>
-                  <button
-                    type="button"
-                    onClick={() => { onChange(o.id); setOpen(false); setQuery(""); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 flex items-center justify-between ${
-                      o.id === value ? "text-blue-700 bg-blue-50 font-medium" : "text-gray-800"
-                    }`}
-                  >
-                    {o.name}
-                    {o.id === value && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
+interface Person {
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
 }
 
-// ─── Multi-select chip picker ─────────────────────────────────────────────────
+const emptyPerson = (role = ""): Person => ({ name: "", email: "", role, phone: "" });
 
-function MultiPicker({
-  options, selected, onChange, placeholder,
-}: {
-  options: MockUser[];
-  selected: string[];
-  onChange: (ids: string[]) => void;
-  placeholder: string;
-}) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen]   = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
-
-  const unselected = options.filter(
-    (o) => !selected.includes(o.id) &&
-      (!query || o.name.toLowerCase().includes(query.toLowerCase()))
-  );
-
-  function add(id: string) {
-    onChange([...selected, id]);
-    setQuery("");
-  }
-  function remove(id: string) {
-    onChange(selected.filter((s) => s !== id));
-  }
-
-  return (
-    <div ref={ref}>
-      {/* Selected chips */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {selected.map((id) => {
-            const prof = options.find((o) => o.id === id);
-            return (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full"
-              >
-                {prof?.name ?? id}
-                <button
-                  type="button"
-                  onClick={() => remove(id)}
-                  className="ml-0.5 text-blue-500 hover:text-blue-700"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Search input */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="w-full flex items-center gap-2 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-        >
-          <Search className="w-4 h-4 text-gray-400 shrink-0" />
-          <input
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-            onFocus={() => setOpen(true)}
-            placeholder={selected.length ? `เพิ่มกรรมการสอบ... (เลือกแล้ว ${selected.length} คน)` : placeholder}
-            className="flex-1 bg-transparent focus:outline-none text-gray-700 placeholder-gray-400"
-          />
-        </button>
-
-        {/* Dropdown */}
-        {open && unselected.length > 0 && (
-          <ul className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto py-1">
-            {unselected.map((o) => (
-              <li key={o.id}>
-                <button
-                  type="button"
-                  onClick={() => { add(o.id); }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700"
-                >
-                  {o.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {open && unselected.length === 0 && query && (
-          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-sm py-3 text-sm text-gray-400 text-center">
-            ไม่พบชื่อที่ค้นหา
-          </div>
-        )}
-        {open && unselected.length === 0 && !query && selected.length === options.length && (
-          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-sm py-3 text-sm text-gray-400 text-center">
-            เลือกครบทุกคนแล้ว
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// One row per required role so the student sees exactly what must be filled in.
+const initialPeople = (): Person[] => [
+  emptyPerson("ADVISOR"),
+  emptyPerson("PROGRAM_CHAIR"),
+  emptyPerson("HEAD_EXAM_COMMITTEE"),
+  emptyPerson("EXAM_COMMITTEE"),
+  emptyPerson("INVITED_EXAM_COMMITTEE"),
+];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -227,83 +52,89 @@ export default function NewSubmissionPage() {
     ? "คำร้องขอสอบโครงร่างวิทยานิพนธ์ (บ.วศ.1ก / บ.วศ.1ข / บ.วศ.1ค / บ.วศ.1ง)"
     : "คำร้องขอสอบวิทยานิพนธ์ (บ.2 / บ.3 / บ.4)";
 
-  const { createSubmission, users } = useApp();
+  const { createSubmission } = useApp();
 
-  const advisors       = users.filter((u) => u.roles.includes("PROFESSOR"));
-  const headCandidates = users.filter((u) => u.roles.includes("PROFESSOR"));
-  const committees     = users.filter((u) => u.roles.includes("PROFESSOR"));
+  const [title,           setTitle]           = useState("");
+  const [studentFullName, setStudentFullName] = useState("");
+  const [studentCode,     setStudentCode]     = useState("");
+  const [program,         setProgram]         = useState<ProgramType | "">("");
+  const [studentEmail,    setStudentEmail]    = useState("");
+  const [studentPhone,    setStudentPhone]    = useState("");
+  const [people,          setPeople]          = useState<Person[]>(initialPeople);
+  const [examDate,        setExamDate]        = useState("");
+  const [examTime,        setExamTime]        = useState("");
+  const [roomNeeded,      setRoomNeeded]      = useState(false);
+  const [parkingNeeded,   setParkingNeeded]   = useState(false);
+  const [carPlate,        setCarPlate]        = useState("");
+  const [error,           setError]           = useState<string | null>(null);
+  const [confirmed,       setConfirmed]       = useState(false);
+  const [submitting,      setSubmitting]      = useState(false);
 
-  const [title,              setTitle]              = useState("");
-  const [advisorId,          setAdvisorId]          = useState("");
-  const [studentFullName,    setStudentFullName]    = useState("");
-  const [studentCode,        setStudentCode]        = useState("");
-  const [program,            setProgram]            = useState<ProgramType | "">("");
-  const [studentEmail,       setStudentEmail]       = useState("");
-  const [studentPhone,       setStudentPhone]       = useState("");
-  const [headCommitteeId,    setHeadCommitteeId]    = useState("");
-  const [committeeIds,       setCommitteeIds]       = useState<string[]>([]);
-  const [coAdvisorIds,       setCoAdvisorIds]       = useState<string[]>([]);
-  const [invitedProfName,    setInvitedProfName]    = useState("");
-  const [invitedProfAffil,   setInvitedProfAffil]   = useState("");
-  const [invitedProfEmail,   setInvitedProfEmail]   = useState("");
-  const [invitedProfPhone,   setInvitedProfPhone]   = useState("");
-  const [examDate,           setExamDate]           = useState("");
-  const [examTime,           setExamTime]           = useState("");
-  const [roomNeeded,         setRoomNeeded]         = useState(false);
-  const [parkingNeeded,      setParkingNeeded]      = useState(false);
-  const [carPlate,           setCarPlate]           = useState("");
-  const [error,              setError]              = useState<string | null>(null);
-  const [confirmed,          setConfirmed]          = useState(false);
-  const [submitting,         setSubmitting]         = useState(false);
+  const chairCount = people.filter((p) => p.role === "PROGRAM_CHAIR").length;
 
-  // coAdvisors must come after advisorId state is declared to avoid TDZ
-  const coAdvisors = users.filter((u) => u.roles.includes("PROFESSOR") && u.id !== advisorId);
+  function updatePerson(index: number, patch: Partial<Person>) {
+    setPeople((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+    setError(null);
+  }
+  function addPerson() {
+    setPeople((prev) => [...prev, emptyPerson("EXAM_COMMITTEE")]);
+  }
+  function removePerson(index: number) {
+    setPeople((prev) => prev.filter((_, i) => i !== index));
+    setError(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim())              { setError("กรุณาระบุชื่อหัวข้อ");                         return; }
-    if (!studentFullName.trim())    { setError("กรุณาระบุชื่อ-นามสกุล");                       return; }
-    if (!studentCode.trim())        { setError("กรุณาระบุรหัสนิสิต");                          return; }
-    if (!program)                   { setError("กรุณาเลือกหลักสูตร");                           return; }
-    if (!studentEmail.trim())       { setError("กรุณาระบุอีเมล");                              return; }
-    if (!advisorId)                 { setError("กรุณาเลือกอาจารย์ที่ปรึกษา");                  return; }
-    if (!headCommitteeId)           { setError("กรุณาเลือกประธานกรรมการสอบ");                  return; }
-    if (!committeeIds.length)       { setError("กรุณาเลือกกรรมการสอบอย่างน้อย 1 คน");          return; }
-    if (!examDate.trim())           { setError("กรุณาระบุวันที่สอบ");                          return; }
-    if (!examTime.trim())           { setError("กรุณาระบุเวลาสอบ");                            return; }
-    if (!invitedProfName.trim())    { setError("กรุณาระบุชื่อ-นามสกุลกรรมการภายนอก");          return; }
-    if (!invitedProfAffil.trim())   { setError("กรุณาระบุสังกัดกรรมการภายนอก");                return; }
-    if (!invitedProfEmail.trim())   { setError("กรุณาระบุอีเมลกรรมการภายนอก");                 return; }
-    if (parkingNeeded && !carPlate.trim()) { setError("กรุณาระบุเลขทะเบียนรถ");                return; }
+    if (!title.trim())           { setError("กรุณาระบุชื่อหัวข้อ");     return; }
+    if (!studentFullName.trim()) { setError("กรุณาระบุชื่อ-นามสกุล");   return; }
+    if (!studentCode.trim())     { setError("กรุณาระบุรหัสนิสิต");      return; }
+    if (!program)                { setError("กรุณาเลือกหลักสูตร");       return; }
+    if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");          return; }
+
+    for (const [i, p] of people.entries()) {
+      if (!p.name.trim())  { setError(`กรุณาระบุชื่อ-นามสกุลของบุคคลที่ ${i + 1}`); return; }
+      if (!p.email.trim()) { setError(`กรุณาระบุอีเมลของบุคคลที่ ${i + 1}`);        return; }
+      if (!p.role)         { setError(`กรุณาเลือกบทบาทของบุคคลที่ ${i + 1}`);       return; }
+    }
+    const count = (r: string) => people.filter((p) => p.role === r).length;
+    if (count("PROGRAM_CHAIR") !== 1)          { setError("ต้องระบุประธานหลักสูตร 1 คน (เพิ่มได้เพียง 1 คนเท่านั้น)"); return; }
+    if (count("ADVISOR") !== 1)                { setError("ต้องระบุอาจารย์ที่ปรึกษา 1 คน");        return; }
+    if (count("HEAD_EXAM_COMMITTEE") !== 1)    { setError("ต้องระบุประธานกรรมการสอบ 1 คน");        return; }
+    if (count("EXAM_COMMITTEE") < 1)           { setError("ต้องระบุกรรมการสอบอย่างน้อย 1 คน");     return; }
+    if (count("INVITED_EXAM_COMMITTEE") !== 1) { setError("ต้องระบุกรรมการภายนอก 1 คน");           return; }
+
+    if (!examDate.trim()) { setError("กรุณาระบุวันที่สอบ"); return; }
+    if (!examTime.trim()) { setError("กรุณาระบุเวลาสอบ");   return; }
+    if (parkingNeeded && !carPlate.trim()) { setError("กรุณาระบุเลขทะเบียนรถ"); return; }
+
     setError(null);
     setSubmitting(true);
     try {
       const data: SubmissionFormData = {
         title: title.trim(),
         submissionType,
-        advisorId,
         studentFullName: studentFullName.trim(),
         studentCode: studentCode.trim(),
         program: program as ProgramType,
         studentEmail: studentEmail.trim(),
         studentPhone: studentPhone.trim(),
-        headCommitteeId:      headCommitteeId || undefined,
-        committeeIds:         committeeIds.length ? committeeIds : undefined,
-        coAdvisorIds:         coAdvisorIds.length ? coAdvisorIds : undefined,
-        invitedProfName:      invitedProfName.trim() || undefined,
-        invitedProfAffiliation: invitedProfAffil.trim() || undefined,
-        invitedProfEmail:     invitedProfEmail.trim() || undefined,
-        invitedProfPhone:     invitedProfPhone.trim() || undefined,
-        examDate:     examDate || undefined,
-        examTime:     examTime || undefined,
+        people: people.map((p) => ({
+          name: p.name.trim(),
+          email: p.email.trim(),
+          role: p.role,
+          phone: p.phone.trim() || undefined,
+        })),
+        examDate: examDate || undefined,
+        examTime: examTime || undefined,
         roomNeeded,
         parkingNeeded,
         carPlate: parkingNeeded ? carPlate.trim() : undefined,
       };
       const sub = await createSubmission(data);
       router.push(`/dashboard/student/${sub.id}`);
-    } catch {
-      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
       setSubmitting(false);
     }
   }
@@ -369,87 +200,90 @@ export default function NewSubmissionPage() {
           </div>
         </Section>
 
-        {/* ── คณะกรรมการสอบ ── */}
-        <Section icon={<Users className="w-4 h-4" />} title="คณะกรรมการสอบ">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="อาจารย์ที่ปรึกษา" required>
-              <SearchableSelect
-                options={advisors}
-                value={advisorId}
-                onChange={(id) => { setAdvisorId(id); setError(null); }}
-                placeholder="ค้นหาอาจารย์ที่ปรึกษา..."
-              />
-            </Field>
-            <Field label="ประธานกรรมการสอบ" required>
-              <SearchableSelect
-                options={headCandidates}
-                value={headCommitteeId}
-                onChange={setHeadCommitteeId}
-                placeholder="ค้นหาประธานกรรมการสอบ..."
-              />
-            </Field>
+        {/* ── ผู้รับผิดชอบวิทยานิพนธ์ ── */}
+        <Section icon={<Users className="w-4 h-4" />} title="ผู้รับผิดชอบวิทยานิพนธ์">
+          <div className="text-xs text-gray-500 space-y-1 -mt-1">
+            <p>กรอกข้อมูลอาจารย์และกรรมการที่รับผิดชอบวิทยานิพนธ์ของท่านด้วยตนเอง — ระบบจะสร้างบัญชีและส่งอีเมลแจ้งแต่ละท่านโดยอัตโนมัติ</p>
+            <p>
+              จำเป็นต้องมี: อาจารย์ที่ปรึกษา 1 · ประธานหลักสูตร 1 · ประธานกรรมการสอบ 1 · กรรมการสอบอย่างน้อย 1 · กรรมการภายนอก 1
+              — อาจารย์ที่ปรึกษาร่วมเพิ่มได้ตามต้องการ
+            </p>
           </div>
 
-          <Field label={`กรรมการสอบ${committeeIds.length ? ` (${committeeIds.length} คน)` : ""}`} required>
-            <MultiPicker
-              options={committees}
-              selected={committeeIds}
-              onChange={setCommitteeIds}
-              placeholder="ค้นหาและเพิ่มกรรมการสอบ..."
-            />
-          </Field>
-
-          <Field label="อาจารย์ที่ปรึกษาร่วม">
-            <p className="text-xs text-gray-400 mb-1.5">ไม่บังคับ — เพิ่มได้หลายคน</p>
-            <MultiPicker
-              options={coAdvisors}
-              selected={coAdvisorIds}
-              onChange={setCoAdvisorIds}
-              placeholder="ค้นหาและเพิ่มอาจารย์ที่ปรึกษาร่วม..."
-            />
-          </Field>
-
-          <div className="col-span-full">
-            <div className="border border-dashed border-gray-300 rounded-xl p-4 space-y-3 bg-gray-50">
-              <p className="text-sm font-semibold text-gray-700">กรรมการภายนอก (External Committee)</p>
-              <p className="text-xs text-gray-400 -mt-1">กรรมการภายนอกต้องติดต่อและยืนยันล่วงหน้าก่อนกรอกข้อมูล</p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="ชื่อ-นามสกุล (พร้อมตำแหน่ง)" required>
-                  <input
-                    value={invitedProfName}
-                    onChange={(e) => { setInvitedProfName(e.target.value); setError(null); }}
-                    className={INPUT}
-                    placeholder="เช่น ศ.ดร.สมชาย ใจดี"
-                  />
-                </Field>
-                <Field label="สังกัด / มหาวิทยาลัย" required>
-                  <input
-                    value={invitedProfAffil}
-                    onChange={(e) => { setInvitedProfAffil(e.target.value); setError(null); }}
-                    className={INPUT}
-                    placeholder="เช่น มหาวิทยาลัยเกษตรศาสตร์"
-                  />
-                </Field>
-                <Field label="อีเมล" required>
-                  <input
-                    type="email"
-                    value={invitedProfEmail}
-                    onChange={(e) => { setInvitedProfEmail(e.target.value); setError(null); }}
-                    className={INPUT}
-                    placeholder="email@university.ac.th"
-                  />
-                </Field>
-                <Field label="เบอร์โทรศัพท์">
-                  <input
-                    value={invitedProfPhone}
-                    onChange={(e) => setInvitedProfPhone(e.target.value)}
-                    className={INPUT}
-                    placeholder="0812345678"
-                  />
-                </Field>
+          <div className="space-y-3">
+            {people.map((p, i) => (
+              <div key={i} className="border border-gray-200 rounded-xl p-3.5 bg-gray-50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500">บุคคลที่ {i + 1}</span>
+                  {people.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePerson(i)}
+                      className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+                      aria-label="ลบบุคคลนี้"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="ชื่อ-นามสกุล (พร้อมตำแหน่ง)" required>
+                    <input
+                      value={p.name}
+                      onChange={(e) => updatePerson(i, { name: e.target.value })}
+                      className={INPUT}
+                      placeholder="เช่น รศ.ดร.สมชาย ใจดี"
+                    />
+                  </Field>
+                  <Field label="อีเมล" required>
+                    <input
+                      type="email"
+                      value={p.email}
+                      onChange={(e) => updatePerson(i, { email: e.target.value })}
+                      className={INPUT}
+                      placeholder="email@chula.ac.th"
+                    />
+                  </Field>
+                  <Field label="บทบาท" required>
+                    <select
+                      value={p.role}
+                      onChange={(e) => updatePerson(i, { role: e.target.value })}
+                      className={INPUT + " bg-white"}
+                    >
+                      <option value="">— เลือกบทบาท —</option>
+                      {PERSON_ROLES.map((r) => (
+                        <option
+                          key={r}
+                          value={r}
+                          disabled={r === "PROGRAM_CHAIR" && chairCount >= 1 && p.role !== "PROGRAM_CHAIR"}
+                        >
+                          {ROLE_LABELS[r] ?? r}
+                          {r === "PROGRAM_CHAIR" ? " (ได้ 1 คน)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="เบอร์โทรศัพท์">
+                    <input
+                      value={p.phone}
+                      onChange={(e) => updatePerson(i, { phone: e.target.value })}
+                      className={INPUT}
+                      placeholder="0812345678"
+                    />
+                  </Field>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
+
+          <button
+            type="button"
+            onClick={addPerson}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 transition"
+          >
+            <Plus className="w-4 h-4" />
+            เพิ่มบุคคล
+          </button>
         </Section>
 
         {/* ── ข้อมูลการสอบ ── */}

@@ -24,7 +24,8 @@ export default function ProfessorDashboard() {
     if (step.role === "ADVISOR")               return (sub as any).advisorId === user?.id;
     if (step.role === "HEAD_EXAM_COMMITTEE")   return (sub as any).headCommitteeId === user?.id;
     if (step.role === "INVITED_EXAM_COMMITTEE")return (sub as any).invitedCommitteeId === user?.id;
-    if (step.role === "PROGRAM_CHAIR")         return true; // API only gives chairs subs with PROGRAM_CHAIR steps
+    if (step.role === "PROGRAM_CHAIR")
+      return (sub as any).programChairId ? (sub as any).programChairId === user?.id : true;
     // EXAM_COMMITTEE or CO_ADVISOR — sequential committee signing
     const members = step.committeeMembers ?? [];
     const idx = members.indexOf(user?.id ?? "");

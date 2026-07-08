@@ -103,6 +103,7 @@ model Submission {
   committeeIds       String[]
   coAdvisorIds       String[]
   invitedCommitteeId String?
+  programChairId     String?
 
   invitedProfName        String?
   invitedProfAffiliation String?

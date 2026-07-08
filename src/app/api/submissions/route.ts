@@ -85,6 +85,7 @@ export async function GET() {
         { committeeIds: { hasSome: [userId] } },
         { headCommitteeId: userId },
         { invitedCommitteeId: userId },
+        { programChairId: userId },
       ],
     };
   }
@@ -108,10 +109,72 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   const userId = session.user.id;
 
-  // Find-or-create account for invited external committee member
+  // ── Committee people: student enters name/email/role/phone for every person
+  //    responsible for their thesis. Accounts are found-or-created by email.
+  type PersonInput = { name?: string; email?: string; role?: string; phone?: string };
+  const PERSON_ROLES = ["ADVISOR", "CO_ADVISOR", "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE", "PROGRAM_CHAIR"];
+  const people: PersonInput[] = Array.isArray(data.people) ? data.people : [];
+
+  let advisorId: string | null = data.advisorId || null;
+  let coAdvisorIds: string[] = data.coAdvisorIds ?? [];
+  let headCommitteeId: string | null = data.headCommitteeId || null;
+  let committeeIds: string[] = data.committeeIds ?? [];
   let invitedCommitteeId: string | null = data.invitedCommitteeId || null;
-  let newInvitedUser: { id: string; name: string; email: string; password: string } | null = null;
-  if (data.invitedProfEmail) {
+  let programChairId: string | null = null;
+  let invitedProfName: string | null = data.invitedProfName ?? null;
+  let invitedProfEmail: string | null = data.invitedProfEmail ?? null;
+  let invitedProfPhone: string | null = data.invitedProfPhone ?? null;
+  const newAccounts: { id: string; name: string; email: string; password: string }[] = [];
+
+  if (people.length) {
+    for (const p of people) {
+      if (!p.name?.trim() || !p.email?.trim() || !p.role || !PERSON_ROLES.includes(p.role))
+        return NextResponse.json({ error: "กรุณากรอกชื่อ อีเมล และบทบาทของกรรมการให้ครบทุกคน" }, { status: 400 });
+    }
+    const count = (r: string) => people.filter((p) => p.role === r).length;
+    if (count("PROGRAM_CHAIR") !== 1)
+      return NextResponse.json({ error: "ต้องระบุประธานหลักสูตร 1 คน (เพิ่มได้เพียง 1 คนเท่านั้น)" }, { status: 400 });
+    if (count("ADVISOR") !== 1)
+      return NextResponse.json({ error: "ต้องระบุอาจารย์ที่ปรึกษา 1 คน" }, { status: 400 });
+    if (count("HEAD_EXAM_COMMITTEE") !== 1)
+      return NextResponse.json({ error: "ต้องระบุประธานกรรมการสอบ 1 คน" }, { status: 400 });
+    if (count("EXAM_COMMITTEE") < 1)
+      return NextResponse.json({ error: "ต้องระบุกรรมการสอบอย่างน้อย 1 คน" }, { status: 400 });
+    if (count("INVITED_EXAM_COMMITTEE") !== 1)
+      return NextResponse.json({ error: "ต้องระบุกรรมการภายนอก 1 คน" }, { status: 400 });
+
+    // Find-or-create one account per unique email (same person may hold several roles)
+    const idByEmail = new Map<string, string>();
+    for (const p of people) {
+      const email = p.email!.trim().toLowerCase();
+      if (idByEmail.has(email)) continue;
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        idByEmail.set(email, existing.id);
+        continue;
+      }
+      const tempPassword = randomBytes(8).toString("hex");
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+      const created = await prisma.user.create({
+        data: { email, name: p.name!.trim(), roles: ["PROFESSOR"], passwordHash },
+      });
+      idByEmail.set(email, created.id);
+      newAccounts.push({ id: created.id, name: created.name, email, password: tempPassword });
+    }
+
+    const idOf = (p: PersonInput) => idByEmail.get(p.email!.trim().toLowerCase())!;
+    advisorId       = idOf(people.find((p) => p.role === "ADVISOR")!);
+    headCommitteeId = idOf(people.find((p) => p.role === "HEAD_EXAM_COMMITTEE")!);
+    programChairId  = idOf(people.find((p) => p.role === "PROGRAM_CHAIR")!);
+    coAdvisorIds    = people.filter((p) => p.role === "CO_ADVISOR").map(idOf);
+    committeeIds    = people.filter((p) => p.role === "EXAM_COMMITTEE").map(idOf);
+    const invited   = people.find((p) => p.role === "INVITED_EXAM_COMMITTEE")!;
+    invitedCommitteeId = idOf(invited);
+    invitedProfName    = invited.name!.trim();
+    invitedProfEmail   = invited.email!.trim().toLowerCase();
+    invitedProfPhone   = invited.phone?.trim() || null;
+  } else if (data.invitedProfEmail) {
+    // Legacy path: find-or-create only the invited external committee member
     const existing = await prisma.user.findUnique({ where: { email: data.invitedProfEmail } });
     if (existing) {
       invitedCommitteeId = existing.id;
@@ -127,7 +190,7 @@ export async function POST(req: NextRequest) {
         },
       });
       invitedCommitteeId = created.id;
-      newInvitedUser = { id: created.id, name: created.name, email: created.email, password: tempPassword };
+      newAccounts.push({ id: created.id, name: created.name, email: created.email, password: tempPassword });
     }
   }
 
@@ -137,20 +200,21 @@ export async function POST(req: NextRequest) {
       submissionType: data.submissionType,
       status: "IN_PROGRESS",
       studentId: userId,
-      advisorId: data.advisorId || null,
+      advisorId,
       studentFullName: data.studentFullName,
       studentCode: data.studentCode,
       program: data.program,
       studentEmail: data.studentEmail,
       studentPhone: data.studentPhone,
-      headCommitteeId: data.headCommitteeId || null,
-      committeeIds: data.committeeIds ?? [],
-      coAdvisorIds: data.coAdvisorIds ?? [],
-      invitedCommitteeId: invitedCommitteeId,
-      invitedProfName: data.invitedProfName,
+      headCommitteeId,
+      committeeIds,
+      coAdvisorIds,
+      invitedCommitteeId,
+      programChairId,
+      invitedProfName,
       invitedProfAffiliation: data.invitedProfAffiliation,
-      invitedProfEmail: data.invitedProfEmail,
-      invitedProfPhone: data.invitedProfPhone,
+      invitedProfEmail,
+      invitedProfPhone,
       examDate: data.examDate,
       examTime: data.examTime,
       roomNeeded: data.roomNeeded ?? false,
@@ -160,10 +224,10 @@ export async function POST(req: NextRequest) {
         create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,
           role,
-          status: role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length ? "SKIPPED" : "PENDING",
+          status: role === "CO_ADVISOR" && !coAdvisorIds.length ? "SKIPPED" : "PENDING",
           committeeMembers:
-            role === "EXAM_COMMITTEE"         ? (data.committeeIds ?? []) :
-            role === "CO_ADVISOR"             ? (data.coAdvisorIds ?? []) :
+            role === "EXAM_COMMITTEE"         ? committeeIds :
+            role === "CO_ADVISOR"             ? coAdvisorIds :
             role === "INVITED_EXAM_COMMITTEE" && invitedCommitteeId ? [invitedCommitteeId] : [],
         })),
       },
@@ -174,11 +238,14 @@ export async function POST(req: NextRequest) {
   // Step 1 starts as PENDING — student must upload required files and click submit.
   // The approve action will notify step 2 automatically when step 1 is completed.
 
-  // Send welcome email to newly created invited committee account
-  if (newInvitedUser) {
-    try {
-      await sendWelcomeEmail({ userId: newInvitedUser.id, name: newInvitedUser.name, email: newInvitedUser.email, password: newInvitedUser.password, role: "PROFESSOR" });
-    } catch (e) { console.error("[email/invited-welcome]", e); }
+  // Welcome emails (with passwords) for accounts created by this submission
+  if (newAccounts.length) {
+    await Promise.allSettled(
+      newAccounts.map((a) =>
+        sendWelcomeEmail({ userId: a.id, name: a.name, email: a.email, password: a.password, role: "PROFESSOR" })
+          .catch((e) => console.error("[email/committee-welcome]", a.email, e))
+      )
+    );
   }
 
   // Notify all admins that a new submission was created (informational)

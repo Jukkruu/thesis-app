@@ -23,6 +23,7 @@ export interface SubmissionFormData {
   invitedProfAffiliation?: string;
   invitedProfEmail?: string;
   invitedProfPhone?: string;
+  people?: { name: string; email: string; role: string; phone?: string }[];
   examDate?: string;
   examTime?: string;
   roomNeeded?: boolean;
@@ -202,7 +203,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case "ADVISOR":               return (sub as any).advisorId === user.id;
       case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
       case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
-      case "PROGRAM_CHAIR":         return user.isProgramChair === true;
+      case "PROGRAM_CHAIR":
+        return (sub as any).programChairId ? (sub as any).programChairId === user.id : user.isProgramChair === true;
       case "CO_ADVISOR":
       case "EXAM_COMMITTEE": {
         if (!step.committeeMembers?.includes(user.id)) return false;
@@ -230,7 +232,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         case "ADVISOR":               return (sub as any).advisorId === user.id;
         case "HEAD_EXAM_COMMITTEE":   return (sub as any).headCommitteeId === user.id;
         case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
-        case "PROGRAM_CHAIR":         return user.isProgramChair === true;
+        case "PROGRAM_CHAIR":
+          return (sub as any).programChairId ? (sub as any).programChairId === user.id : user.isProgramChair === true;
         case "CO_ADVISOR":
         case "EXAM_COMMITTEE": {
           if (!step.committeeMembers?.includes(user.id)) return false;

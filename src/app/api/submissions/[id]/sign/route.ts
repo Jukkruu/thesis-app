@@ -197,8 +197,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         } else if (nextRole === "INVITED_EXAM_COMMITTEE") {
           recipientId = (sub as any).invitedCommitteeId ?? null;
         } else if (nextRole === "PROGRAM_CHAIR") {
-          const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
-          recipientId = chair?.id ?? null;
+          if ((sub as any).programChairId) {
+            recipientId = (sub as any).programChairId;
+          } else {
+            const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
+            recipientId = chair?.id ?? null;
+          }
         } else if (nextRole === "CO_ADVISOR") {
           const coIds: string[] = (sub as any).coAdvisorIds ?? [];
           specificMemberId = coIds[0];

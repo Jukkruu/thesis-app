@@ -106,11 +106,15 @@ export async function GET(req: NextRequest) {
           if (role === "EXAM_COMMITTEE"        && sub.committeeIds?.[0])   recipIds.add(sub.committeeIds[0]);
           if (role === "CO_ADVISOR"            && sub.coAdvisorIds?.[0])   recipIds.add(sub.coAdvisorIds[0]);
           if (role === "PROGRAM_CHAIR") {
-            const chair = await prisma.user.findFirst({
-              where: { isProgramChair: true },
-              select: { id: true },
-            });
-            if (chair) recipIds.add(chair.id);
+            if ((sub as any).programChairId) {
+              recipIds.add((sub as any).programChairId);
+            } else {
+              const chair = await prisma.user.findFirst({
+                where: { isProgramChair: true },
+                select: { id: true },
+              });
+              if (chair) recipIds.add(chair.id);
+            }
           }
         }
 

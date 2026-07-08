@@ -60,8 +60,13 @@ async function notifyRole(role: string, sub: any, message: string, type: string)
     }
     return;
   } else if (role === "PROGRAM_CHAIR") {
-    const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
-    recipientId = chair?.id ?? null;
+    // Per-submission chair (assigned by the student) with legacy global-flag fallback
+    if ((sub as any).programChairId) {
+      recipientId = (sub as any).programChairId;
+    } else {
+      const chair = await prisma.user.findFirst({ where: { isProgramChair: true } });
+      recipientId = chair?.id ?? null;
+    }
   } else {
     const user = await prisma.user.findFirst({ where: { roles: { has: role as any } } });
     recipientId = user?.id ?? null;
@@ -89,7 +94,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     (sub.coAdvisorIds as string[]).includes(userId) ||
     (sub.committeeIds as string[]).includes(userId) ||
     sub.headCommitteeId === userId ||
-    sub.invitedCommitteeId === userId;
+    sub.invitedCommitteeId === userId ||
+    (sub as any).programChairId === userId;
   if (!isPrivileged && !isInvolved)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -138,7 +144,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (step.role === "CO_ADVISOR")            return (sub.coAdvisorIds as string[]).includes(userId);
       if (step.role === "HEAD_EXAM_COMMITTEE")   return sub.headCommitteeId === userId;
       if (step.role === "INVITED_EXAM_COMMITTEE")return sub.invitedCommitteeId === userId;
-      if (step.role === "PROGRAM_CHAIR")         return dbUser?.isProgramChair === true;
+      if (step.role === "PROGRAM_CHAIR")
+        return (sub as any).programChairId ? (sub as any).programChairId === userId : dbUser?.isProgramChair === true;
       return userRoles.includes(step.role); // ADMIN, SUPER_ADMIN, EXAM_COMMITTEE
     })();
     if (!canApprove) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -414,7 +421,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         (sub.coAdvisorIds as string[]).includes(userId) ||
         (sub.committeeIds as string[]).includes(userId) ||
         sub.headCommitteeId === userId ||
-        sub.invitedCommitteeId === userId;
+        sub.invitedCommitteeId === userId ||
+        (sub as any).programChairId === userId;
       if (!isInvolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

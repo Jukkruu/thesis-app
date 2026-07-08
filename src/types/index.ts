@@ -79,6 +79,7 @@ export interface MockSubmission {
   committeeIds?: string[];
   coAdvisorIds?: string[];
   invitedCommitteeId?: string;
+  programChairId?: string;
   invitedProfName?: string;
   invitedProfAffiliation?: string;
   invitedProfEmail?: string;

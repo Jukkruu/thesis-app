@@ -67,7 +67,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
       case "INVITED_EXAM_COMMITTEE":return (sub as any).invitedCommitteeId === user.id;
       case "CO_ADVISOR":            return ((sub.coAdvisorIds ?? []) as string[]).includes(user.id);
       case "EXAM_COMMITTEE":        return ((sub.committeeIds ?? []) as string[]).includes(user.id);
-      case "PROGRAM_CHAIR":         return (user as any).isProgramChair === true;
+      case "PROGRAM_CHAIR":
+        return (sub as any).programChairId ? (sub as any).programChairId === user.id : (user as any).isProgramChair === true;
       default:                      return user.roles.includes(currentStep.role as any);
     }
   })();

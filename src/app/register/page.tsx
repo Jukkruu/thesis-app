@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [role, setRole]             = useState<RoleChoice>(null);
   const [name, setName]             = useState("");
   const [email, setEmail]           = useState("");
+  const [studentId, setStudentId]   = useState("");
   const [error, setError]           = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]             = useState(false);
@@ -18,6 +19,7 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!name.trim())  { setError("กรุณากรอกชื่อ-นามสกุล"); return; }
     if (!email.trim()) { setError("กรุณากรอกอีเมล"); return; }
+    if (role === "STUDENT" && !studentId.trim()) { setError("กรุณากรอกรหัสนิสิต"); return; }
 
     setSubmitting(true);
     setError(null);
@@ -25,7 +27,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), role }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, studentId: studentId.trim() || undefined }),
     });
 
     setSubmitting(false);
@@ -96,7 +98,7 @@ export default function RegisterPage() {
         {role && !done && (
           <div className={`bg-white rounded-2xl border ${accent.border} shadow-sm p-6 space-y-5`}>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => { setRole(null); setError(null); setName(""); setEmail(""); }}
+              <button type="button" onClick={() => { setRole(null); setError(null); setName(""); setEmail(""); setStudentId(""); }}
                 className="text-gray-400 hover:text-gray-600 transition">
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -121,6 +123,21 @@ export default function RegisterPage() {
                   autoFocus
                 />
               </div>
+              {isStudent && (
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1.5 text-sm">
+                    รหัสนิสิต <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={studentId}
+                    onChange={(e) => { setStudentId(e.target.value); setError(null); }}
+                    className={`w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 ${accent.ring}`}
+                    placeholder="เช่น 6733100421"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block font-medium text-gray-700 mb-1.5 text-sm">
                   อีเมล <span className="text-red-500">*</span>
