@@ -63,7 +63,12 @@ function buildGroups(uploads: MockUpload[]): Group[] {
   return groups;
 }
 
-const MAIN_FORM_TYPES = new Set<FormType>(["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS"]);
+// Semantic groups so users immediately know what each file is for
+const FILE_GROUPS: { key: string; label: string; types: Set<FormType> }[] = [
+  { key: "main",    label: "เอกสารหลัก",                 types: new Set<FormType>(["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS"]) },
+  { key: "finance", label: "เอกสารการเงิน",              types: new Set<FormType>(["FINANCE_DOC", "FINANCE_ATTACH"]) },
+  { key: "faculty", label: "เอกสารจากคณะและผลการสอบ", types: new Set<FormType>(["SIGNED", "EXAM_RESULT", "INVITE_LETTER", "VERY_GOOD_EVAL"]) },
+];
 
 interface Props {
   uploads: MockUpload[];
@@ -79,8 +84,14 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
   if (!uploads.length) return null;
 
   const groups = buildGroups(uploads);
-  const mainGroups  = groups.filter((g) => MAIN_FORM_TYPES.has(g.formType));
-  const otherGroups = groups.filter((g) => !MAIN_FORM_TYPES.has(g.formType));
+  const sections = FILE_GROUPS.map((g) => ({
+    ...g,
+    items: groups.filter((x) => g.types.has(x.formType)),
+  }));
+  // Anything not covered by a named group falls into the last section
+  const covered = new Set(FILE_GROUPS.flatMap((g) => [...g.types]));
+  const leftovers = groups.filter((x) => !covered.has(x.formType));
+  if (leftovers.length) sections[sections.length - 1].items.push(...leftovers);
 
   function toggle(key: string) {
     setOpenHistory((prev) => {
@@ -151,24 +162,25 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
     );
   }
 
+  let renderedSections = 0;
   return (
     <div className={`bg-white rounded-2xl border border-gray-200 ${compact ? "p-4" : "p-5"} space-y-4`}>
       <h2 className="font-semibold text-gray-800">{title} ({uploads.length} ไฟล์)</h2>
 
-      {mainGroups.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">เอกสารหลัก</p>
-          {mainGroups.map(renderGroup)}
-        </div>
-      )}
-
-      {otherGroups.length > 0 && (
-        <div className="space-y-2">
-          {mainGroups.length > 0 && <div className="border-t border-gray-100" />}
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">เอกสารแนบอื่น ๆ</p>
-          {otherGroups.map(renderGroup)}
-        </div>
-      )}
+      {sections.map(({ key, label, items }) => {
+        if (!items.length) return null;
+        const withDivider = renderedSections > 0;
+        renderedSections++;
+        return (
+          <div key={key} className="space-y-2">
+            {withDivider && <div className="border-t border-gray-100" />}
+            <p className="text-xs font-semibold text-gray-400 tracking-wide">
+              {label} <span className="font-normal">({items.length})</span>
+            </p>
+            {items.map(renderGroup)}
+          </div>
+        );
+      })}
     </div>
   );
 }
