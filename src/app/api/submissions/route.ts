@@ -166,8 +166,9 @@ export async function POST(req: NextRequest) {
     advisorId       = idOf(people.find((p) => p.role === "ADVISOR")!);
     headCommitteeId = idOf(people.find((p) => p.role === "HEAD_EXAM_COMMITTEE")!);
     programChairId  = idOf(people.find((p) => p.role === "PROGRAM_CHAIR")!);
-    coAdvisorIds    = people.filter((p) => p.role === "CO_ADVISOR").map(idOf);
-    committeeIds    = people.filter((p) => p.role === "EXAM_COMMITTEE").map(idOf);
+    // Dedupe — duplicate ids in committeeMembers would break sequential signing
+    coAdvisorIds    = [...new Set(people.filter((p) => p.role === "CO_ADVISOR").map(idOf))];
+    committeeIds    = [...new Set(people.filter((p) => p.role === "EXAM_COMMITTEE").map(idOf))];
     const invited   = people.find((p) => p.role === "INVITED_EXAM_COMMITTEE")!;
     invitedCommitteeId = idOf(invited);
     invitedProfName    = invited.name!.trim();

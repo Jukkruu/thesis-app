@@ -26,6 +26,8 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 FINANCE_EMAIL         # recipient for finance notifications
 DEMO_MODE             # "true" enables /demo page + passwordless demo login; unset in production
+EMAIL_OVERRIDE_TO     # testing: when set, ALL emails go to this address instead of real recipients
+                      # (subject gets "[ถึง: <intended>]" suffix). Remove to resume real delivery.
 ```
 
 ---

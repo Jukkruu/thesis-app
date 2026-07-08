@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       (subCheck.coAdvisorIds as string[]).includes(uid) ||
       (subCheck.committeeIds as string[]).includes(uid) ||
       subCheck.headCommitteeId === uid ||
-      subCheck.invitedCommitteeId === uid;
+      subCheck.invitedCommitteeId === uid ||
+      (subCheck as any).programChairId === uid;
     if (!involved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

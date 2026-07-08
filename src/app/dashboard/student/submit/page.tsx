@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
 import { PROGRAM_LABELS, ROLE_LABELS } from "@/lib/utils";
@@ -45,7 +45,7 @@ export default function NewSubmissionPage() {
     ? "คำร้องขอสอบโครงร่างวิทยานิพนธ์ (บ.วศ.1ก / บ.วศ.1ข / บ.วศ.1ค / บ.วศ.1ง)"
     : "คำร้องขอสอบวิทยานิพนธ์ (บ.2 / บ.3 / บ.4)";
 
-  const { createSubmission } = useApp();
+  const { createSubmission, user } = useApp();
 
   const [title,           setTitle]           = useState("");
   const [studentFullName, setStudentFullName] = useState("");
@@ -63,7 +63,24 @@ export default function NewSubmissionPage() {
   const [confirmed,       setConfirmed]       = useState(false);
   const [submitting,      setSubmitting]      = useState(false);
 
+  // Prefill student info from the logged-in account (still editable)
+  useEffect(() => {
+    if (!user) return;
+    setStudentFullName((v) => v || user.name || "");
+    setStudentCode((v) => v || user.studentId || "");
+    setStudentEmail((v) => v || user.email || "");
+  }, [user]);
+
   const chairCount = people.filter((p) => p.role === "PROGRAM_CHAIR").length;
+
+  // Live checklist of required roles — updates as the student fills in people
+  const ROLE_REQUIREMENTS: { role: string; label: string; min: number; max: number | null }[] = [
+    { role: "ADVISOR",                label: "อาจารย์ที่ปรึกษา",   min: 1, max: 1 },
+    { role: "PROGRAM_CHAIR",          label: "ประธานหลักสูตร",     min: 1, max: 1 },
+    { role: "HEAD_EXAM_COMMITTEE",    label: "ประธานกรรมการสอบ",  min: 1, max: 1 },
+    { role: "EXAM_COMMITTEE",         label: "กรรมการสอบ",         min: 1, max: null },
+    { role: "INVITED_EXAM_COMMITTEE", label: "กรรมการภายนอก",      min: 1, max: 1 },
+  ];
 
   function updatePerson(index: number, patch: Partial<Person>) {
     setPeople((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
@@ -85,10 +102,20 @@ export default function NewSubmissionPage() {
     if (!program)                { setError("กรุณาเลือกหลักสูตร");       return; }
     if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");          return; }
 
+    const seenRoleEmail = new Set<string>();
     for (const [i, p] of people.entries()) {
       if (!p.name.trim())  { setError(`กรุณาระบุชื่อ-นามสกุลของบุคคลที่ ${i + 1}`); return; }
       if (!p.email.trim()) { setError(`กรุณาระบุอีเมลของบุคคลที่ ${i + 1}`);        return; }
       if (!p.role)         { setError(`กรุณาเลือกบทบาทของบุคคลที่ ${i + 1}`);       return; }
+      const email = p.email.trim().toLowerCase();
+      if (email === user?.email?.toLowerCase() || email === studentEmail.trim().toLowerCase()) {
+        setError(`บุคคลที่ ${i + 1}: ไม่สามารถใช้อีเมลของท่านเองเป็นกรรมการได้`); return;
+      }
+      const key = `${p.role}:${email}`;
+      if (seenRoleEmail.has(key)) {
+        setError(`บุคคลที่ ${i + 1}: อีเมลนี้ถูกเพิ่มในบทบาทเดียวกันแล้ว`); return;
+      }
+      seenRoleEmail.add(key);
     }
     const count = (r: string) => people.filter((p) => p.role === r).length;
     if (count("PROGRAM_CHAIR") !== 1)          { setError("ต้องระบุประธานหลักสูตร 1 คน (เพิ่มได้เพียง 1 คนเท่านั้น)"); return; }
@@ -195,12 +222,30 @@ export default function NewSubmissionPage() {
 
         {/* ── ผู้รับผิดชอบวิทยานิพนธ์ ── */}
         <Section icon={<Users className="w-4 h-4" />} title="ผู้รับผิดชอบวิทยานิพนธ์">
-          <div className="text-xs text-gray-500 space-y-1 -mt-1">
-            <p>กรอกข้อมูลอาจารย์และกรรมการที่รับผิดชอบวิทยานิพนธ์ของท่านด้วยตนเอง — ระบบจะสร้างบัญชีและส่งอีเมลแจ้งแต่ละท่านโดยอัตโนมัติ</p>
-            <p>
-              จำเป็นต้องมี: อาจารย์ที่ปรึกษา 1 · ประธานหลักสูตร 1 · ประธานกรรมการสอบ 1 · กรรมการสอบอย่างน้อย 1 · กรรมการภายนอก 1
-              — อาจารย์ที่ปรึกษาร่วมเพิ่มได้ตามต้องการ
-            </p>
+          <div className="text-xs text-gray-500 -mt-1">
+            <p>กรอกข้อมูลอาจารย์และกรรมการที่รับผิดชอบวิทยานิพนธ์ของท่านด้วยตนเอง — ระบบจะสร้างบัญชีและส่งอีเมลแจ้งแต่ละท่านโดยอัตโนมัติ (อาจารย์ที่ปรึกษาร่วมเพิ่มได้ตามต้องการ)</p>
+          </div>
+
+          {/* Live checklist — turns green as each required role is covered */}
+          <div className="flex flex-wrap gap-1.5">
+            {ROLE_REQUIREMENTS.map(({ role, label, min, max }) => {
+              const n = people.filter((p) => p.role === role).length;
+              const over = max !== null && n > max;
+              const ok = n >= min && !over;
+              return (
+                <span
+                  key={role}
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${
+                    over ? "bg-red-50 border-red-200 text-red-600"
+                    : ok ? "bg-green-50 border-green-200 text-green-700"
+                    : "bg-gray-50 border-gray-200 text-gray-400"
+                  }`}
+                >
+                  {ok ? "✓" : over ? "✗" : "○"} {label}
+                  {max === null ? ` (${n})` : over ? ` (${n} — เกิน)` : ""}
+                </span>
+              );
+            })}
           </div>
 
           <div className="space-y-3">

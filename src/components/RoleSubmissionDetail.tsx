@@ -41,7 +41,8 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     || ((sub.coAdvisorIds ?? []) as string[]).includes(user.id)
     || ((sub as any).headCommitteeId === user.id)
     || ((sub.committeeIds ?? []) as string[]).includes(user.id)
-    || ((sub as any).invitedCommitteeId === user.id);
+    || ((sub as any).invitedCommitteeId === user.id)
+    || ((sub as any).programChairId === user.id);
 
   if (!authorized) {
     return (

@@ -36,7 +36,8 @@ function getRelatedSubmissions(
     ((s.coAdvisorIds ?? []) as string[]).includes(userId) ||
     ((s.committeeIds ?? []) as string[]).includes(userId) ||
     (s as any).headCommitteeId === userId ||
-    (s as any).invitedCommitteeId === userId
+    (s as any).invitedCommitteeId === userId ||
+    (s as any).programChairId === userId
   );
 }
 
