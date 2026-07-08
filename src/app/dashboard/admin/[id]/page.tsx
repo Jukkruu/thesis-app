@@ -202,7 +202,7 @@ function StepCard({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder={action === "REJECTED" ? "เหตุผลการปฏิเสธ..." : "หมายเหตุ (ไม่บังคับ)..."}
+                placeholder={action === "REJECTED" ? "เหตุผลการปฏิเสธ (จำเป็น)..." : "หมายเหตุ (ไม่บังคับ)..."}
                 className={`w-full border rounded-xl p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 ${
                   action === "REJECTED" ? "border-red-300 focus:ring-red-400" : "border-gray-200 focus:ring-orange-400"
                 }`}
@@ -224,6 +224,7 @@ function StepCard({
                     // ส่งกลับ: reset from this step onward
                     await onOverride(step.stepOrder, "REJECTED", notes || undefined);
                   } else if (action === "REJECTED" && onReject) {
+                    if (!notes.trim()) { setErrMsg("กรุณาระบุเหตุผลในการปฏิเสธ"); setSaving(false); return; }
                     // ปฏิเสธ: real rejection → student fixes and resubmits
                     await onReject(notes || undefined);
                   } else {

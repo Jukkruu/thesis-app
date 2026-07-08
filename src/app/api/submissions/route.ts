@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail } from "@/lib/email";
 
 // PROPOSAL: 11 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
@@ -105,6 +107,30 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   const userId = session.user.id;
 
+  // Find-or-create account for invited external committee member
+  let invitedCommitteeId: string | null = data.invitedCommitteeId || null;
+  let newInvitedUser: { id: string; name: string; email: string; password: string } | null = null;
+  if (data.invitedProfEmail) {
+    const existing = await prisma.user.findUnique({ where: { email: data.invitedProfEmail } });
+    if (existing) {
+      invitedCommitteeId = existing.id;
+    } else {
+      const tempPassword = randomBytes(8).toString("hex");
+      const { createHash } = await import("crypto");
+      const passwordHash = createHash("sha256").update(tempPassword).digest("hex");
+      const created = await prisma.user.create({
+        data: {
+          email: data.invitedProfEmail,
+          name: data.invitedProfName ?? data.invitedProfEmail,
+          roles: ["PROFESSOR"],
+          passwordHash,
+        },
+      });
+      invitedCommitteeId = created.id;
+      newInvitedUser = { id: created.id, name: created.name, email: created.email, password: tempPassword };
+    }
+  }
+
   const submission = await prisma.submission.create({
     data: {
       title: data.title,
@@ -120,7 +146,7 @@ export async function POST(req: NextRequest) {
       headCommitteeId: data.headCommitteeId || null,
       committeeIds: data.committeeIds ?? [],
       coAdvisorIds: data.coAdvisorIds ?? [],
-      invitedCommitteeId: data.invitedCommitteeId || null,
+      invitedCommitteeId: invitedCommitteeId,
       invitedProfName: data.invitedProfName,
       invitedProfAffiliation: data.invitedProfAffiliation,
       invitedProfEmail: data.invitedProfEmail,
@@ -146,6 +172,13 @@ export async function POST(req: NextRequest) {
 
   // Step 1 starts as PENDING — student must upload required files and click submit.
   // The approve action will notify step 2 automatically when step 1 is completed.
+
+  // Send welcome email to newly created invited committee account
+  if (newInvitedUser) {
+    try {
+      await sendWelcomeEmail({ userId: newInvitedUser.id, name: newInvitedUser.name, email: newInvitedUser.email, password: newInvitedUser.password, role: "PROFESSOR" });
+    } catch (e) { console.error("[email/invited-welcome]", e); }
+  }
 
   // Notify all admins that a new submission was created (informational)
   const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });

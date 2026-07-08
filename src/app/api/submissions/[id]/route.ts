@@ -405,6 +405,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const isPrivileged = userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r));
 
+    // Admin/super-admin must provide a reason when rejecting
+    if (isPrivileged && !body.notes?.trim())
+      return NextResponse.json({ error: "กรุณาระบุเหตุผลในการปฏิเสธ" }, { status: 400 });
+
     // Non-privileged users must be involved in this submission to reject
     if (!isPrivileged) {
       const isInvolved =
@@ -432,7 +436,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: { recipientId: sub.studentId, message: studentNote, detail: sub.title, submissionId: id, type: "rejected" },
     });
     try {
-      await sendStepEmail({ role: "STUDENT", sub, stepName: getStepName(step.stepOrder, sub.submissionType) });
+      await sendStepEmail({ role: "STUDENT", sub, stepName: getStepName(step.stepOrder, sub.submissionType), isRejection: true, rejectionNote: body.notes });
     } catch (e) { console.error("[email/reject]", e); }
   }
 

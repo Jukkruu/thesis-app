@@ -30,6 +30,8 @@ function getAppUrl(): string {
 
 interface StepEmailOptions {
   role: string;
+  isRejection?: boolean;
+  rejectionNote?: string;
   sub: {
     id: string;
     title: string;
@@ -53,7 +55,7 @@ interface Recipient {
 }
 
 export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
-  const { role, sub, stepName } = options;
+  const { role, sub, stepName, isRejection, rejectionNote } = options;
   const resend = getResend();
   if (!resend) {
     console.log("[email/step] RESEND_API_KEY not set — skipping");
@@ -142,11 +144,17 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
 
     const magicLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
 
+    const subject = isRejection
+      ? `[ระบบจัดการวิทยานิพนธ์] คำร้องถูกปฏิเสธ — ${sub.title}`
+      : `[ระบบจัดการวิทยานิพนธ์] ${stepName} — ${sub.title}`;
+    const html = isRejection
+      ? buildRejectedHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink, rejectionNote)
+      : buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink);
     const { error } = await resend.emails.send({
       from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
       to:   ["outanagon2549@gmail.com"],
-      subject: `[ระบบจัดการวิทยานิพนธ์] ${stepName} — ${sub.title}`,
-      html: buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink),
+      subject,
+      html,
     });
 
     if (error) {
@@ -205,6 +213,70 @@ function buildHtml(
       <div style="text-align:center;margin:28px 0;">
         <a href="${magicLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
+          คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
+      </div>
+
+      <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
+        อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
+        กรุณาอย่าตอบกลับอีเมลนี้
+      </p>
+    </div>
+  `;
+}
+
+function buildRejectedHtml(
+  recipientName: string,
+  recipientEmail: string,
+  roleLabel: string,
+  stepName: string,
+  thesisTitle: string,
+  studentName: string,
+  magicLink: string,
+  rejectionNote?: string,
+): string {
+  const rName  = escapeHtml(recipientName);
+  const rEmail = escapeHtml(recipientEmail);
+  const rLabel = escapeHtml(roleLabel);
+  const sName  = escapeHtml(stepName);
+  const tTitle = escapeHtml(thesisTitle);
+  const stName = escapeHtml(studentName);
+  const note   = rejectionNote ? escapeHtml(rejectionNote) : null;
+  return `
+    <div style="font-family:'Sarabun',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:linear-gradient(135deg,#b91c1c,#dc2626);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:20px;">ระบบจัดการวิทยานิพนธ์</h1>
+        <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
+      </div>
+
+      <p style="color:#374151;font-size:16px;">เรียน ${rName} <span style="color:#6b7280;font-size:14px;">(${rLabel})</span>,</p>
+      <p style="color:#374151;">คำร้องวิทยานิพนธ์ของท่านถูกปฏิเสธในขั้นตอน <strong>${sName}</strong> กรุณาแก้ไขและยื่นใหม่</p>
+
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0 0 4px;font-weight:700;color:#b91c1c;font-size:13px;">ขั้นตอนที่ถูกปฏิเสธ</p>
+        <p style="margin:0;color:#dc2626;font-size:16px;font-weight:600;">${sName}</p>
+        ${note ? `<p style="margin:8px 0 0;color:#7f1d1d;font-size:14px;">เหตุผล: ${note}</p>` : ""}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:15px;">
+        <tr style="background:#f3f4f6;">
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;width:40%;">ชื่อนิสิต</td>
+          <td style="padding:10px 14px;color:#111827;">${stName}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;">ชื่อวิทยานิพนธ์</td>
+          <td style="padding:10px 14px;color:#111827;">${tTitle}</td>
+        </tr>
+        <tr style="background:#f3f4f6;">
+          <td style="padding:10px 14px;font-weight:600;color:#6b7280;">เข้าสู่ระบบในฐานะ</td>
+          <td style="padding:10px 14px;color:#111827;">${rName} (${rEmail})</td>
+        </tr>
+      </table>
+
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${magicLink}"
+           style="background:linear-gradient(135deg,#b91c1c,#dc2626);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
           คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
