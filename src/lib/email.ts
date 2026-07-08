@@ -416,6 +416,7 @@ export interface FinanceEmailData {
   carPlate?: string;
   financeAttachUrl?: string;
   financeAttachName?: string;
+  emailSubject?: string;
 }
 
 export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
@@ -432,7 +433,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     advisorName, headCommitteeName, committeeNames,
     invitedProfName, invitedProfAffiliation, invitedProfEmail, invitedProfPhone,
     examDate, examTime, roomNeeded, parkingNeeded, carPlate,
-    financeAttachUrl, financeAttachName,
+    financeAttachUrl, financeAttachName, emailSubject,
   } = data;
 
   // Fetch finance attachment file if available
@@ -460,7 +461,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
   const { error } = await resend.emails.send({
     from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
     to: [financeEmail],
-    subject: `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${escapeHtml(studentName)}`,
+    subject: emailSubject ?? `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${escapeHtml(studentName)}`,
     ...(attachments ? { attachments } : {}),
     html: `
       <div style="font-family:'Sarabun',sans-serif;max-width:640px;margin:0 auto;padding:24px;">

@@ -291,6 +291,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    if (step.stepOrder === 6 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "THESIS_DEFENSE") {
+      try {
+        const invitedId = (sub as any).invitedCommitteeId as string | null | undefined;
+        const [advisorUser, headUser, committeeUsers, invitedUser, financeAttach] = await Promise.all([
+          sub.advisorId ? prisma.user.findUnique({ where: { id: sub.advisorId }, select: { name: true } }) : null,
+          sub.headCommitteeId ? prisma.user.findUnique({ where: { id: sub.headCommitteeId }, select: { name: true } }) : null,
+          (sub.committeeIds as string[] | undefined)?.length
+            ? prisma.user.findMany({ where: { id: { in: sub.committeeIds as string[] } }, select: { name: true } })
+            : Promise.resolve([]),
+          invitedId ? prisma.user.findUnique({ where: { id: invitedId }, select: { name: true, email: true } }) : null,
+          prisma.formUpload.findFirst({ where: { submissionId: id, formType: "FINANCE_ATTACH" }, orderBy: { uploadedAt: "desc" }, select: { fileUrl: true, fileName: true } }),
+        ]);
+        await sendFinanceEmail({
+          studentName: sub.studentFullName ?? sub.studentId ?? "-",
+          studentCode: sub.studentCode ?? "-",
+          studentEmail: sub.studentEmail ?? undefined,
+          studentPhone: sub.studentPhone ?? undefined,
+          program: sub.program ? (PROGRAM_LABELS[sub.program] ?? sub.program) : "-",
+          thesisTitle: sub.title,
+          submissionId: id,
+          advisorName: advisorUser?.name,
+          headCommitteeName: headUser?.name,
+          committeeNames: (committeeUsers as { name: string }[]).map((u) => u.name),
+          invitedProfName: (sub as any).invitedProfName ?? invitedUser?.name,
+          invitedProfAffiliation: (sub as any).invitedProfAffiliation,
+          invitedProfEmail: (sub as any).invitedProfEmail ?? invitedUser?.email,
+          invitedProfPhone: (sub as any).invitedProfPhone,
+          examDate: (sub as any).examDate,
+          examTime: (sub as any).examTime,
+          roomNeeded: (sub as any).roomNeeded,
+          parkingNeeded: (sub as any).parkingNeeded,
+          carPlate: (sub as any).carPlate,
+          financeAttachUrl: financeAttach?.fileUrl ?? undefined,
+          financeAttachName: financeAttach?.fileName ?? undefined,
+          emailSubject: `[แจ้งการเงิน] นิสิตขอสอบวิทยานิพนธ์ — ${sub.studentFullName ?? sub.studentId ?? "-"}`,
+        });
+        const adminUsers = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
+        if (adminUsers.length) {
+          await prisma.notification.createMany({
+            data: adminUsers.map((a) => ({ recipientId: a.id, message: "ส่งอีเมลแจ้งฝ่ายการเงิน (สอบวิทยานิพนธ์) แล้ว", detail: sub.title, submissionId: id, type: "info" })),
+          });
+        }
+      } catch (e) {
+        console.error("[email/finance/thesis]", e);
+      }
+    }
+
     if (step.stepOrder === 3 && step.role === "PROGRAM_CHAIR" && sub.submissionType === "PROPOSAL") {
       try {
         const invitedId = (sub as any).invitedCommitteeId as string | null | undefined;
