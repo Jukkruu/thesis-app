@@ -28,14 +28,7 @@ interface Person {
 
 const emptyPerson = (role = ""): Person => ({ name: "", email: "", role, phone: "" });
 
-// One row per required role so the student sees exactly what must be filled in.
-const initialPeople = (): Person[] => [
-  emptyPerson("ADVISOR"),
-  emptyPerson("PROGRAM_CHAIR"),
-  emptyPerson("HEAD_EXAM_COMMITTEE"),
-  emptyPerson("EXAM_COMMITTEE"),
-  emptyPerson("INVITED_EXAM_COMMITTEE"),
-];
+const initialPeople = (): Person[] => [emptyPerson()];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -77,7 +70,7 @@ export default function NewSubmissionPage() {
     setError(null);
   }
   function addPerson() {
-    setPeople((prev) => [...prev, emptyPerson("EXAM_COMMITTEE")]);
+    setPeople((prev) => [...prev, emptyPerson()]);
   }
   function removePerson(index: number) {
     setPeople((prev) => prev.filter((_, i) => i !== index));
