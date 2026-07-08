@@ -162,8 +162,9 @@ export async function POST(req: NextRequest) {
           role,
           status: role === "CO_ADVISOR" && !(data.coAdvisorIds ?? []).length ? "SKIPPED" : "PENDING",
           committeeMembers:
-            role === "EXAM_COMMITTEE" ? (data.committeeIds ?? []) :
-            role === "CO_ADVISOR"     ? (data.coAdvisorIds ?? []) : [],
+            role === "EXAM_COMMITTEE"         ? (data.committeeIds ?? []) :
+            role === "CO_ADVISOR"             ? (data.coAdvisorIds ?? []) :
+            role === "INVITED_EXAM_COMMITTEE" && invitedCommitteeId ? [invitedCommitteeId] : [],
         })),
       },
     },
