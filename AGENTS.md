@@ -144,27 +144,29 @@ stepUploads={isFutureStep ? [] : stepUploads}
 | Student | นิสิต | Upload documents, assign committee members, track status |
 | Advisor | อาจารย์ที่ปรึกษา | Sign forms, monitor assigned students |
 | Co-Advisor | อาจารย์ที่ปรึกษาร่วม | Signs immediately after Advisor at every Advisor step — **optional**, step auto-SKIPPED when no co-advisors assigned; multiple allowed (sequential like EXAM_COMMITTEE) |
-| Program Chair | ประธานหลักสูตร | Sign at multiple phases |
+| Program Chair | ประธานหลักสูตร | Sign at multiple phases — **assigned per submission by Student** (`submissions.programChairId`); legacy global `isProgramChair` flag is a fallback and still grants see-all |
 | Head Exam Committee | ประธานกรรมการสอบ | Signs before regular committee — assigned per submission by Student |
 | Exam Committee | กรรมการสอบ | Multiple members, sign separately in order — assigned per submission by Student |
-| Invited Exam Committee | กรรมการภายนอก | External examiner — assigned per submission by Student |
+| Invited Exam Committee | กรรมการภายนอก | External examiner — assigned per submission by Student; **account auto-created** like all committee people |
 
 ### External roles (no login)
 | Role | How they interact |
 |---|---|
 | Faculty Dean | Signs บ.4 physically offline |
-| Finance | Receives email at end of PROPOSAL Phase 1 only |
+| Finance | Receives email at PROPOSAL step 3 and THESIS step 6 (with FINANCE_ATTACH attached) |
 | Graduate School | Receives final document package outside the system |
 
 ---
 
-## Submission fields (from Google Form — source of truth)
+## Submission fields — student enters everything manually
+
+**Registration:** students must provide รหัสนิสิต (unique, stored on `users.studentId`); professors don't. Submit form prefills ชื่อ/รหัสนิสิต/อีเมล from the account.
 
 **Student info:** ชื่อ-นามสกุล, รหัสนิสิต, หลักสูตร (PHD=วิศวกรรมศาสตรดุษฎีบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_MECH=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_CPS=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาระบบกายภาพที่เชื่อมประสานด้วยเครือข่ายไซเบอร์), อีเมล์, เบอร์โทร
 
-**Committee (all assigned per submission by Student):** Advisor, Co-Advisor (optional, multiple), Head Exam Committee (**required**), Exam Committee member/s (**required**, at least one), Invited Exam Committee
+**Committee people (`data.people[]`):** the student manually enters every person responsible for their thesis as `{ name, email, role, phone? }` rows — there are NO professor dropdowns. The API finds-or-creates a PROFESSOR account per unique email (new accounts get a welcome email with password) and maps the rows to `advisorId` / `coAdvisorIds` / `headCommitteeId` / `committeeIds` / `invitedCommitteeId` / `programChairId`. The same email may hold multiple roles (one account). Committee id arrays are deduped — duplicates would break sequential signing.
 
-**Student submit form validation:** ประธานกรรมการสอบ (required), กรรมการสอบ (required ≥1), เบอร์โทรกรรมการภายนอก (NOT required), วันที่สอบ (required), เวลาสอบ (required). A title-confirmation warning box appears before final submit so the student can verify the thesis title is correct.
+**Validation (enforced in form AND API):** ADVISOR exactly 1 · PROGRAM_CHAIR exactly 1 (role option disabled in other rows once taken) · HEAD_EXAM_COMMITTEE exactly 1 · EXAM_COMMITTEE ≥1 · INVITED_EXAM_COMMITTEE exactly 1 · CO_ADVISOR 0+. A person's email may not equal the student's own email; duplicate email-in-same-role rows are rejected. The form shows a live checklist chip per required role. วันที่สอบ + เวลาสอบ required; title-confirmation checkbox before submit.
 
 **Exam logistics:** วันที่สอบ + เวลา, ห้องประชุม (yes/no), ที่จอดรถ (yes/no), เลขทะเบียนรถ
 
@@ -207,7 +209,7 @@ If rejected → goes back one step (e.g. step 9 → step 8, step 8 → step 7).
 | 3 | ADVISOR | Sign บ.2 |
 | 4 | CO_ADVISOR | Sign บ.2 — **auto-SKIPPED if no co-advisors assigned** |
 | 5 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
-| 6 | PROGRAM_CHAIR | Sign บ.2 |
+| 6 | PROGRAM_CHAIR | Sign บ.2 → **triggers finance email** + notify admin |
 
 #### Phase 4 (Steps 7–8): Faculty relay
 | Step | Role | Action |
@@ -245,9 +247,18 @@ If rejected at any step → goes back one step.
 
 ## Key rules
 - **Sequential only** — no parallel signing
-- **EXAM_COMMITTEE and CO_ADVISOR** steps: all assigned members must approve (tracked via `committeeActions` JSON on `WorkflowStep`). CO_ADVISOR uses `coAdvisorIds` (DB field `String[]`) the same way EXAM_COMMITTEE uses `committeeIds`.
+- **EXAM_COMMITTEE and CO_ADVISOR** steps: all assigned members must approve (tracked via `committeeActions` JSON on `WorkflowStep`). CO_ADVISOR uses `coAdvisorIds` (DB field `String[]`) the same way EXAM_COMMITTEE uses `committeeIds`. INVITED_EXAM_COMMITTEE steps carry `[invitedCommitteeId]` in `committeeMembers` for self-containment.
 - **CO_ADVISOR auto-skip**: when `coAdvisorIds` is empty at submission creation, all CO_ADVISOR steps are created with `status: "SKIPPED"` so they are transparently bypassed.
-- **Finance email** fires at PROPOSAL step 3 (PROGRAM_CHAIR approval) via `POST /api/email/finance`
+- **PROGRAM_CHAIR resolution**: always prefer `sub.programChairId` (per-submission, set from the student's people list) and fall back to the global `isProgramChair` flag. Applied in `email.ts`, notifyRole + approve auth in `PATCH /api/submissions/[id]`, the sign route, exam-reminder cron, upload involvement check, `AppContext`, `RoleSubmissionDetail`, professor dashboard, and display-name lookups.
+- **Finance email** fires at PROPOSAL step 3 and THESIS_DEFENSE step 6 (both PROGRAM_CHAIR approvals), called directly via `sendFinanceEmail()` with the latest FINANCE_ATTACH file attached; recipient = `FINANCE_EMAIL` env var (skips if unset).
+- **Rejection emails** use a red formal template (`buildRejectedHtml`) showing step + reason. `step.notes` stores only the raw reason text (or null) — role context lives in notification messages only. **Admin/super-admin reject requires a comment** (enforced UI + API); other roles may reject without one.
 - **Admin (พี่โบ้)** relays at THESIS_DEFENSE steps 7–8 — step 7: send B2+B3 to Faculty; step 8: receive back docs (ใบรายงานผล, แบบรายงานฯ, invitation letter), upload, forward to student, then approve → triggers invitation emails. Admin panel shows step-7-specific checklist banner.
 - **Student upload steps** start PENDING; student uploads required files then clicks submit to advance
 - **Rejection** goes back exactly one step — any role can reject, no role restriction
+
+## UI conventions (recent)
+- **FileList** groups uploads into named sections: เอกสารหลัก (lettered forms) / เอกสารการเงิน (FINANCE_*) / เอกสารจากคณะและผลการสอบ (SIGNED, EXAM_RESULT, INVITE_LETTER, VERY_GOOD_EVAL). Unknown types fall into the last section.
+- **FileUploader** slots always render a `SlotHeader`: form-code badge (FORM_SHORT) + description + status chip (อัปโหลดแล้ว / เลือกไฟล์แล้ว / ยังไม่ได้เลือกไฟล์).
+- **Professor dashboard** shows the generic "อาจารย์" label on card badges (a professor can hold several roles per submission); other views keep specific role labels.
+- **Admin detail** committee panel lists every person (incl. per-submission program chair) with mailto links.
+- **Emails** use formal Thai business-letter register: เรียน …, จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการ, ขอแสดงความนับถือ + department signature block.
