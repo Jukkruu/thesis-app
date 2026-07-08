@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
@@ -16,10 +16,41 @@ function escapeHtml(s: string | undefined | null): string {
 }
 
 
-function getResend(): Resend | null {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  return new Resend(apiKey);
+function getTransport() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+}
+
+// Gmail requires the from address to match the authenticated account
+function getFromAddress(): string {
+  return `"ระบบวิทยานิพนธ์ ME CU" <${process.env.GMAIL_USER}>`;
+}
+
+async function sendMail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: { filename: string; content: Buffer }[];
+}): Promise<{ error: Error | null }> {
+  const transport = getTransport();
+  if (!transport) {
+    console.log("[email] GMAIL_USER / GMAIL_APP_PASSWORD not set — skipping");
+    return { error: null };
+  }
+  try {
+    await transport.sendMail({
+      from: getFromAddress(),
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      attachments: opts.attachments,
+    });
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e : new Error(String(e)) };
+  }
 }
 
 function getAppUrl(): string {
@@ -56,11 +87,6 @@ interface Recipient {
 
 export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
   const { role, sub, stepName, isRejection, rejectionNote } = options;
-  const resend = getResend();
-  if (!resend) {
-    console.log("[email/step] RESEND_API_KEY not set — skipping");
-    return;
-  }
 
   let recipients: Recipient[] = [];
 
@@ -150,15 +176,14 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
     const html = isRejection
       ? buildRejectedHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink, rejectionNote)
       : buildHtml(recipient.name, recipient.email, roleLabel, stepName, sub.title, studentDisplay, magicLink);
-    const { error } = await resend.emails.send({
-      from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-      to:   [recipient.email],
+    const { error } = await sendMail({
+      to: recipient.email,
       subject,
       html,
     });
 
     if (error) {
-      console.error(`[email/step] Resend error (${recipient.email}):`, JSON.stringify(error));
+      console.error(`[email/step] Send error (${recipient.email}):`, error.message);
     } else {
       console.log(`[email/step] Sent to ${recipient.email}`);
     }
@@ -301,12 +326,6 @@ export interface WelcomeEmailData {
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
-  const resend = getResend();
-  if (!resend) {
-    console.log("[email/welcome] RESEND_API_KEY not set — skipping");
-    return;
-  }
-
   await prisma.magicToken.deleteMany({
     where: { userId: data.userId, expiresAt: { lt: new Date() } },
   });
@@ -323,15 +342,14 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   });
 
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
-  const { error } = await resend.emails.send({
-    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: [data.email],
+  const { error } = await sendMail({
+    to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
     html: buildWelcomeHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/welcome] Resend error (${data.email}):`, JSON.stringify(error));
+    console.error(`[email/welcome] Send error (${data.email}):`, error.message);
   } else {
     console.log(`[email/welcome] Sent to ${data.email}`);
   }
@@ -387,12 +405,6 @@ export interface ForgotPasswordEmailData {
 }
 
 export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Promise<void> {
-  const resend = getResend();
-  if (!resend) {
-    console.log("[email/forgot-pw] RESEND_API_KEY not set — skipping");
-    return;
-  }
-
   await prisma.magicToken.deleteMany({
     where: { userId: data.userId, expiresAt: { lt: new Date() } },
   });
@@ -409,15 +421,14 @@ export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Pr
   });
 
   const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
-  const { error } = await resend.emails.send({
-    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: [data.email],
+  const { error } = await sendMail({
+    to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
     html: buildForgotPasswordHtml(data.name, data.email, data.password, loginLink),
   });
 
   if (error) {
-    console.error(`[email/forgot-pw] Resend error (${data.email}):`, JSON.stringify(error));
+    console.error(`[email/forgot-pw] Send error (${data.email}):`, error.message);
   } else {
     console.log(`[email/forgot-pw] Sent to ${data.email}`);
   }
@@ -492,12 +503,6 @@ export interface FinanceEmailData {
 }
 
 export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
-  const resend = getResend();
-  if (!resend) {
-    console.log("[email/finance] RESEND_API_KEY not set — skipping");
-    return;
-  }
-
   const financeEmail = process.env.FINANCE_EMAIL;
   if (!financeEmail) {
     console.warn("[email/finance] FINANCE_EMAIL env var not set — skipping");
@@ -534,11 +539,10 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
     invitedProfName ? `<tr><td style="padding:10px 14px;font-weight:600;color:#6b7280;">กรรมการภายนอก</td><td style="padding:10px 14px;color:#111827;">${escapeHtml(invitedProfName)}${invitedProfAffiliation ? ` (${escapeHtml(invitedProfAffiliation)})` : ""}${invitedProfEmail ? `<br><span style="color:#6b7280;font-size:13px;">📧 ${escapeHtml(invitedProfEmail)}</span>` : ""}${invitedProfPhone ? `<br><span style="color:#6b7280;font-size:13px;">📞 ${escapeHtml(invitedProfPhone)}</span>` : ""}</td></tr>` : "",
   ].filter(Boolean).join("\n");
 
-  const { error } = await resend.emails.send({
-    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: [financeEmail],
+  const { error } = await sendMail({
+    to: financeEmail,
     subject: emailSubject ?? `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${escapeHtml(studentName)}`,
-    ...(attachments ? { attachments } : {}),
+    attachments,
     html: `
       <div style="font-family:'Sarabun',sans-serif;max-width:640px;margin:0 auto;padding:24px;">
         <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);border-radius:12px;padding:24px;color:white;margin-bottom:24px;">
@@ -595,7 +599,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
   });
 
   if (error) {
-    console.error("[email/finance] Resend error:", JSON.stringify(error));
+    console.error("[email/finance] Send error:", error.message);
     throw new Error("Finance email failed");
   }
   console.log("[email/finance] Sent to:", financeEmail);
@@ -617,11 +621,6 @@ export interface ExamReminderEmailData {
 }
 
 export async function sendExamReminderEmail(data: ExamReminderEmailData): Promise<void> {
-  const resend = getResend();
-  if (!resend) {
-    console.log("[email/exam-reminder] RESEND_API_KEY not set — skipping");
-    return;
-  }
 
   await prisma.magicToken.deleteMany({
     where: { userId: data.recipientId, expiresAt: { lt: new Date() } },
@@ -643,15 +642,14 @@ export async function sendExamReminderEmail(data: ExamReminderEmailData): Promis
     ? `[แจ้งเตือน] เหลือ 7 วันก่อนวันสอบ — ${data.thesisTitle}`
     : `[แจ้งเตือน] วันสอบอีก 14 วัน — ${data.thesisTitle}`;
 
-  const { error } = await resend.emails.send({
-    from: "ระบบวิทยานิพนธ์ ME CU <onboarding@resend.dev>",
-    to: [data.recipientEmail],
+  const { error } = await sendMail({
+    to: data.recipientEmail,
     subject,
     html: buildExamReminderHtml(data, magicLink),
   });
 
   if (error) {
-    console.error(`[email/exam-reminder] Resend error (${data.recipientEmail}):`, JSON.stringify(error));
+    console.error(`[email/exam-reminder] Send error (${data.recipientEmail}):`, error.message);
   } else {
     console.log(`[email/exam-reminder] Sent to ${data.recipientEmail}`);
   }
