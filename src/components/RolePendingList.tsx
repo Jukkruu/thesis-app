@@ -76,7 +76,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
       <div className="grid grid-cols-3 gap-3">
         <StatCard icon={<Clock className="w-5 h-5" />}        value={pending.length}      label="รอดำเนินการ" tone={pending.length > 0 ? "orange" : "gray"} />
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={approved}            label="อนุมัติแล้ว" tone="green" />
-        <StatCard icon={<Layers className="w-5 h-5" />}       value={submissions.length}  label="ทั้งหมด"     tone="blue" />
+        <StatCard icon={<Layers className="w-5 h-5" />}       value={submissions.length}  label="เกี่ยวข้องทั้งหมด" tone="blue" />
       </div>
 
       {/* Tabs */}

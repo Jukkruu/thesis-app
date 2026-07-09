@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { ROLE_LABELS, FORM_LABELS, getStepName, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, FORM_LABELS, getStepName, formatDate, toUserErrorMessage } from "@/lib/utils";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
@@ -96,7 +96,12 @@ export default function StudentSubmissionDetail() {
   const currentStep  = sub.workflowSteps.find((s) => s.status === "PENDING");
   const isMyTurn     = currentStep?.role === "STUDENT";
   const doneCount    = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps   = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
+  const visibleSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
+  const totalSteps   = visibleSteps.length;
+  // Display number matching the timeline (SKIPPED steps are hidden and renumbered)
+  const currentDisplayOrder = currentStep
+    ? visibleSteps.findIndex((s) => s.id === currentStep.id) + 1
+    : 0;
   const subStatus    = sub.status;
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
 
@@ -168,15 +173,24 @@ export default function StudentSubmissionDetail() {
     }
   }
 
-  function handleResubmit() {
-    studentResubmit(sub!.id);
-    showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
+  async function handleResubmit() {
+    try {
+      await studentResubmit(sub!.id);
+      showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
+    } catch (err) {
+      showToast(toUserErrorMessage(err), "error");
+    }
   }
 
-  function handleCancelConfirm() {
-    cancelSubmission(sub!.id);
-    setShowCancelModal(false);
-    showToast("ยกเลิกคำร้องแล้ว", "info");
+  async function handleCancelConfirm() {
+    try {
+      await cancelSubmission(sub!.id);
+      setShowCancelModal(false);
+      showToast("ยกเลิกคำร้องแล้ว", "info");
+    } catch (err) {
+      setShowCancelModal(false);
+      showToast(toUserErrorMessage(err), "error");
+    }
   }
 
   function renderStatusBanner() {
@@ -466,7 +480,7 @@ export default function StudentSubmissionDetail() {
                 <div className="flex-1">
                   <p className="text-orange-800 font-bold">รอการดำเนินการ</p>
                   <p className="text-orange-600 text-sm mt-1">
-                    ขั้นที่ {currentStep.stepOrder}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
+                    ขั้นที่ {currentDisplayOrder} จาก {totalSteps}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
                   </p>
                   <p className="text-orange-700 text-sm font-medium">{resolvePendingName()}</p>
                   <p className="text-orange-400 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>

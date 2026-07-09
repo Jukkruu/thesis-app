@@ -169,7 +169,10 @@ export default function StudentDashboard() {
                     {isMyTurn && sub.status === "IN_PROGRESS" && (
                       <span className="text-sm text-blue-600 font-semibold">★ ถึงคิวของท่าน</span>
                     )}
-                    {!isMyTurn && currentStep && (
+                    {sub.status === "REJECTED" && (
+                      <span className="text-sm text-red-600 font-semibold">★ กรุณาแก้ไขและยื่นใหม่</span>
+                    )}
+                    {!isMyTurn && sub.status === "IN_PROGRESS" && currentStep && (
                       <span className="text-sm text-gray-500">รอ: {ROLE_LABELS[currentStep.role]}</span>
                     )}
                   </div>

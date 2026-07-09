@@ -328,7 +328,7 @@ export default function NewSubmissionPage() {
         <Section icon={<CalendarDays className="w-4 h-4" />} title="ข้อมูลการสอบ">
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="วันที่สอบ" required>
-              <input type="date" value={examDate} onChange={(e) => { setExamDate(e.target.value); setError(null); }} className={INPUT} />
+              <input type="date" value={examDate} min={new Date().toISOString().split("T")[0]} onChange={(e) => { setExamDate(e.target.value); setError(null); }} className={INPUT} />
             </Field>
             <Field label="เวลาสอบ" required>
               <input type="time" value={examTime} onChange={(e) => { setExamTime(e.target.value); setError(null); }} className={INPUT} />

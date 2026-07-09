@@ -135,6 +135,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [status]);
 
+  // Keep data fresh: silent refetch every 60s and whenever the tab regains focus,
+  // so pending lists and the notification bell update without a manual reload.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let busy = false;
+    const tick = async () => {
+      if (busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try { await refresh(); } catch { /* keep last good data */ } finally { busy = false; }
+    };
+    const interval = setInterval(tick, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [status]);
+
   async function logout() {
     await signOut({ redirect: false });
   }

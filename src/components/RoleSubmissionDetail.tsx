@@ -124,7 +124,12 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
     ? (STEP_SIGN_FORMS[sub.submissionType ?? "PROPOSAL"]?.[currentStep.stepOrder] ?? [])
     : [];
   const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-  const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
+  const visibleSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
+  const totalSteps  = visibleSteps.length;
+  // Display number matching the timeline (SKIPPED steps are hidden and renumbered)
+  const currentDisplayOrder = currentStep
+    ? visibleSteps.findIndex((s) => s.id === currentStep.id) + 1
+    : 0;
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -349,7 +354,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
                 รอดำเนินการจาก
               </div>
               <p className="text-orange-600 font-medium">{ROLE_LABELS[currentStep.role]}</p>
-              <p className="text-sm text-orange-500 mt-1">ขั้นที่ {currentStep.stepOrder} จาก {totalSteps}</p>
+              <p className="text-sm text-orange-500 mt-1">ขั้นที่ {currentDisplayOrder} จาก {totalSteps}</p>
             </div>
           )}
 

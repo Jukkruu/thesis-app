@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download, X } from "lucide-react";
-import { FORM_LABELS, downloadFile, formatBytes } from "@/lib/utils";
+import { FORM_LABELS, downloadFile, formatBytes, toUserErrorMessage } from "@/lib/utils";
 import type { FormType } from "@/types";
 
 interface ExtraSlot {
@@ -77,8 +77,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
       await approveCurrentStep(submissionId, combinedNotes);
       showToast("อัปโหลดและอนุมัติเรียบร้อยแล้ว ✓");
       onSuccess?.();
-    } catch {
-      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } catch (err) {
+      setError(toUserErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -92,8 +92,8 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
       await rejectCurrentStep(submissionId, notes);
       showToast("บันทึกการปฏิเสธเรียบร้อยแล้ว", "error");
       onSuccess?.();
-    } catch {
-      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } catch (err) {
+      setError(toUserErrorMessage(err));
     } finally {
       setLoading(false);
     }

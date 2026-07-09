@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
 import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download, X } from "lucide-react";
-import { FORM_LABELS, FORM_SHORT, downloadFile, formatBytes } from "@/lib/utils";
+import { FORM_LABELS, FORM_SHORT, downloadFile, formatBytes, toUserErrorMessage } from "@/lib/utils";
 import type { FormType } from "@/types";
 
 interface Props {
@@ -46,27 +46,32 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
       return;
     }
     setLoading(true);
-    if (decision === "APPROVED" && signedFile) {
-      const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
-      const uploadFormType = nonSignedForms.length === 1 ? nonSignedForms[0] : "SIGNED";
-      const formData = new FormData();
-      formData.append("file", signedFile);
-      formData.append("submissionId", submissionId);
-      formData.append("formType", uploadFormType);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) {
-        setError("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
-        setLoading(false);
-        return;
+    setError(null);
+    try {
+      if (decision === "APPROVED" && signedFile) {
+        const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
+        const uploadFormType = nonSignedForms.length === 1 ? nonSignedForms[0] : "SIGNED";
+        const formData = new FormData();
+        formData.append("file", signedFile);
+        formData.append("submissionId", submissionId);
+        formData.append("formType", uploadFormType);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!res.ok) {
+          setError("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
+          return;
+        }
       }
+      await committeeSign(submissionId, decision, notes || undefined);
+      showToast(
+        decision === "APPROVED" ? "อัปโหลดและลงนามเรียบร้อยแล้ว ✓" : "บันทึกการไม่อนุมัติแล้ว",
+        decision === "APPROVED" ? "success" : "error"
+      );
+      onSuccess?.();
+    } catch (err) {
+      setError(toUserErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
-    await committeeSign(submissionId, decision, notes || undefined);
-    setLoading(false);
-    showToast(
-      decision === "APPROVED" ? "อัปโหลดและลงนามเรียบร้อยแล้ว ✓" : "บันทึกการไม่อนุมัติแล้ว",
-      decision === "APPROVED" ? "success" : "error"
-    );
-    onSuccess?.();
   }
 
   return (
@@ -136,9 +141,17 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
             : "ท่านไม่อนุมัติวิทยานิพนธ์นี้"}
         </div>
       ) : !isMyTurn ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 text-center">
-          รอกรรมการลำดับที่ {myIndex} ลงนามและอัปโหลดก่อน
-        </div>
+        (() => {
+          const waitingId = prevMembers.find(
+            (mid) => actions.find((a) => a.userId === mid)?.decision !== "APPROVED"
+          );
+          const waitingName = users.find((u) => u.id === waitingId)?.name;
+          return (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 text-center">
+              รอ{waitingName ? ` ${waitingName}` : `กรรมการลำดับที่ ${myIndex}`} ลงนามและอัปโหลดก่อน จึงจะถึงคิวของท่าน
+            </div>
+          );
+        })()
       ) : (
         <div className="space-y-4 pt-1 border-t border-gray-100">
 

@@ -6,7 +6,8 @@ import { useApp } from "@/context/AppContext";
 import { ROLE_ROUTES } from "@/lib/roleRoutes";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { ROLE_LABELS, ROLE_EMOJI, getStepName, formatDate } from "@/lib/utils";
+import { ROLE_LABELS, ROLE_EMOJI, getStepName, formatDate, toUserErrorMessage } from "@/lib/utils";
+import { useToast } from "@/context/ToastContext";
 import { SubmissionStatus } from "@/types";
 import Link from "next/link";
 import {
@@ -59,6 +60,7 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "ALL" }[] = [
 
 export default function AdminDashboard() {
   const { submissions, adminDeleteSubmission, user, users } = useApp();
+  const { showToast } = useToast();
   const router = useRouter();
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -277,6 +279,9 @@ export default function AdminDashboard() {
             const visibleSteps = sub.workflowSteps.filter((s) => s.status !== "SKIPPED");
             const doneCount   = visibleSteps.filter((s) => s.status === "APPROVED").length;
             const totalVisible = visibleSteps.length;
+            const currentDisplayOrder = currentStep
+              ? visibleSteps.findIndex((s) => s.id === currentStep.id) + 1
+              : 0;
             const stuckDays   = getStuckDays(sub);
             const isMyTurn    = currentStep?.role === "ADMIN";
             const pendingName = currentStep ? resolvePendingName(sub, currentStep, users) : null;
@@ -333,7 +338,16 @@ export default function AdminDashboard() {
                       {confirmDelete === sub.id ? (
                         <>
                           <span className="text-sm text-red-600 font-medium">ยืนยันลบ?</span>
-                          <button onClick={() => { adminDeleteSubmission(sub.id); setConfirmDelete(null); }}
+                          <button
+                            onClick={async () => {
+                              setConfirmDelete(null);
+                              try {
+                                await adminDeleteSubmission(sub.id);
+                                showToast("ลบคำร้องแล้ว");
+                              } catch (err) {
+                                showToast(toUserErrorMessage(err, "ลบไม่สำเร็จ กรุณาลองอีกครั้ง"), "error");
+                              }
+                            }}
                             className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">ลบ</button>
                           <button onClick={() => setConfirmDelete(null)}
                             className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-lg">ยกเลิก</button>
@@ -362,7 +376,7 @@ export default function AdminDashboard() {
                     }`}>
                       <Clock className={`w-4 h-4 shrink-0 ${isMyTurn ? "text-orange-500" : "text-gray-400"}`} />
                       <span className={`font-semibold shrink-0 ${isMyTurn ? "text-orange-700" : "text-gray-600"}`}>
-                        ขั้นที่ {currentStep.stepOrder}
+                        ขั้นที่ {currentDisplayOrder}/{totalVisible}
                       </span>
                       <span className={`truncate ${isMyTurn ? "text-orange-700" : "text-gray-600"}`}>{stepName}</span>
                       {pendingName && !isMyTurn && (

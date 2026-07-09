@@ -159,6 +159,12 @@ export function getStepName(stepOrder: number, submissionType?: string | null): 
   return map[stepOrder] ?? "";
 }
 
+/** Show server error text only when it is a Thai user-facing message; otherwise use a generic fallback. */
+export function toUserErrorMessage(err: unknown, fallback = "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"): string {
+  const msg = err instanceof Error ? err.message : "";
+  return msg && /[ก-๙]/.test(msg) ? msg : fallback;
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
