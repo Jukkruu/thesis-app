@@ -464,9 +464,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ? `ส่งกลับโดย ${byLabel} — "${body.notes}"`
       : `ส่งกลับโดย ${byLabel}`;
 
+    // Reset BOTH steps to PENDING. Marking the current step REJECTED would strand it:
+    // the approve flow only advances through PENDING steps, so a REJECTED step here
+    // would be skipped forever once the previous role re-approves.
     await prisma.workflowStep.update({
       where: { id: step.id },
-      data: { status: "REJECTED", actedAt: now, actedByName: userName, actedById: userId, notes: body.notes?.trim() || null },
+      data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
     await prisma.workflowStep.update({
       where: { id: prevStep.id },

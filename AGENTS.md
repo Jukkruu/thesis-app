@@ -54,17 +54,13 @@ EMAIL_OVERRIDE_TO     # testing: when set, ALL emails go to this address instead
 ### Step 1 is NOT auto-approved
 When a submission is created, **step 1 starts as PENDING**. The student must upload the required documents and click submit. Step 2's email notification fires automatically when the student's submit action (approve) completes.
 
-### Rejection goes back ONE step
-When any role rejects (or sends back), the API resets **only the current PENDING step and the immediately preceding step** to `PENDING`. Any role can trigger this — there is no role restriction on the reject action.
+### Rejection stays on the step — student must resubmit
+`PATCH action "reject"` and `POST /sign decision "REJECTED"`: the current PENDING step is marked `REJECTED` and the submission status becomes `REJECTED`. The workflow does NOT move. While `REJECTED`, both `approve` and a second `reject` return 400 ("รอนักศึกษายืนยันการแก้ไขก่อน"). The student fixes documents and calls `action "resubmit"` (student-only) — this resets **only the rejected step** to PENDING (clears actedAt/notes/committeeActions), sets status `IN_PROGRESS`, and the same reviewer re-reviews from the same step. Any involved role can reject; admin/super-admin rejections require a notes comment (enforced UI + API).
 
-Logic (in `PATCH /api/submissions/[id]` action `"reject"` and `POST /api/submissions/[id]/sign` decision `"REJECTED"`):
-1. Find the current PENDING step → `step`
-2. Find the step with the highest `stepOrder` below `step` → `prevStep`
-3. Reset both `step` and `prevStep` to `PENDING` (clear notes, actedAt, committeeActions)
-4. Set submission status to `IN_PROGRESS`
-5. Notify the role at `prevStep`; also notify student if `prevStep` is not a STUDENT step
+### Send-back (ส่งกลับ) goes back ONE step — admin only
+`PATCH action "return_to_prev"` (ADMIN/SUPER_ADMIN only): resets **both the current PENDING step and the nearest preceding non-SKIPPED step** to `PENDING` (clear actedAt/notes/committeeActions), status stays `IN_PROGRESS`, and the previous role is notified to act again. Returns 400 on the first step.
 
-Returns 400 if `step` is the first step (no previous step to go back to).
+**Critical**: the sent-back current step must be reset to `PENDING`, never `REJECTED` — the approve flow only advances through PENDING steps, so a step left `REJECTED` here gets skipped forever once the previous role re-approves (bug found and fixed 2026-07-14 via E2E test).
 
 ### Reject button (ปฏิเสธ)
 The reject button is embedded directly inside `SignatureButton` and `CommitteeSignPanel` — **no separate send-back panel exists**. Clicking ปฏิเสธ calls `action: "reject"` and goes back one step. There is no standalone "ส่งกลับขั้นตอนก่อนหน้า" panel (it was removed as redundant).
