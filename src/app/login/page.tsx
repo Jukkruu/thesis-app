@@ -41,7 +41,7 @@ export default function LoginPage() {
             <GraduationCap className="w-9 h-9 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">ระบบจัดการวิทยานิพนธ์</h1>
             <p className="text-gray-500 mt-1.5">คณะวิศวกรรมศาสตร์ · ยื่น ติดตาม และลงนามเอกสารออนไลน์</p>
           </div>
         </div>

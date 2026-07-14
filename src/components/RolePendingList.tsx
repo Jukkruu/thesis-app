@@ -80,10 +80,10 @@ export function RolePendingList({ role, title, basePath }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 overflow-x-auto">
         <button
           onClick={() => setTab("pending")}
-          className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-medium text-sm border-b-2 transition whitespace-nowrap shrink-0 ${
             tab === "pending"
               ? "border-blue-600 text-blue-600"
               : "border-transparent text-gray-500 hover:text-gray-700"
@@ -99,7 +99,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
         </button>
         <button
           onClick={() => setTab("history")}
-          className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-medium text-sm border-b-2 transition whitespace-nowrap shrink-0 ${
             tab === "history"
               ? "border-blue-600 text-blue-600"
               : "border-transparent text-gray-500 hover:text-gray-700"
@@ -141,7 +141,7 @@ export function RolePendingList({ role, title, basePath }: Props) {
                 {/* Colored accent bar */}
                 <div className={`w-1.5 shrink-0 ${isPendingTab ? "bg-orange-400" : "bg-green-400"}`} />
 
-                <div className="flex items-center justify-between gap-4 p-5 flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3 p-4 sm:p-5 flex-1 min-w-0">
                   <div className="flex items-start gap-3 min-w-0">
                     {/* Avatar initial */}
                     <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-gray-500">
@@ -192,12 +192,12 @@ const TONES: Record<string, string> = {
 
 function StatCard({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: string }) {
   return (
-    <div className={`rounded-2xl border p-4 ${TONES[tone]}`}>
+    <div className={`rounded-2xl border p-3 sm:p-4 ${TONES[tone]}`}>
       <div className="flex items-center justify-between">
         {icon}
-        <span className="text-3xl font-bold">{value}</span>
+        <span className="text-2xl sm:text-3xl font-bold">{value}</span>
       </div>
-      <p className="text-sm text-gray-600 mt-1">{label}</p>
+      <p className="text-xs sm:text-sm text-gray-600 mt-1">{label}</p>
     </div>
   );
 }

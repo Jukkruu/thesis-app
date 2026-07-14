@@ -17,6 +17,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Mobile: form controls must be ≥16px or iOS Safari auto-zooms on focus */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Keyboard accessibility — clear focus ring on interactive elements */
 button:focus-visible,
 a:focus-visible,

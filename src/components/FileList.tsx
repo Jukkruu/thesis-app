@@ -149,7 +149,11 @@ export function FileList({ uploads, submissionTitle, title = "เอกสาร
                       <p className="text-xs text-gray-500 truncate">{u.fileName} · {formatBytes(u.fileSize)}</p>
                       <p className="text-xs text-gray-400">{formatDate(u.uploadedAt)}</p>
                     </div>
-                    <button onClick={() => previewFile(u.fileUrl, u.fileName)}>
+                    <button
+                      onClick={() => previewFile(u.fileUrl, u.fileName)}
+                      className="p-2 -m-1 shrink-0"
+                      aria-label="ดูเอกสาร"
+                    >
                       <Eye className="w-3.5 h-3.5 text-gray-300 hover:text-blue-500 transition" />
                     </button>
                   </div>
