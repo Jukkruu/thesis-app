@@ -251,7 +251,10 @@ function buildHtml(
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
           คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
         </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
+          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
+          หากลิงก์หมดอายุ ท่านสามารถเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่านได้ที่ <a href="${getAppUrl()}/login" style="color:#4f46e5;">${getAppUrl()}/login</a>
+        </p>
       </div>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการ และขอขอบพระคุณมา ณ โอกาสนี้</p>
@@ -318,7 +321,10 @@ function buildRejectedHtml(
            style="background:linear-gradient(135deg,#b91c1c,#dc2626);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
           คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
         </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
+          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
+          หากลิงก์หมดอายุ ท่านสามารถเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่านได้ที่ <a href="${getAppUrl()}/login" style="color:#dc2626;">${getAppUrl()}/login</a>
+        </p>
       </div>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดทราบและดำเนินการแก้ไข</p>
@@ -560,7 +566,7 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
 
   const { error } = await sendMail({
     to: financeEmail,
-    subject: emailSubject ?? `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${escapeHtml(studentName)}`,
+    subject: emailSubject ?? `[แจ้งการเงิน] นิสิตยื่นเสนอหัวข้อวิทยานิพนธ์ — ${studentName}`,
     attachments,
     html: `
       <div style="font-family:'Sarabun',sans-serif;max-width:640px;margin:0 auto;padding:24px;">
@@ -569,8 +575,8 @@ export async function sendFinanceEmail(data: FinanceEmailData): Promise<void> {
           <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">ภาควิชาวิศวกรรมเครื่องกล คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
         </div>
 
-        <p style="color:#374151;font-size:16px;">เรียน ฝ่ายการเงิน,</p>
-        <p style="color:#374151;">นิสิตรายการด้านล่างได้ยื่นเสนอหัวข้อวิทยานิพนธ์และผ่านการอนุมัติขั้นตอนที่ 1 เรียบร้อยแล้ว กรุณาดำเนินการในส่วนที่เกี่ยวข้อง</p>
+        <p style="color:#374151;font-size:16px;">เรียน เจ้าหน้าที่ฝ่ายการเงิน</p>
+        <p style="color:#374151;">ด้วยนิสิตตามรายละเอียดด้านล่างได้ยื่นคำร้องผ่านระบบจัดการวิทยานิพนธ์ และได้รับการอนุมัติจากประธานหลักสูตรเรียบร้อยแล้ว จึงใคร่ขอความอนุเคราะห์ดำเนินการในส่วนที่เกี่ยวข้อง (เอกสารการเงินแนบกรรมการสอบตามไฟล์แนบ)</p>
 
         <p style="font-weight:700;color:#1e40af;font-size:14px;margin:20px 0 8px;">ข้อมูลนิสิต</p>
         <table style="width:100%;border-collapse:collapse;font-size:15px;">
