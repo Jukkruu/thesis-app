@@ -26,6 +26,13 @@ interface Person {
   phone: string;
 }
 
+// ประธานหลักสูตรประจำแต่ละหลักสูตร — กรอกให้อัตโนมัติเมื่อนิสิตเลือกหลักสูตร (แก้ไขได้)
+const PROGRAM_CHAIR_BY_PROGRAM: Record<string, { name: string; email: string }> = {
+  PHD:     { name: "รศ.ดร.จิตติน แตงเที่ยง",       email: "qed690@yahoo.com" },
+  ME_MECH: { name: "รศ.ดร.จิตติน แตงเที่ยง",       email: "qed690@yahoo.com" },
+  ME_CPS:  { name: "ผศ.ดร.ณัฐพล ดำรงค์พลาสิทธิ์", email: "nattapol.d@chula.ac.th" },
+};
+
 const emptyPerson = (role = ""): Person => ({ name: "", email: "", role, phone: "" });
 
 const initialPeople = (): Person[] => [emptyPerson()];
@@ -81,6 +88,24 @@ export default function NewSubmissionPage() {
     { role: "EXAM_COMMITTEE",         label: "กรรมการสอบ",         min: 1, max: null },
     { role: "INVITED_EXAM_COMMITTEE", label: "กรรมการภายนอก",      min: 1, max: 1 },
   ];
+
+  // Selecting a program auto-fills the matching program chair into the people list
+  function handleProgramChange(p: ProgramType | "") {
+    setProgram(p);
+    setError(null);
+    const chair = p ? PROGRAM_CHAIR_BY_PROGRAM[p] : undefined;
+    if (!chair) return;
+    setPeople((prev) => {
+      const row: Person = { name: chair.name, email: chair.email, role: "PROGRAM_CHAIR", phone: "" };
+      const chairIdx = prev.findIndex((x) => x.role === "PROGRAM_CHAIR");
+      if (chairIdx >= 0) {
+        return prev.map((x, i) => (i === chairIdx ? { ...row, phone: x.phone } : x));
+      }
+      const emptyIdx = prev.findIndex((x) => !x.name.trim() && !x.email.trim() && !x.role);
+      if (emptyIdx >= 0) return prev.map((x, i) => (i === emptyIdx ? row : x));
+      return [...prev, row];
+    });
+  }
 
   function updatePerson(index: number, patch: Partial<Person>) {
     setPeople((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
@@ -204,12 +229,13 @@ export default function NewSubmissionPage() {
               <input value={studentCode} onChange={(e) => setStudentCode(e.target.value)} className={INPUT} placeholder="เช่น 64010042" />
             </Field>
             <Field label="หลักสูตร" required>
-              <select value={program} onChange={(e) => setProgram(e.target.value as ProgramType)} className={INPUT + " bg-white"}>
+              <select value={program} onChange={(e) => handleProgramChange(e.target.value as ProgramType | "")} className={INPUT + " bg-white"}>
                 <option value="">— เลือกหลักสูตร —</option>
                 {(Object.entries(PROGRAM_LABELS) as [string, string][]).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-400 mt-1">ระบบจะกรอกประธานหลักสูตรให้อัตโนมัติตามหลักสูตรที่เลือก</p>
             </Field>
             <Field label="อีเมล" required>
               <input type="email" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} className={INPUT} placeholder="email@chula.ac.th" />
@@ -252,7 +278,14 @@ export default function NewSubmissionPage() {
             {people.map((p, i) => (
               <div key={i} className="border border-gray-200 rounded-xl p-3.5 bg-gray-50 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500">บุคคลที่ {i + 1}</span>
+                  <span className="text-xs font-semibold text-gray-500 flex items-center gap-2 flex-wrap">
+                    บุคคลที่ {i + 1}
+                    {p.role === "PROGRAM_CHAIR" && Object.values(PROGRAM_CHAIR_BY_PROGRAM).some((c) => c.email === p.email.trim()) && (
+                      <span className="font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full">
+                        กรอกอัตโนมัติตามหลักสูตร
+                      </span>
+                    )}
+                  </span>
                   {people.length > 1 && (
                     <button
                       type="button"
