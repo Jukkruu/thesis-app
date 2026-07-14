@@ -37,14 +37,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (["COMPLETED", "CANCELLED"].includes(sub.status))
     return NextResponse.json({ error: "คำร้องนี้ปิดแล้ว ไม่สามารถลงนามได้" }, { status: 400 });
 
-  // Find the pending step this user is assigned to (involvement-based)
-  const step = sub.workflowSteps.find(
-    (s: any) =>
-      s.status === "PENDING" &&
-      ["EXAM_COMMITTEE", "CO_ADVISOR"].includes(s.role) &&
-      (s.committeeMembers as string[])?.includes(userId)
-  );
-  if (!step) return NextResponse.json({ error: "Not assigned or no pending step" }, { status: 403 });
+  // All steps are created PENDING up front, so "any pending committee step where I'm a
+  // member" is NOT enough — that would let a member sign their step (e.g. step 9) while
+  // the workflow is still at an earlier step. The current step is the LOWEST-order PENDING
+  // step; a member may only sign when THAT step is their committee step.
+  const currentStep = sub.workflowSteps.find((s: any) => s.status === "PENDING");
+  if (
+    !currentStep ||
+    !["EXAM_COMMITTEE", "CO_ADVISOR"].includes(currentStep.role) ||
+    !(currentStep.committeeMembers as string[])?.includes(userId)
+  ) {
+    return NextResponse.json({ error: "ยังไม่ถึงคิวของท่าน หรือท่านไม่ได้เป็นกรรมการของขั้นตอนนี้" }, { status: 403 });
+  }
+  const step = currentStep;
   const userRole = step.role as string;
   const stepRoleLabel = ROLE_LABELS[userRole as keyof typeof ROLE_LABELS] ?? userRole;
 

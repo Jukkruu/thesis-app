@@ -108,12 +108,22 @@ export async function POST(req: NextRequest) {
 
   const data = await req.json();
   const userId = session.user.id;
+  const studentOwnEmails = new Set(
+    [session.user.email, data.studentEmail]
+      .filter(Boolean)
+      .map((e: string) => e.trim().toLowerCase())
+  );
 
   // ── Committee people: student enters name/email/role/phone for every person
   //    responsible for their thesis. Accounts are found-or-created by email.
   type PersonInput = { name?: string; email?: string; role?: string; phone?: string };
   const PERSON_ROLES = ["ADVISOR", "CO_ADVISOR", "HEAD_EXAM_COMMITTEE", "EXAM_COMMITTEE", "INVITED_EXAM_COMMITTEE", "PROGRAM_CHAIR"];
   const people: PersonInput[] = Array.isArray(data.people) ? data.people : [];
+
+  // A submission with no committee is unworkable — every workflow step after step 1
+  // would have no assignee. The form always sends people; reject empty at the API too.
+  if (people.length === 0)
+    return NextResponse.json({ error: "กรุณาระบุอาจารย์และกรรมการที่รับผิดชอบวิทยานิพนธ์" }, { status: 400 });
 
   let advisorId: string | null = data.advisorId || null;
   let coAdvisorIds: string[] = data.coAdvisorIds ?? [];
@@ -127,9 +137,19 @@ export async function POST(req: NextRequest) {
   const newAccounts: { id: string; name: string; email: string; password: string }[] = [];
 
   if (people.length) {
+    const seenRoleEmail = new Set<string>();
     for (const p of people) {
       if (!p.name?.trim() || !p.email?.trim() || !p.role || !PERSON_ROLES.includes(p.role))
         return NextResponse.json({ error: "กรุณากรอกชื่อ อีเมล และบทบาทของกรรมการให้ครบทุกคน" }, { status: 400 });
+      const email = p.email.trim().toLowerCase();
+      // A committee person may not be the student themselves
+      if (studentOwnEmails.has(email))
+        return NextResponse.json({ error: "ไม่สามารถใช้อีเมลของนิสิตเป็นกรรมการได้" }, { status: 400 });
+      // Same email may hold multiple roles, but not the SAME role twice (breaks sequential signing)
+      const key = `${p.role}:${email}`;
+      if (seenRoleEmail.has(key))
+        return NextResponse.json({ error: "อีเมลนี้ถูกเพิ่มในบทบาทเดียวกันซ้ำ" }, { status: 400 });
+      seenRoleEmail.add(key);
     }
     const count = (r: string) => people.filter((p) => p.role === r).length;
     if (count("PROGRAM_CHAIR") !== 1)
