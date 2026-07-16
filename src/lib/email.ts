@@ -73,9 +73,12 @@ async function sendMail(opts: {
 }
 
 function getAppUrl(): string {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
+  // Strip trailing slashes — NEXTAUTH_URL with a trailing "/" produced
+  // "https://host//api/auth/magic" links that mail filters flag as malformed
+  const url =
+    process.env.NEXTAUTH_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  return url.replace(/\/+$/, "");
 }
 
 // Magic link valid 48h. NOT consumed on first use — Office365 SafeLinks prefetches
