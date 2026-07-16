@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email";
+import { isValidEmail } from "@/lib/utils";
 
 // PROPOSAL: 11 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
@@ -141,6 +142,9 @@ export async function POST(req: NextRequest) {
     for (const p of people) {
       if (!p.name?.trim() || !p.email?.trim() || !p.role || !PERSON_ROLES.includes(p.role))
         return NextResponse.json({ error: "กรุณากรอกชื่อ อีเมล และบทบาทของกรรมการให้ครบทุกคน" }, { status: 400 });
+      // A typo'd email creates an account whose password email goes nowhere — reject early
+      if (!isValidEmail(p.email))
+        return NextResponse.json({ error: `รูปแบบอีเมลของ "${p.name.trim()}" ไม่ถูกต้อง (${p.email.trim()})` }, { status: 400 });
       const email = p.email.trim().toLowerCase();
       // A committee person may not be the student themselves
       if (studentOwnEmails.has(email))

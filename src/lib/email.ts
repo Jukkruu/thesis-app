@@ -348,7 +348,7 @@ export interface WelcomeEmailData {
   role?: string;
 }
 
-export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ sent: boolean }> {
   await prisma.magicToken.deleteMany({
     where: { userId: data.userId, expiresAt: { lt: new Date() } },
   });
@@ -373,9 +373,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
 
   if (error) {
     console.error(`[email/welcome] Send error (${data.email}):`, error.message);
-  } else {
-    console.log(`[email/welcome] Sent to ${data.email}`);
+    return { sent: false };
   }
+  console.log(`[email/welcome] Sent to ${data.email}`);
+  return { sent: true };
 }
 
 function buildWelcomeHtml(name: string, email: string, password: string, loginLink: string): string {

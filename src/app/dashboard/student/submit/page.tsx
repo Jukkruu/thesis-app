@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
-import { PROGRAM_LABELS, ROLE_LABELS } from "@/lib/utils";
+import { PROGRAM_LABELS, ROLE_LABELS, isValidEmail } from "@/lib/utils";
 import { ProgramType, SubmissionType } from "@/types";
 import { ArrowLeft, User, Users, CalendarDays, Info, X, Plus, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -126,11 +126,13 @@ export default function NewSubmissionPage() {
     if (!studentCode.trim())     { setError("กรุณาระบุรหัสนิสิต");      return; }
     if (!program)                { setError("กรุณาเลือกหลักสูตร");       return; }
     if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");          return; }
+    if (!isValidEmail(studentEmail)) { setError("รูปแบบอีเมลของท่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"); return; }
 
     const seenRoleEmail = new Set<string>();
     for (const [i, p] of people.entries()) {
       if (!p.name.trim())  { setError(`กรุณาระบุชื่อ-นามสกุลของบุคคลที่ ${i + 1}`); return; }
       if (!p.email.trim()) { setError(`กรุณาระบุอีเมลของบุคคลที่ ${i + 1}`);        return; }
+      if (!isValidEmail(p.email)) { setError(`บุคคลที่ ${i + 1}: รูปแบบอีเมลไม่ถูกต้อง (${p.email.trim()})`); return; }
       if (!p.role)         { setError(`กรุณาเลือกบทบาทของบุคคลที่ ${i + 1}`);       return; }
       const email = p.email.trim().toLowerCase();
       if (email === user?.email?.toLowerCase() || email === studentEmail.trim().toLowerCase()) {

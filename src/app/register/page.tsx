@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { GraduationCap, UserPlus, Mail, CheckCircle2, BookOpen, ArrowLeft } from "lucide-react";
+import { isValidEmail } from "@/lib/utils";
 
 type RoleChoice = "STUDENT" | "PROFESSOR" | null;
 
@@ -14,11 +15,13 @@ export default function RegisterPage() {
   const [error, setError]           = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]             = useState(false);
+  const [emailFailed, setEmailFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim())  { setError("กรุณากรอกชื่อ-นามสกุล"); return; }
     if (!email.trim()) { setError("กรุณากรอกอีเมล"); return; }
+    if (!isValidEmail(email)) { setError("รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"); return; }
     if (role === "STUDENT" && !studentId.trim()) { setError("กรุณากรอกรหัสนิสิต"); return; }
 
     setSubmitting(true);
@@ -32,9 +35,13 @@ export default function RegisterPage() {
 
     setSubmitting(false);
 
-    if (res.ok) { setDone(true); return; }
-
     const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setEmailFailed(data.emailSent === false);
+      setDone(true);
+      return;
+    }
+
     setError(data.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
   }
 
@@ -178,11 +185,19 @@ export default function RegisterPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">ลงทะเบียนสำเร็จ!</h2>
-              <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                ระบบส่งรหัสผ่านและลิงก์เข้าสู่ระบบไปที่<br />
-                <strong className="text-gray-800">{email}</strong><br />
-                แล้ว กรุณาตรวจสอบอีเมลของคุณ
-              </p>
+              {emailFailed ? (
+                <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mt-3 text-sm leading-relaxed text-left">
+                  สร้างบัญชีเรียบร้อยแล้ว แต่ระบบไม่สามารถส่งอีเมลรหัสผ่านไปที่<br />
+                  <strong>{email}</strong> ได้<br />
+                  กรุณาใช้ปุ่ม &ldquo;ลืมรหัสผ่าน&rdquo; ในหน้าเข้าสู่ระบบ หรือติดต่อเจ้าหน้าที่ภาควิชา
+                </p>
+              ) : (
+                <p className="text-gray-500 mt-2 text-sm leading-relaxed">
+                  ระบบส่งรหัสผ่านและลิงก์เข้าสู่ระบบไปที่<br />
+                  <strong className="text-gray-800">{email}</strong><br />
+                  แล้ว กรุณาตรวจสอบอีเมลของคุณ
+                </p>
+              )}
             </div>
             <Link href="/login" className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
               ไปยังหน้าเข้าสู่ระบบ →

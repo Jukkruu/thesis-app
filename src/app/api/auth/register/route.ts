@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/email";
+import { isValidEmail } from "@/lib/utils";
 
 function generatePassword(length = 10): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest) {
 
   if (!name.trim()) return NextResponse.json({ error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
   if (!email.trim()) return NextResponse.json({ error: "กรุณากรอกอีเมล" }, { status: 400 });
+  if (!isValidEmail(email))
+    return NextResponse.json({ error: "รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" }, { status: 400 });
   if (role === "STUDENT" && !studentId)
     return NextResponse.json({ error: "กรุณากรอกรหัสนิสิต" }, { status: 400 });
 
@@ -33,17 +36,25 @@ export async function POST(req: NextRequest) {
   const password = generatePassword(10);
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const user = await prisma.user.create({
-    data: {
-      name: name.trim(),
-      email: normalizedEmail,
-      roles: [role as any],
-      studentId: role === "STUDENT" ? studentId : undefined,
-      passwordHash,
-    },
-  });
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: normalizedEmail,
+        roles: [role as any],
+        studentId: role === "STUDENT" ? studentId : undefined,
+        passwordHash,
+      },
+    });
+  } catch (e: any) {
+    // Unique-constraint race: two simultaneous registrations with the same email/studentId
+    if (e?.code === "P2002")
+      return NextResponse.json({ error: "อีเมลหรือรหัสนิสิตนี้มีในระบบแล้ว" }, { status: 409 });
+    throw e;
+  }
 
-  await sendWelcomeEmail({ userId: user.id, name: user.name, email: user.email, password, role });
+  const { sent } = await sendWelcomeEmail({ userId: user.id, name: user.name, email: user.email, password, role });
 
-  return NextResponse.json({ ok: true }, { status: 201 });
+  return NextResponse.json({ ok: true, emailSent: sent }, { status: 201 });
 }

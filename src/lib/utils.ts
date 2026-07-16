@@ -159,6 +159,11 @@ export function getStepName(stepOrder: number, submissionType?: string | null): 
   return map[stepOrder] ?? "";
 }
 
+/** Basic email shape check — a typo'd address means the welcome/step email silently goes nowhere. */
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+}
+
 /** Show server error text only when it is a Thai user-facing message; otherwise use a generic fallback. */
 export function toUserErrorMessage(err: unknown, fallback = "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"): string {
   const msg = err instanceof Error ? err.message : "";
