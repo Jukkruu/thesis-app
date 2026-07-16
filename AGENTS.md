@@ -11,7 +11,7 @@ A role-based thesis approval workflow app. **Fully live** — Next.js 16 App Rou
 ## Stack & deployment
 - **DB**: Prisma + `@prisma/adapter-pg` → Supabase PostgreSQL. Client in `src/lib/prisma.ts` (singleton always cached on `globalThis` — both dev and Vercel production).
 - **Auth**: NextAuth v5, credentials (email + password, bcrypt) plus one-time magic links in emails. `src/lib/auth.ts`. Login email is trimmed + lowercased before lookup.
-- **Email**: Gmail SMTP via nodemailer in `src/lib/email.ts` (shared `sendMail()` helper) — `sendStepEmail()` on every step advance, `sendFinanceEmail()` at PROPOSAL step 3 and THESIS step 6 (called directly, not via HTTP). Emails go to real recipients. Sender is `GMAIL_USER`; Gmail app limit ~500 emails/day. Magic links are **one-time use** and valid for 48 hours.
+- **Email**: SMTP via nodemailer in `src/lib/email.ts` (shared `sendMail()` helper) — `sendStepEmail()` on every step advance, `sendFinanceEmail()` at PROPOSAL step 3 and THESIS step 6 (called directly, not via HTTP). Emails go to real recipients. Sender: Office365/generic SMTP when `SMTP_USER`/`SMTP_PASS` are set (default host smtp.office365.com:587), else Gmail via `GMAIL_USER`/`GMAIL_APP_PASSWORD` (~500 emails/day limit). Magic links are **one-time use** and valid for 48 hours.
 - **Storage**: Supabase Storage bucket `thesis-files`. Upload API at `POST /api/upload`.
 - **Deploy**: Vercel, auto-deploys on push to `main` (GitHub: Jukkruu/thesis-app).
 
@@ -20,8 +20,12 @@ A role-based thesis approval workflow app. **Fully live** — Next.js 16 App Rou
 DATABASE_URL          # Supabase connection string (pooled)
 NEXTAUTH_SECRET
 NEXTAUTH_URL
-GMAIL_USER            # Gmail address used as SMTP sender
+GMAIL_USER            # Gmail address used as SMTP sender (fallback when SMTP_USER unset)
 GMAIL_APP_PASSWORD    # Google App Password (16 chars, requires 2FA)
+SMTP_USER             # optional: Office365/generic SMTP sender, takes priority over Gmail
+SMTP_PASS             # password for SMTP_USER — mailbox needs "Authenticated SMTP" enabled
+SMTP_HOST             # optional, default smtp.office365.com
+SMTP_PORT             # optional, default 587 (STARTTLS)
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 FINANCE_EMAIL         # recipient for finance notifications

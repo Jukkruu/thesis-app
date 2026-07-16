@@ -17,15 +17,27 @@ function escapeHtml(s: string | undefined | null): string {
 
 
 function getTransport() {
+  // Office365 / generic SMTP takes priority when configured (e.g. suphap.m@chula.ac.th).
+  // Requires "Authenticated SMTP" enabled on the mailbox — Chula IT may need to allow it.
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (smtpUser && smtpPass) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST ?? "smtp.office365.com",
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: false, // STARTTLS on 587
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+  }
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return null;
   return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
 }
 
-// Gmail requires the from address to match the authenticated account
+// The from address must match the authenticated account (both Gmail and Office365 enforce this)
 function getFromAddress(): string {
-  return `"ระบบวิทยานิพนธ์ ME CU" <${process.env.GMAIL_USER}>`;
+  return `"ระบบวิทยานิพนธ์ ME CU" <${process.env.SMTP_USER || process.env.GMAIL_USER}>`;
 }
 
 async function sendMail(opts: {
