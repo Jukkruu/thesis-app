@@ -1,9 +1,6 @@
 import nodemailer from "nodemailer";
-import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
-import { ROLE_ROUTES } from "./roleRoutes";
-import type { Role } from "@/types";
 
 function escapeHtml(s: string | undefined | null): string {
   if (!s) return "";
@@ -158,40 +155,11 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
   const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
 
-  // Map workflow step-role strings to actual dashboard paths.
-  // ROLE_ROUTES only covers the 4 top-level DB roles (STUDENT/ADMIN/SUPER_ADMIN/PROFESSOR).
-  const STEP_ROLE_DASHBOARD: Record<string, string> = {
-    STUDENT:                "/dashboard/student",
-    ADVISOR:                "/dashboard/advisor",
-    CO_ADVISOR:             "/dashboard/advisor",
-    HEAD_EXAM_COMMITTEE:    "/dashboard/head-exam-committee",
-    EXAM_COMMITTEE:         "/dashboard/exam-committee",
-    INVITED_EXAM_COMMITTEE: "/dashboard/invited-exam-committee",
-    PROGRAM_CHAIR:          "/dashboard/program-chair",
-    ADMIN:                  "/dashboard/admin",
-    SUPER_ADMIN:            "/dashboard/super-admin",
-  };
-  const basePath = STEP_ROLE_DASHBOARD[role] ?? ROLE_ROUTES[role as Role] ?? "/dashboard";
-  const redirectTo = `${basePath}/${sub.id}`;
-
   for (const recipient of recipients) {
-    // Clean up any expired tokens for this user before creating a new one
-    await prisma.magicToken.deleteMany({
-      where: { userId: recipient.id, expiresAt: { lt: new Date() } },
-    });
-
-    // Magic token — one-time use, valid 48 hours
-    const rawToken = randomBytes(32).toString("hex");
-    await prisma.magicToken.create({
-      data: {
-        token:     rawToken,
-        userId:    recipient.id,
-        redirectTo,
-        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-      },
-    });
-
-    const magicLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+    // Plain login link — one-time magic links were removed because mail scanners
+    // (e.g. Office365 SafeLinks) prefetch URLs and consume the token before the
+    // recipient ever clicks. Users log in with email + password instead.
+    const magicLink = `${getAppUrl()}/login`;
 
     const subject = isRejection
       ? `[ระบบจัดการวิทยานิพนธ์] คำร้องถูกปฏิเสธ — ${sub.title}`
@@ -261,11 +229,11 @@ function buildHtml(
       <div style="text-align:center;margin:28px 0;">
         <a href="${magicLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
+          เข้าสู่ระบบเพื่อดูคำร้อง
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
-          หากลิงก์หมดอายุ ท่านสามารถเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่านได้ที่ <a href="${getAppUrl()}/login" style="color:#4f46e5;">${getAppUrl()}/login</a>
+          เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน<br>
+          หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)
         </p>
       </div>
 
@@ -331,11 +299,11 @@ function buildRejectedHtml(
       <div style="text-align:center;margin:28px 0;">
         <a href="${magicLink}"
            style="background:linear-gradient(135deg,#b91c1c,#dc2626);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          คลิกเพื่อเข้าสู่ระบบและดูคำร้อง
+          เข้าสู่ระบบเพื่อดูคำร้อง
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
-          หากลิงก์หมดอายุ ท่านสามารถเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่านได้ที่ <a href="${getAppUrl()}/login" style="color:#dc2626;">${getAppUrl()}/login</a>
+          เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน<br>
+          หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)
         </p>
       </div>
 
@@ -361,22 +329,7 @@ export interface WelcomeEmailData {
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ sent: boolean }> {
-  await prisma.magicToken.deleteMany({
-    where: { userId: data.userId, expiresAt: { lt: new Date() } },
-  });
-
-  const redirectTo = ROLE_ROUTES[data.role as Role] ?? "/dashboard/student";
-  const rawToken = randomBytes(32).toString("hex");
-  await prisma.magicToken.create({
-    data: {
-      token: rawToken,
-      userId: data.userId,
-      redirectTo,
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-    },
-  });
-
-  const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+  const loginLink = `${getAppUrl()}/login`;
   const { error } = await sendMail({
     to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
@@ -414,11 +367,10 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
       <div style="text-align:center;margin:28px 0;">
         <a href="${loginLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          คลิกเพื่อเข้าสู่ระบบทันที
+          ไปยังหน้าเข้าสู่ระบบ
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
-          หลังจากนั้นให้ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ
+          ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ
         </p>
       </div>
 
@@ -443,22 +395,7 @@ export interface ForgotPasswordEmailData {
 }
 
 export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Promise<void> {
-  await prisma.magicToken.deleteMany({
-    where: { userId: data.userId, expiresAt: { lt: new Date() } },
-  });
-
-  const rawToken = randomBytes(32).toString("hex");
-  const redirectTo = ROLE_ROUTES[data.role as Role] ?? "/dashboard";
-  await prisma.magicToken.create({
-    data: {
-      token: rawToken,
-      userId: data.userId,
-      redirectTo,
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-    },
-  });
-
-  const loginLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+  const loginLink = `${getAppUrl()}/login`;
   const { error } = await sendMail({
     to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
@@ -497,11 +434,10 @@ function buildForgotPasswordHtml(name: string, email: string, password: string, 
       <div style="text-align:center;margin:28px 0;">
         <a href="${loginLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          คลิกเพื่อเข้าสู่ระบบทันที
+          ไปยังหน้าเข้าสู่ระบบ
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง<br>
-          หลังจากนั้นให้ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ
+          ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ
         </p>
       </div>
 
@@ -662,22 +598,7 @@ export interface ExamReminderEmailData {
 }
 
 export async function sendExamReminderEmail(data: ExamReminderEmailData): Promise<void> {
-
-  await prisma.magicToken.deleteMany({
-    where: { userId: data.recipientId, expiresAt: { lt: new Date() } },
-  });
-
-  const rawToken = randomBytes(32).toString("hex");
-  await prisma.magicToken.create({
-    data: {
-      token: rawToken,
-      userId: data.recipientId,
-      redirectTo: data.redirectTo,
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-    },
-  });
-
-  const magicLink = `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
+  const magicLink = `${getAppUrl()}/login`;
   const is7 = data.daysUntil === 7;
   const subject = is7
     ? `[แจ้งเตือน] เหลือ 7 วันก่อนวันสอบ — ${data.thesisTitle}`
@@ -741,9 +662,9 @@ function buildExamReminderHtml(data: ExamReminderEmailData, magicLink: string): 
       <div style="text-align:center;margin:28px 0;">
         <a href="${magicLink}"
            style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          คลิกเพื่อเข้าสู่ระบบและตรวจสอบสถานะ
+          เข้าสู่ระบบเพื่อตรวจสอบสถานะ
         </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 48 ชั่วโมง</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่าน</p>
       </div>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
