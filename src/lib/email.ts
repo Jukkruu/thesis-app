@@ -226,16 +226,10 @@ function buildHtml(
         </tr>
       </table>
 
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${magicLink}"
-           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          เข้าสู่ระบบเพื่อดูคำร้อง
-        </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน<br>
-          หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)
-        </p>
-      </div>
+      <p style="color:#374151;margin:24px 0;">
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
+        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
+      </p>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการ และขอขอบพระคุณมา ณ โอกาสนี้</p>
       <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
@@ -296,16 +290,10 @@ function buildRejectedHtml(
         </tr>
       </table>
 
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${magicLink}"
-           style="background:linear-gradient(135deg,#b91c1c,#dc2626);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          เข้าสู่ระบบเพื่อดูคำร้อง
-        </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน<br>
-          หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)
-        </p>
-      </div>
+      <p style="color:#374151;margin:24px 0;">
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
+        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
+      </p>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดทราบและดำเนินการแก้ไข</p>
       <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
@@ -364,15 +352,10 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
         <p style="margin:0;color:#374151;font-size:15px;"><strong>รหัสผ่าน:</strong> <code style="background:#e5e7eb;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;letter-spacing:0.05em;">${rPass}</code></p>
       </div>
 
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${loginLink}"
-           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          ไปยังหน้าเข้าสู่ระบบ
-        </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ
-        </p>
-      </div>
+      <p style="color:#374151;margin:24px 0;">
+        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
+        <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ</span>
+      </p>
 
       <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
 
@@ -431,15 +414,10 @@ function buildForgotPasswordHtml(name: string, email: string, password: string, 
 
       <p style="color:#6b7280;font-size:14px;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบทันที</p>
 
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${loginLink}"
-           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          ไปยังหน้าเข้าสู่ระบบ
-        </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">
-          ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ
-        </p>
-      </div>
+      <p style="color:#374151;margin:24px 0;">
+        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
+        <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ</span>
+      </p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
         อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
@@ -659,13 +637,10 @@ function buildExamReminderHtml(data: ExamReminderEmailData, magicLink: string): 
         </tr>
       </table>
 
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${magicLink}"
-           style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;display:inline-block;">
-          เข้าสู่ระบบเพื่อตรวจสอบสถานะ
-        </a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:12px;">เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่าน</p>
-      </div>
+      <p style="color:#374151;margin:24px 0;">
+        ท่านสามารถเข้าสู่ระบบเพื่อตรวจสอบสถานะได้ที่ ${magicLink}<br>
+        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่าน</span>
+      </p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
         อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบจัดการวิทยานิพนธ์ ภาควิชาวิศวกรรมเครื่องกล จุฬาฯ<br>
