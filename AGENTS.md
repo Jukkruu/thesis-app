@@ -17,7 +17,8 @@ A role-based thesis approval workflow app. **Fully live** — Next.js 16 App Rou
 
 ### Required env vars (Vercel + local `.env.local`)
 ```
-DATABASE_URL          # Supabase connection string (pooled)
+DATABASE_URL          # Supabase pooler in TRANSACTION mode (port 6543, host aws-1-...pooler.supabase.com).
+                      # Session mode (:5432) has a 15-client cap and caused EMAXCONNSESSION under real traffic.
 NEXTAUTH_SECRET
 NEXTAUTH_URL
 GMAIL_USER            # Gmail address used as SMTP sender (fallback when SMTP_USER unset)
@@ -31,7 +32,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 FINANCE_EMAIL         # recipient for finance notifications
 DEMO_MODE             # "true" enables /demo page + passwordless demo login; unset in production
 EMAIL_OVERRIDE_TO     # testing: when set, ALL emails go to this address instead of real recipients
-                      # (subject gets "[ถึง: <intended>]" suffix). Remove to resume real delivery.
+                      # (subject gets "[ถึง: <intended>]" suffix). REMOVED 2026-07-16 — system is live,
+                      # real recipients get email. Re-set it before any bulk testing.
 ```
 
 ---
@@ -130,7 +132,7 @@ stepUploads={isFutureStep ? [] : stepUploads}
 - Reuse role colors via `ROLE_GRADIENT` / `ROLE_EMOJI` / `ROLE_LABELS` in `lib/utils.ts`.
 - Run `npm run build` before committing non-trivial changes.
 - No `STEP_NAMES` direct usage anywhere — always `getStepName(stepOrder, submissionType)`.
-- Prisma singleton: `src/lib/prisma.ts` uses `globalForPrisma.prisma ?? createClient()` then always sets `globalForPrisma.prisma = prisma`. Never add a `NODE_ENV !== "production"` guard — that was the bug that caused connection exhaustion on Vercel.
+- Prisma singleton: `src/lib/prisma.ts` uses `globalForPrisma.prisma ?? createClient()` then always sets `globalForPrisma.prisma = prisma`. Never add a `NODE_ENV !== "production"` guard — that was the bug that caused connection exhaustion on Vercel. The pg pool is capped at `max: 3` with a 30s idle timeout — do not raise it; parallel Vercel instances share the Supabase pooler's global client limit.
 
 ---
 
@@ -160,13 +162,13 @@ stepUploads={isFutureStep ? [] : stepUploads}
 
 ## Submission fields — student enters everything manually
 
-**Registration:** students must provide รหัสนิสิต (unique, stored on `users.studentId`); professors don't. Submit form prefills ชื่อ/รหัสนิสิต/อีเมล from the account.
+**Registration:** students must provide รหัสนิสิต (unique, stored on `users.studentId`); professors don't. Email format is validated via `isValidEmail()` (`lib/utils.ts`) in both form and API; duplicate email/studentId → 409 (incl. the concurrent-create race via P2002 catch). The register API returns `emailSent` — when the welcome email fails, the register page shows an amber warning pointing to forgot-password instead of claiming the email was sent. Submit form prefills ชื่อ/รหัสนิสิต/อีเมล from the account.
 
 **Student info:** ชื่อ-นามสกุล, รหัสนิสิต, หลักสูตร (PHD=วิศวกรรมศาสตรดุษฎีบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_MECH=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาวิศวกรรมเครื่องกล / ME_CPS=วิศวกรรมศาสตรมหาบัณฑิต สาขาวิชาระบบกายภาพที่เชื่อมประสานด้วยเครือข่ายไซเบอร์), อีเมล์, เบอร์โทร
 
 **Committee people (`data.people[]`):** the student manually enters every person responsible for their thesis as `{ name, email, role, phone? }` rows — there are NO professor dropdowns. The API finds-or-creates a PROFESSOR account per unique email (new accounts get a welcome email with password) and maps the rows to `advisorId` / `coAdvisorIds` / `headCommitteeId` / `committeeIds` / `invitedCommitteeId` / `programChairId`. The same email may hold multiple roles (one account). Committee id arrays are deduped — duplicates would break sequential signing.
 
-**Validation (enforced in form AND API):** ADVISOR exactly 1 · PROGRAM_CHAIR exactly 1 (role option disabled in other rows once taken) · HEAD_EXAM_COMMITTEE exactly 1 · EXAM_COMMITTEE ≥1 · INVITED_EXAM_COMMITTEE exactly 1 · CO_ADVISOR 0+. A person's email may not equal the student's own email; duplicate email-in-same-role rows are rejected. The form shows a live checklist chip per required role. วันที่สอบ + เวลาสอบ required; title-confirmation checkbox before submit.
+**Validation (enforced in form AND API):** ADVISOR exactly 1 · PROGRAM_CHAIR exactly 1 (role option disabled in other rows once taken) · HEAD_EXAM_COMMITTEE exactly 1 · EXAM_COMMITTEE ≥1 · INVITED_EXAM_COMMITTEE exactly 1 · CO_ADVISOR 0+. Every person's email must pass `isValidEmail()` (a typo'd email would create an account whose password email goes nowhere); a person's email may not equal the student's own email; duplicate email-in-same-role rows are rejected. The form shows a live checklist chip per required role. วันที่สอบ + เวลาสอบ required; title-confirmation checkbox before submit.
 
 **Exam logistics:** วันที่สอบ + เวลา, ห้องประชุม (yes/no), ที่จอดรถ (yes/no), เลขทะเบียนรถ
 
