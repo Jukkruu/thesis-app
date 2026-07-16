@@ -22,8 +22,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Consume the token — one-time use
-  await prisma.magicToken.delete({ where: { token } }).catch(() => {});
+  // NOT deleted on use — Office365 SafeLinks prefetches emailed URLs, which used
+  // to consume one-time tokens before the recipient clicked. The token stays
+  // valid until its 48h expiry (expired tokens are deleted above and by senders).
 
   // Build the session JWT matching the NextAuth JWT callback output
   const isSecure = req.url.startsWith("https://");

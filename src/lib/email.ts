@@ -1,6 +1,9 @@
 import nodemailer from "nodemailer";
+import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
+import { ROLE_ROUTES } from "./roleRoutes";
+import type { Role } from "@/types";
 
 function escapeHtml(s: string | undefined | null): string {
   if (!s) return "";
@@ -73,6 +76,25 @@ function getAppUrl(): string {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
+}
+
+// Magic link valid 48h. NOT consumed on first use — Office365 SafeLinks prefetches
+// URLs in incoming mail, so a delete-on-first-GET token dies before the recipient
+// ever clicks. The token is removed only when it expires.
+async function createMagicLink(userId: string, redirectTo: string): Promise<string> {
+  await prisma.magicToken.deleteMany({
+    where: { userId, expiresAt: { lt: new Date() } },
+  });
+  const rawToken = randomBytes(32).toString("hex");
+  await prisma.magicToken.create({
+    data: {
+      token: rawToken,
+      userId,
+      redirectTo,
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+    },
+  });
+  return `${getAppUrl()}/api/auth/magic?t=${rawToken}`;
 }
 
 interface StepEmailOptions {
@@ -155,11 +177,24 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
   const studentDisplay = sub.studentFullName ?? (sub.studentCode ? `รหัส ${sub.studentCode}` : "นิสิต");
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
 
+  // Map workflow step-role strings to actual dashboard paths.
+  // ROLE_ROUTES only covers the 4 top-level DB roles (STUDENT/ADMIN/SUPER_ADMIN/PROFESSOR).
+  const STEP_ROLE_DASHBOARD: Record<string, string> = {
+    STUDENT:                "/dashboard/student",
+    ADVISOR:                "/dashboard/advisor",
+    CO_ADVISOR:             "/dashboard/advisor",
+    HEAD_EXAM_COMMITTEE:    "/dashboard/head-exam-committee",
+    EXAM_COMMITTEE:         "/dashboard/exam-committee",
+    INVITED_EXAM_COMMITTEE: "/dashboard/invited-exam-committee",
+    PROGRAM_CHAIR:          "/dashboard/program-chair",
+    ADMIN:                  "/dashboard/admin",
+    SUPER_ADMIN:            "/dashboard/super-admin",
+  };
+  const basePath = STEP_ROLE_DASHBOARD[role] ?? ROLE_ROUTES[role as Role] ?? "/dashboard";
+  const redirectTo = `${basePath}/${sub.id}`;
+
   for (const recipient of recipients) {
-    // Plain login link — one-time magic links were removed because mail scanners
-    // (e.g. Office365 SafeLinks) prefetch URLs and consume the token before the
-    // recipient ever clicks. Users log in with email + password instead.
-    const magicLink = `${getAppUrl()}/login`;
+    const magicLink = await createMagicLink(recipient.id, redirectTo);
 
     const subject = isRejection
       ? `[ระบบจัดการวิทยานิพนธ์] คำร้องถูกปฏิเสธ — ${sub.title}`
@@ -227,8 +262,9 @@ function buildHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
-        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
+        เข้าสู่ระบบอัตโนมัติเพื่อดูคำร้องได้ที่ลิงก์นี้ (ใช้ได้ภายใน 48 ชั่วโมง):<br>
+        <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;font-size:13px;">${magicLink}</a><br>
+        <span style="color:#6b7280;font-size:13px;">หรือเข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่านที่ ${getAppUrl()}/login — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ</span>
       </p>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการ และขอขอบพระคุณมา ณ โอกาสนี้</p>
@@ -291,8 +327,9 @@ function buildRejectedHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
-        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
+        เข้าสู่ระบบอัตโนมัติเพื่อดูคำร้องได้ที่ลิงก์นี้ (ใช้ได้ภายใน 48 ชั่วโมง):<br>
+        <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;font-size:13px;">${magicLink}</a><br>
+        <span style="color:#6b7280;font-size:13px;">หรือเข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่านที่ ${getAppUrl()}/login — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ</span>
       </p>
 
       <p style="color:#374151;margin-top:24px;">จึงเรียนมาเพื่อโปรดทราบและดำเนินการแก้ไข</p>
@@ -317,7 +354,7 @@ export interface WelcomeEmailData {
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ sent: boolean }> {
-  const loginLink = `${getAppUrl()}/login`;
+  const loginLink = await createMagicLink(data.userId, ROLE_ROUTES[data.role as Role] ?? "/dashboard/student");
   const { error } = await sendMail({
     to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] ยินดีต้อนรับ — รหัสผ่านสำหรับเข้าสู่ระบบ",
@@ -353,8 +390,9 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
       </div>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
-        <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ</span>
+        เข้าสู่ระบบอัตโนมัติได้ที่ลิงก์นี้ (ใช้ได้ภายใน 48 ชั่วโมง):<br>
+        <a href="${loginLink}" style="color:#1d4ed8;word-break:break-all;font-size:13px;">${loginLink}</a><br>
+        <span style="color:#6b7280;font-size:13px;">หรือเข้าสู่ระบบด้วยอีเมลและรหัสผ่านด้านบนที่ ${getAppUrl()}/login</span>
       </p>
 
       <p style="color:#374151;margin-top:16px;">ขอแสดงความนับถือ<br>ภาควิชาวิศวกรรมเครื่องกล<br>คณะวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p>
@@ -378,7 +416,7 @@ export interface ForgotPasswordEmailData {
 }
 
 export async function sendForgotPasswordEmail(data: ForgotPasswordEmailData): Promise<void> {
-  const loginLink = `${getAppUrl()}/login`;
+  const loginLink = await createMagicLink(data.userId, ROLE_ROUTES[data.role as Role] ?? "/dashboard");
   const { error } = await sendMail({
     to: data.email,
     subject: "[ระบบจัดการวิทยานิพนธ์] รหัสผ่านใหม่ของคุณ",
@@ -415,8 +453,9 @@ function buildForgotPasswordHtml(name: string, email: string, password: string, 
       <p style="color:#6b7280;font-size:14px;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบทันที</p>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
-        <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ</span>
+        เข้าสู่ระบบอัตโนมัติได้ที่ลิงก์นี้ (ใช้ได้ภายใน 48 ชั่วโมง):<br>
+        <a href="${loginLink}" style="color:#1d4ed8;word-break:break-all;font-size:13px;">${loginLink}</a><br>
+        <span style="color:#6b7280;font-size:13px;">หรือเข้าสู่ระบบด้วยอีเมลและรหัสผ่านใหม่ด้านบนที่ ${getAppUrl()}/login</span>
       </p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
@@ -576,7 +615,7 @@ export interface ExamReminderEmailData {
 }
 
 export async function sendExamReminderEmail(data: ExamReminderEmailData): Promise<void> {
-  const magicLink = `${getAppUrl()}/login`;
+  const magicLink = await createMagicLink(data.recipientId, data.redirectTo);
   const is7 = data.daysUntil === 7;
   const subject = is7
     ? `[แจ้งเตือน] เหลือ 7 วันก่อนวันสอบ — ${data.thesisTitle}`
@@ -638,8 +677,9 @@ function buildExamReminderHtml(data: ExamReminderEmailData, magicLink: string): 
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อตรวจสอบสถานะได้ที่ ${magicLink}<br>
-        <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่าน</span>
+        เข้าสู่ระบบอัตโนมัติเพื่อตรวจสอบสถานะได้ที่ลิงก์นี้ (ใช้ได้ภายใน 48 ชั่วโมง):<br>
+        <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;font-size:13px;">${magicLink}</a><br>
+        <span style="color:#6b7280;font-size:13px;">หรือเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่านที่ ${getAppUrl()}/login</span>
       </p>
 
       <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px;">
