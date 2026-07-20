@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp, SubmissionFormData } from "@/context/AppContext";
-import { PROGRAM_LABELS, ROLE_LABELS, isValidEmail } from "@/lib/utils";
+import { PROGRAM_LABELS, ROLE_LABELS, isValidEmail, isValidStudentId, isValidThaiPhone } from "@/lib/utils";
 import { ProgramType, SubmissionType } from "@/types";
 import { ArrowLeft, User, Users, CalendarDays, Info, X, Plus, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -124,9 +124,11 @@ export default function NewSubmissionPage() {
     if (!title.trim())           { setError("กรุณาระบุชื่อหัวข้อ");     return; }
     if (!studentFullName.trim()) { setError("กรุณาระบุชื่อ-นามสกุล");   return; }
     if (!studentCode.trim())     { setError("กรุณาระบุรหัสนิสิต");      return; }
+    if (!isValidStudentId(studentCode)) { setError("รหัสนิสิตต้องเป็นตัวเลข 10 หลัก"); return; }
     if (!program)                { setError("กรุณาเลือกหลักสูตร");       return; }
     if (!studentEmail.trim())    { setError("กรุณาระบุอีเมล");          return; }
     if (!isValidEmail(studentEmail)) { setError("รูปแบบอีเมลของท่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"); return; }
+    if (studentPhone.trim() && !isValidThaiPhone(studentPhone)) { setError("เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวเลข 9–10 หลัก ขึ้นต้นด้วย 0)"); return; }
 
     const seenRoleEmail = new Set<string>();
     for (const [i, p] of people.entries()) {
@@ -134,6 +136,7 @@ export default function NewSubmissionPage() {
       if (!p.email.trim()) { setError(`กรุณาระบุอีเมลของบุคคลที่ ${i + 1}`);        return; }
       if (!isValidEmail(p.email)) { setError(`บุคคลที่ ${i + 1}: รูปแบบอีเมลไม่ถูกต้อง (${p.email.trim()})`); return; }
       if (!p.role)         { setError(`กรุณาเลือกบทบาทของบุคคลที่ ${i + 1}`);       return; }
+      if (p.phone.trim() && !isValidThaiPhone(p.phone)) { setError(`บุคคลที่ ${i + 1}: เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวเลข 9–10 หลัก ขึ้นต้นด้วย 0)`); return; }
       const email = p.email.trim().toLowerCase();
       if (email === user?.email?.toLowerCase() || email === studentEmail.trim().toLowerCase()) {
         setError(`บุคคลที่ ${i + 1}: ไม่สามารถใช้อีเมลของท่านเองเป็นกรรมการได้`); return;
@@ -152,6 +155,7 @@ export default function NewSubmissionPage() {
     if (count("INVITED_EXAM_COMMITTEE") !== 1) { setError("ต้องระบุกรรมการภายนอก 1 คน");           return; }
 
     if (!examDate.trim()) { setError("กรุณาระบุวันที่สอบ"); return; }
+    if (examDate < new Date().toISOString().split("T")[0]) { setError("วันที่สอบต้องเป็นวันนี้หรือวันในอนาคต"); return; }
     if (!examTime.trim()) { setError("กรุณาระบุเวลาสอบ");   return; }
     if (parkingNeeded && !carPlate.trim()) { setError("กรุณาระบุเลขทะเบียนรถ"); return; }
 
@@ -228,7 +232,7 @@ export default function NewSubmissionPage() {
               <input value={studentFullName} onChange={(e) => setStudentFullName(e.target.value)} className={INPUT} placeholder="ชื่อ นามสกุล" />
             </Field>
             <Field label="รหัสนิสิต" required>
-              <input value={studentCode} onChange={(e) => setStudentCode(e.target.value)} className={INPUT} placeholder="เช่น 64010042" />
+              <input value={studentCode} onChange={(e) => setStudentCode(e.target.value)} className={INPUT} placeholder="เช่น 6733100421" inputMode="numeric" maxLength={10} />
             </Field>
             <Field label="หลักสูตร" required>
               <select value={program} onChange={(e) => handleProgramChange(e.target.value as ProgramType | "")} className={INPUT + " bg-white"}>

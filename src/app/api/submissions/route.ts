@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email";
-import { isValidEmail } from "@/lib/utils";
+import { isValidEmail, isValidStudentId, isValidThaiPhone } from "@/lib/utils";
 
 // PROPOSAL: 11 steps — บ.วศ.1ก/1ข then บ.วศ.1ค/1ง
 const PROPOSAL_ROLES = [
@@ -109,8 +109,46 @@ export async function POST(req: NextRequest) {
 
   const data = await req.json();
   const userId = session.user.id;
+
+  // ── Field validation — the form checks these too, but the API must hold on its own ──
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  if (!title)
+    return NextResponse.json({ error: "กรุณาระบุชื่อหัวข้อวิทยานิพนธ์" }, { status: 400 });
+  if (title.length > 500)
+    return NextResponse.json({ error: "ชื่อหัวข้อยาวเกิน 500 ตัวอักษร" }, { status: 400 });
+  if (data.submissionType !== "PROPOSAL" && data.submissionType !== "THESIS_DEFENSE")
+    return NextResponse.json({ error: "ประเภทคำร้องไม่ถูกต้อง" }, { status: 400 });
+  const studentFullName = typeof data.studentFullName === "string" ? data.studentFullName.trim() : "";
+  if (!studentFullName || studentFullName.length > 200)
+    return NextResponse.json({ error: "กรุณาระบุชื่อ-นามสกุล (ไม่เกิน 200 ตัวอักษร)" }, { status: 400 });
+  const studentCode = typeof data.studentCode === "string" ? data.studentCode.trim() : "";
+  if (!isValidStudentId(studentCode))
+    return NextResponse.json({ error: "รหัสนิสิตต้องเป็นตัวเลข 10 หลัก" }, { status: 400 });
+  if (!["PHD", "ME_MECH", "ME_CPS"].includes(data.program))
+    return NextResponse.json({ error: "กรุณาเลือกหลักสูตร" }, { status: 400 });
+  const studentEmail = typeof data.studentEmail === "string" ? data.studentEmail.trim() : "";
+  if (!isValidEmail(studentEmail))
+    return NextResponse.json({ error: "รูปแบบอีเมลของนิสิตไม่ถูกต้อง" }, { status: 400 });
+  const studentPhone = typeof data.studentPhone === "string" ? data.studentPhone.trim() : "";
+  if (studentPhone && !isValidThaiPhone(studentPhone))
+    return NextResponse.json({ error: "เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวเลข 9–10 หลัก ขึ้นต้นด้วย 0)" }, { status: 400 });
+  const examDate = typeof data.examDate === "string" ? data.examDate.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate) || isNaN(Date.parse(examDate)))
+    return NextResponse.json({ error: "กรุณาระบุวันที่สอบให้ถูกต้อง" }, { status: 400 });
+  // "Today" in Thailand (UTC+7) — the server runs in UTC
+  const todayBkk = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  if (examDate < todayBkk)
+    return NextResponse.json({ error: "วันที่สอบต้องเป็นวันนี้หรือวันในอนาคต" }, { status: 400 });
+  const examTime = typeof data.examTime === "string" ? data.examTime.trim() : "";
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(examTime))
+    return NextResponse.json({ error: "กรุณาระบุเวลาสอบให้ถูกต้อง (เช่น 13:00)" }, { status: 400 });
+  const parkingNeeded = data.parkingNeeded ?? false;
+  const carPlate = typeof data.carPlate === "string" ? data.carPlate.trim() : "";
+  if (parkingNeeded && (!carPlate || carPlate.length > 50))
+    return NextResponse.json({ error: "กรุณาระบุเลขทะเบียนรถ (ไม่เกิน 50 ตัวอักษร)" }, { status: 400 });
+
   const studentOwnEmails = new Set(
-    [session.user.email, data.studentEmail]
+    [session.user.email, studentEmail]
       .filter(Boolean)
       .map((e: string) => e.trim().toLowerCase())
   );
@@ -142,9 +180,13 @@ export async function POST(req: NextRequest) {
     for (const p of people) {
       if (!p.name?.trim() || !p.email?.trim() || !p.role || !PERSON_ROLES.includes(p.role))
         return NextResponse.json({ error: "กรุณากรอกชื่อ อีเมล และบทบาทของกรรมการให้ครบทุกคน" }, { status: 400 });
+      if (p.name.trim().length > 200)
+        return NextResponse.json({ error: `ชื่อของกรรมการยาวเกิน 200 ตัวอักษร` }, { status: 400 });
       // A typo'd email creates an account whose password email goes nowhere — reject early
       if (!isValidEmail(p.email))
         return NextResponse.json({ error: `รูปแบบอีเมลของ "${p.name.trim()}" ไม่ถูกต้อง (${p.email.trim()})` }, { status: 400 });
+      if (p.phone?.trim() && !isValidThaiPhone(p.phone))
+        return NextResponse.json({ error: `เบอร์โทรศัพท์ของ "${p.name.trim()}" ไม่ถูกต้อง (ตัวเลข 9–10 หลัก ขึ้นต้นด้วย 0)` }, { status: 400 });
       const email = p.email.trim().toLowerCase();
       // A committee person may not be the student themselves
       if (studentOwnEmails.has(email))
@@ -221,16 +263,16 @@ export async function POST(req: NextRequest) {
 
   const submission = await prisma.submission.create({
     data: {
-      title: data.title,
+      title,
       submissionType: data.submissionType,
       status: "IN_PROGRESS",
       studentId: userId,
       advisorId,
-      studentFullName: data.studentFullName,
-      studentCode: data.studentCode,
+      studentFullName,
+      studentCode,
       program: data.program,
-      studentEmail: data.studentEmail,
-      studentPhone: data.studentPhone,
+      studentEmail,
+      studentPhone: studentPhone || null,
       headCommitteeId,
       committeeIds,
       coAdvisorIds,
@@ -240,11 +282,11 @@ export async function POST(req: NextRequest) {
       invitedProfAffiliation: data.invitedProfAffiliation,
       invitedProfEmail,
       invitedProfPhone,
-      examDate: data.examDate,
-      examTime: data.examTime,
+      examDate,
+      examTime,
       roomNeeded: data.roomNeeded ?? false,
-      parkingNeeded: data.parkingNeeded ?? false,
-      carPlate: data.carPlate,
+      parkingNeeded,
+      carPlate: parkingNeeded ? carPlate : null,
       workflowSteps: {
         create: (data.submissionType === "THESIS_DEFENSE" ? THESIS_ROLES : PROPOSAL_ROLES).map((role, i) => ({
           stepOrder: i + 1,

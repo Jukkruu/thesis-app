@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { GraduationCap, UserPlus, Mail, CheckCircle2, BookOpen, ArrowLeft } from "lucide-react";
-import { isValidEmail } from "@/lib/utils";
+import { isValidEmail, isValidStudentId } from "@/lib/utils";
 
 type RoleChoice = "STUDENT" | "PROFESSOR" | null;
 
@@ -23,6 +23,7 @@ export default function RegisterPage() {
     if (!email.trim()) { setError("กรุณากรอกอีเมล"); return; }
     if (!isValidEmail(email)) { setError("รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"); return; }
     if (role === "STUDENT" && !studentId.trim()) { setError("กรุณากรอกรหัสนิสิต"); return; }
+    if (role === "STUDENT" && !isValidStudentId(studentId)) { setError("รหัสนิสิตต้องเป็นตัวเลข 10 หลัก"); return; }
 
     setSubmitting(true);
     setError(null);
@@ -138,6 +139,7 @@ export default function RegisterPage() {
                   <input
                     type="text"
                     inputMode="numeric"
+                    maxLength={10}
                     value={studentId}
                     onChange={(e) => { setStudentId(e.target.value); setError(null); }}
                     className={`w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 ${accent.ring}`}

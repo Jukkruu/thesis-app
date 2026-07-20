@@ -164,6 +164,17 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 }
 
+/** Chula student IDs are exactly 10 digits (e.g. 6733100421). */
+export function isValidStudentId(id: string): boolean {
+  return /^\d{10}$/.test(id.trim());
+}
+
+/** Thai phone number: 9–10 digits starting with 0; spaces and dashes allowed. */
+export function isValidThaiPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s-]/g, "");
+  return /^0\d{8,9}$/.test(digits);
+}
+
 /** Show server error text only when it is a Thai user-facing message; otherwise use a generic fallback. */
 export function toUserErrorMessage(err: unknown, fallback = "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"): string {
   const msg = err instanceof Error ? err.message : "";

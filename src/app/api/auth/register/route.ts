@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/email";
-import { isValidEmail } from "@/lib/utils";
+import { isValidEmail, isValidStudentId } from "@/lib/utils";
 
 function generatePassword(length = 10): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" }, { status: 400 });
   if (role === "STUDENT" && !studentId)
     return NextResponse.json({ error: "กรุณากรอกรหัสนิสิต" }, { status: 400 });
+  if (role === "STUDENT" && !isValidStudentId(studentId))
+    return NextResponse.json({ error: "รหัสนิสิตต้องเป็นตัวเลข 10 หลัก" }, { status: 400 });
+  if (name.trim().length > 200)
+    return NextResponse.json({ error: "ชื่อ-นามสกุลยาวเกิน 200 ตัวอักษร" }, { status: 400 });
 
   const normalizedEmail = email.trim().toLowerCase();
 
