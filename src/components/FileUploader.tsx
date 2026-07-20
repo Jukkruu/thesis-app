@@ -18,10 +18,10 @@ interface Props {
 }
 
 /** Slot header: form code badge + description + status chip — same identity in every state */
-function SlotHeader({ formType, status }: { formType: FormType; status: "done" | "picked" | "empty" }) {
-  const full  = FORM_LABELS[formType] ?? formType;
-  const short = FORM_SHORT[formType] ?? formType;
-  const desc  = full.includes(" — ") ? full.split(" — ")[1] : (full === short ? "" : full);
+function SlotHeader({ formType, status, desc: descOverride }: { formType: string; status: "done" | "picked" | "empty"; desc?: string }) {
+  const full  = FORM_LABELS[formType as FormType] ?? formType;
+  const short = FORM_SHORT[formType as FormType] ?? formType;
+  const desc  = descOverride ?? (full.includes(" — ") ? full.split(" — ")[1] : (full === short ? "" : full));
   const chip =
     status === "done"   ? { text: "✓ อัปโหลดแล้ว", cls: "bg-green-100 text-green-700" } :
     status === "picked" ? { text: "✓ เลือกไฟล์แล้ว", cls: "bg-blue-100 text-blue-700" } :
@@ -33,6 +33,105 @@ function SlotHeader({ formType, status }: { formType: FormType; status: "done" |
       </span>
       {desc && <span className="text-xs text-gray-500 truncate flex-1">{desc}</span>}
       <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${chip.cls}`}>{chip.text}</span>
+    </div>
+  );
+}
+
+/**
+ * Shared picker slot — the ONE upload design for every role (student, admin,
+ * signing professors, committee). Parent owns the selected file; the actual
+ * upload happens in the parent's submit action.
+ */
+export function UploadSlot({
+  formType,
+  slotLabel,
+  selectedFile,
+  onFileSelect,
+  done = false,
+  doneLabel = "อัปโหลดสำเร็จแล้ว",
+  disabled = false,
+}: {
+  formType: string;
+  slotLabel?: string;
+  selectedFile: File | null;
+  onFileSelect: (f: File | null) => void;
+  done?: boolean;
+  doneLabel?: string;
+  disabled?: boolean;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setError(null);
+    if (f) {
+      if (f.type !== "application/pdf") { setError("รับเฉพาะไฟล์ PDF เท่านั้น"); return; }
+      if (f.size > 20 * 1024 * 1024)   { setError("ไฟล์ใหญ่เกิน 20 MB"); return; }
+    }
+    onFileSelect(f);
+  }
+
+  if (done) {
+    return (
+      <div className="border-2 border-green-200 rounded-xl p-4 space-y-3 bg-green-50">
+        <SlotHeader formType={formType} status="done" desc={slotLabel} />
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+          <p className="text-sm font-medium text-green-800">{doneLabel}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(
+      "border-2 rounded-xl p-4 space-y-3 bg-white",
+      selectedFile ? "border-blue-300" : "border-dashed border-gray-300"
+    )}>
+      <SlotHeader formType={formType} status={selectedFile ? "picked" : "empty"} desc={slotLabel} />
+
+      <div
+        onClick={() => !disabled && inputRef.current?.click()}
+        className={cn(
+          "flex flex-col items-center gap-2 py-5 rounded-lg transition",
+          disabled ? "bg-gray-50 cursor-wait" : "cursor-pointer hover:bg-gray-50"
+        )}
+      >
+        {selectedFile ? (
+          <FileText className="w-7 h-7 text-blue-400" />
+        ) : (
+          <Upload className="w-7 h-7 text-gray-300" />
+        )}
+        <span className="text-xs text-gray-500 text-center px-2">
+          {selectedFile
+            ? `${selectedFile.name} (${formatBytes(selectedFile.size)})`
+            : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
+        </span>
+      </div>
+
+      {selectedFile && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onFileSelect(null);
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+          className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
+        >
+          <X className="w-3 h-3" /> เลือกไฟล์ใหม่
+        </button>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleChange}
+      />
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

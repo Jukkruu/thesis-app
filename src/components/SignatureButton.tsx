@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
-import { CheckCircle2, XCircle, Upload, FileText, Loader2, Download, X } from "lucide-react";
-import { FORM_LABELS, downloadFile, formatBytes, toUserErrorMessage } from "@/lib/utils";
+import { CheckCircle2, XCircle, Loader2, Download } from "lucide-react";
+import { FORM_LABELS, downloadFile, toUserErrorMessage } from "@/lib/utils";
+import { UploadSlot } from "@/components/FileUploader";
 import type { FormType } from "@/types";
 
 interface ExtraSlot {
@@ -35,7 +36,6 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
   // Per-form upload state
   const [fileByForm,    setFileByForm]    = useState<Record<string, File | null>>({});
   const [uploadedForms, setUploadedForms] = useState<Set<string>>(new Set());
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const sub = submissions.find((s) => s.id === submissionId);
 
@@ -159,65 +159,17 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
           </p>
 
           {uploadTargets.map((ft) => {
-            const isDone    = uploadedForms.has(ft);
-            const selected  = fileByForm[ft] ?? null;
             const extraSlot = extraSlots?.find((s) => s.slotKey === ft);
-            const slotLabel = extraSlot?.label ?? FORM_LABELS[ft as FormType] ?? ft;
-
             return (
-              <div key={ft}>
-                {uploadTargets.length > 1 && (
-                  <p className="text-xs text-gray-500 mb-1 font-medium">{slotLabel}</p>
-                )}
-
-                {isDone ? (
-                  <div className="border-2 border-green-200 rounded-xl p-4 bg-green-50 flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                    <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จแล้ว</p>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
-                    <div
-                      onClick={() => !loading && fileRefs.current[ft]?.click()}
-                      className={cn(
-                        "flex flex-col items-center gap-2 py-5 rounded-lg transition",
-                        loading ? "bg-gray-50 cursor-wait" : "cursor-pointer hover:bg-gray-50"
-                      )}
-                    >
-                      {selected ? (
-                        <FileText className="w-7 h-7 text-blue-400" />
-                      ) : (
-                        <Upload className="w-7 h-7 text-gray-300" />
-                      )}
-                      <span className="text-xs text-gray-500 text-center px-2">
-                        {selected
-                          ? `${selected.name} (${formatBytes(selected.size)})`
-                          : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
-                      </span>
-                    </div>
-                    {selected && (
-                      <button
-                        onClick={() => { setFileByForm((prev) => ({ ...prev, [ft]: null })); if (fileRefs.current[ft]) fileRefs.current[ft]!.value = ""; }}
-                        className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
-                      >
-                        <X className="w-3 h-3" /> เลือกไฟล์ใหม่
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                <input
-                  ref={(el) => { fileRefs.current[ft] = el; }}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    setFileByForm((prev) => ({ ...prev, [ft]: f }));
-                    setError(null);
-                  }}
-                />
-              </div>
+              <UploadSlot
+                key={ft}
+                formType={extraSlot?.formType ?? ft}
+                slotLabel={extraSlot?.label}
+                selectedFile={fileByForm[ft] ?? null}
+                onFileSelect={(f) => { setFileByForm((prev) => ({ ...prev, [ft]: f })); setError(null); }}
+                done={uploadedForms.has(ft)}
+                disabled={loading}
+              />
             );
           })}
         </div>

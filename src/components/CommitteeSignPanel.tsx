@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
-import { CheckCircle2, XCircle, Clock, Loader2, Users, Upload, FileText, Download, X } from "lucide-react";
-import { FORM_LABELS, FORM_SHORT, downloadFile, formatBytes, toUserErrorMessage } from "@/lib/utils";
+import { CheckCircle2, XCircle, Clock, Loader2, Users, Download } from "lucide-react";
+import { FORM_LABELS, FORM_SHORT, downloadFile, toUserErrorMessage } from "@/lib/utils";
+import { UploadSlot } from "@/components/FileUploader";
 import type { FormType } from "@/types";
 
 interface Props {
@@ -24,7 +25,10 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [signedFile, setSignedFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+
+  // When the step signs exactly one named form, version that slot; otherwise SIGNED
+  const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
+  const uploadFormType = nonSignedForms.length === 1 ? nonSignedForms[0] : "SIGNED";
 
   const sub     = submissions.find((s) => s.id === submissionId);
   const members = step.committeeMembers ?? [];
@@ -49,8 +53,6 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
     setError(null);
     try {
       if (decision === "APPROVED" && signedFile) {
-        const nonSignedForms = (formsToShow ?? []).filter((f) => f !== "SIGNED");
-        const uploadFormType = nonSignedForms.length === 1 ? nonSignedForms[0] : "SIGNED";
         const formData = new FormData();
         formData.append("file", signedFile);
         formData.append("submissionId", submissionId);
@@ -214,37 +216,11 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
                 <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
                 อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
               </p>
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 space-y-3 bg-white">
-                <div
-                  onClick={() => fileRef.current?.click()}
-                  className="flex flex-col items-center gap-2 py-5 rounded-lg transition cursor-pointer hover:bg-gray-50"
-                >
-                  {signedFile ? (
-                    <FileText className="w-7 h-7 text-blue-400" />
-                  ) : (
-                    <Upload className="w-7 h-7 text-gray-300" />
-                  )}
-                  <span className="text-xs text-gray-500 text-center px-2">
-                    {signedFile
-                      ? `${signedFile.name} (${formatBytes(signedFile.size)})`
-                      : "คลิกเพื่อเลือกไฟล์ PDF (สูงสุด 20 MB)"}
-                  </span>
-                </div>
-                {signedFile && (
-                  <button
-                    onClick={() => { setSignedFile(null); if (fileRef.current) fileRef.current.value = ""; }}
-                    className="w-full py-1.5 rounded-lg border border-gray-200 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-1"
-                  >
-                    <X className="w-3 h-3" /> เลือกไฟล์ใหม่
-                  </button>
-                )}
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => { setSignedFile(e.target.files?.[0] ?? null); setError(null); }}
+              <UploadSlot
+                formType={uploadFormType}
+                selectedFile={signedFile}
+                onFileSelect={(f) => { setSignedFile(f); setError(null); }}
+                disabled={loading}
               />
             </div>
           )}

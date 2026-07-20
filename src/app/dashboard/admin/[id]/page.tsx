@@ -16,7 +16,7 @@ import {
   CheckCircle2, XCircle, Clock, User, Users, CalendarDays, Upload, Loader2,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
-import { FileUploader } from "@/components/FileUploader";
+import { FileUploader, UploadSlot } from "@/components/FileUploader";
 
 // ─── Step control card ────────────────────────────────────────────────────────
 
@@ -279,7 +279,6 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
   const [uploadedSlots, setUploadedSlots] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const activeSlots = FACULTY_SLOTS;
 
@@ -314,49 +313,20 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
       <h3 className="text-lg font-semibold text-gray-800">ดำเนินการ — อัปโหลดเอกสารจากคณะ</h3>
 
-      {/* Required 4 slots */}
+      {/* Required 4 slots — same UploadSlot design as every other role */}
       <div className="space-y-3">
-        {FACULTY_SLOTS.map((slot) => {
-          const isDone    = uploadedSlots.has(slot.key);
-          const selected  = fileBySlot[slot.key] ?? null;
-          return (
-            <div key={slot.key}>
-              <p className="text-xs font-semibold text-gray-600 mb-1">{slot.label}</p>
-              {isDone ? (
-                <div className="flex items-center gap-2 border-2 border-green-200 rounded-xl px-4 py-3 bg-green-50">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                  <p className="text-sm font-medium text-green-800">อัปโหลดสำเร็จ</p>
-                </div>
-              ) : (
-                <div
-                  onClick={() => !loading && fileRefs.current[slot.key]?.click()}
-                  className={cn(
-                    "flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition",
-                    selected ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white",
-                    loading && "cursor-wait opacity-60"
-                  )}
-                >
-                  {selected ? <FileText className="w-4 h-4 text-blue-400 shrink-0" /> : <Upload className="w-4 h-4 text-gray-300 shrink-0" />}
-                  <span className="text-sm text-gray-500 truncate">
-                    {selected ? `${selected.name} (${formatBytes(selected.size)})` : "คลิกเพื่อเลือกไฟล์ PDF"}
-                  </span>
-                </div>
-              )}
-              <input
-                ref={(el) => { fileRefs.current[slot.key] = el; }}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setFileBySlot((prev) => ({ ...prev, [slot.key]: f }));
-                  setError(null);
-                  if (fileRefs.current[slot.key]) fileRefs.current[slot.key]!.value = "";
-                }}
-              />
-            </div>
-          );
-        })}
+        {FACULTY_SLOTS.map((slot) => (
+          <UploadSlot
+            key={slot.key}
+            formType={slot.formType}
+            slotLabel={slot.label}
+            selectedFile={fileBySlot[slot.key] ?? null}
+            onFileSelect={(f) => { setFileBySlot((prev) => ({ ...prev, [slot.key]: f })); setError(null); }}
+            done={uploadedSlots.has(slot.key)}
+            doneLabel="อัปโหลดสำเร็จ"
+            disabled={loading}
+          />
+        ))}
       </div>
 
       {error && (
