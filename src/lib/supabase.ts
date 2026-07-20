@@ -29,6 +29,17 @@ export async function deleteFile(path: string): Promise<void> {
   if (error) throw error
 }
 
+/** Remove every file under a folder prefix (uploads are grouped as {submissionId}/...). */
+export async function deleteFolder(prefix: string): Promise<number> {
+  const storage = adminClient().storage.from(BUCKET)
+  const { data, error } = await storage.list(prefix, { limit: 1000 })
+  if (error) throw error
+  if (!data?.length) return 0
+  const { error: rmError } = await storage.remove(data.map((f) => `${prefix}/${f.name}`))
+  if (rmError) throw rmError
+  return data.length
+}
+
 export async function getSignedUrl(path: string): Promise<string> {
   const { data, error } = await adminClient().storage
     .from(BUCKET)

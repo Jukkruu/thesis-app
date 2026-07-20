@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/email";
 import { isValidEmail, isValidStudentId } from "@/lib/utils";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 function generatePassword(length = 10): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -10,6 +11,10 @@ function generatePassword(length = 10): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Unauthenticated endpoint — cap per-IP so account creation can't be scripted in bulk
+  if (!(await rateLimit(`reg:${clientIp(req)}`, 10, 3600)))
+    return NextResponse.json({ error: "มีการลงทะเบียนบ่อยเกินไป กรุณาลองใหม่ในอีก 1 ชั่วโมง" }, { status: 429 });
+
   const body = await req.json();
   const name: string = body.name ?? "";
   const email: string = body.email ?? "";

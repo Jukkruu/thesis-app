@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStepName, ROLE_LABELS, PROGRAM_LABELS } from "@/lib/utils";
 import { sendStepEmail, sendFinanceEmail } from "@/lib/email";
+import { deleteFolder } from "@/lib/supabase";
 
 function mapSub(s: any) {
   return {
@@ -650,6 +651,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!deleteRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
+  // Remove the submission's files from storage first — the DB delete alone would
+  // leave them orphaned in the bucket forever. Storage failure must not block the
+  // delete itself (files can be swept later; a half-deleted submission cannot).
+  try {
+    const removed = await deleteFolder(id);
+    if (removed) console.log(`[delete] removed ${removed} storage files for ${id}`);
+  } catch (e) {
+    console.error(`[delete] storage cleanup failed for ${id}:`, e);
+  }
   await prisma.submission.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

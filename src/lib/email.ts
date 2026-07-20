@@ -178,6 +178,24 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
 
     if (error) {
       console.error(`[email/step] Send error (${recipient.email}):`, error.message);
+      // Surface the failure in the admins' notification bell — otherwise the workflow
+      // stalls silently because the recipient never learns it is their turn.
+      try {
+        const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
+        if (admins.length) {
+          await prisma.notification.createMany({
+            data: admins.map((a) => ({
+              recipientId: a.id,
+              message: `⚠️ ส่งอีเมลไม่สำเร็จถึง ${recipient.name} (${recipient.email})`,
+              detail: `${stepName} — กรุณาแจ้งผู้เกี่ยวข้องโดยตรง`,
+              submissionId: sub.id,
+              type: "info",
+            })),
+          });
+        }
+      } catch (e) {
+        console.error("[email/step] failed to notify admins about send failure:", e);
+      }
     } else {
       console.log(`[email/step] Sent to ${recipient.email}`);
     }
