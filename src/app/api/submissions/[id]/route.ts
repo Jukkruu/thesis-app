@@ -530,16 +530,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   else if (action === "admin_reset") {
     if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Revive ALL steps, not just non-SKIPPED ones — cancel marks pending steps SKIPPED, so a
+    // reset that skips them would truncate the workflow (it would "complete" after the
+    // pre-cancel steps). This also makes reset the way to undo a cancelled submission.
+    // CO_ADVISOR steps stay SKIPPED when the submission has no co-advisors.
+    const hasCoAdvisors = ((sub.coAdvisorIds as string[]) ?? []).length > 0;
     await prisma.workflowStep.updateMany({
-      where: { submissionId: id, status: { not: "SKIPPED" } },
+      where: hasCoAdvisors ? { submissionId: id } : { submissionId: id, NOT: { role: "CO_ADVISOR" } },
       data: { status: "PENDING", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
     });
+    if (!hasCoAdvisors) {
+      await prisma.workflowStep.updateMany({
+        where: { submissionId: id, role: "CO_ADVISOR" },
+        data: { status: "SKIPPED", actedAt: null, actedByName: null, actedById: null, notes: null, committeeActions: [] },
+      });
+    }
     await prisma.submission.update({ where: { id }, data: { status: "IN_PROGRESS" } });
   }
 
   else if (action === "admin_override_step") {
     if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { stepOrder, decision, notes } = body;
+
+    // A cancelled submission has its pending steps SKIPPED — overriding one step would
+    // recompute status as COMPLETED (nothing pending). Reset the submission first instead.
+    if (sub.status === "CANCELLED")
+      return NextResponse.json({ error: "คำร้องถูกยกเลิกแล้ว — กรุณารีเซ็ตคำร้องก่อนหากต้องการดำเนินการต่อ" }, { status: 400 });
+    if (decision !== "APPROVED" && decision !== "REJECTED")
+      return NextResponse.json({ error: "Invalid decision" }, { status: 400 });
 
     const targetStep = sub.workflowSteps.find((s: any) => s.stepOrder === stepOrder);
     if (!targetStep) return NextResponse.json({ error: "Step not found" }, { status: 404 });

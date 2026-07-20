@@ -161,7 +161,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: { recipientId: sub.studentId, message: rejectionNote, detail: sub.title, submissionId, type: "rejected" },
     });
     try {
-      await sendStepEmail({ role: "STUDENT", sub, stepName: currentStepName });
+      await sendStepEmail({ role: "STUDENT", sub, stepName: currentStepName, isRejection: true, rejectionNote: notes });
     } catch (e) { console.error("[email/reject/committee]", e); }
   }
 
