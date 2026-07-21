@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { MockWorkflowStep } from "@/types";
-import { CheckCircle2, XCircle, Clock, Loader2, Users, Download } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Users, Download, Pen } from "lucide-react";
 import { FORM_LABELS, FORM_SHORT, downloadFile, toUserErrorMessage } from "@/lib/utils";
 import { UploadSlot } from "@/components/FileUploader";
 import type { FormType } from "@/types";
@@ -209,11 +209,25 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
             </div>
           )}
 
-          {/* Step 2: Upload signed file */}
+          {/* Sign reminder */}
+          {!showReject && (
+            <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <span className="bg-amber-100 text-amber-700 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <div>
+                <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                  <Pen className="w-3.5 h-3.5 shrink-0" />
+                  ลงนามในเอกสาร
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">พิมพ์เอกสาร → ลงนามด้วยปากกา → แสกนกลับเป็น PDF</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Upload signed file */}
           {!showReject && (
             <div>
               <p className="text-sm font-semibold text-gray-700 mb-2">
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">2</span>
+                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full mr-1.5">3</span>
                 อัปโหลดเอกสารที่ลงนามแล้ว <span className="text-red-500">*</span>
               </p>
               <UploadSlot

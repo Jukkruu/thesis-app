@@ -12,7 +12,7 @@ import { FormType } from "@/types";
 import Link from "next/link";
 import {
   ArrowLeft, Send, Upload,
-  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2, User, Users,
+  AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2, User, Users, TriangleAlert,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
 import { useToast } from "@/context/ToastContext";
@@ -104,6 +104,12 @@ export default function StudentSubmissionDetail() {
     : 0;
   const subStatus    = sub.status;
   const uploadedTypes = new Set(sub.uploads.map((u) => u.formType));
+  const lastActedDate = sub.workflowSteps
+    .filter((s) => s.actedAt)
+    .sort((a, b) => new Date(b.actedAt!).getTime() - new Date(a.actedAt!).getTime())[0]?.actedAt ?? null;
+  const stuckDays = subStatus === "IN_PROGRESS" && !isMyTurn && lastActedDate
+    ? Math.floor((Date.now() - new Date(lastActedDate).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const subType = sub.submissionType ?? "PROPOSAL";
 
@@ -474,16 +480,28 @@ export default function StudentSubmissionDetail() {
 
           {/* Waiting — not the student's turn */}
           {subStatus === "IN_PROGRESS" && !isMyTurn && !waitingForAdminUpload && currentStep && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
+            <div className={`rounded-2xl p-5 space-y-3 ${stuckDays > 7 ? "bg-amber-50 border border-amber-300" : "bg-orange-50 border border-orange-200"}`}>
               <div className="flex items-start gap-3">
-                <Clock className="w-6 h-6 text-orange-500 shrink-0 mt-0.5" />
+                <Clock className={`w-6 h-6 shrink-0 mt-0.5 ${stuckDays > 7 ? "text-amber-500" : "text-orange-500"}`} />
                 <div className="flex-1">
-                  <p className="text-orange-800 font-bold">รอการดำเนินการ</p>
-                  <p className="text-orange-600 text-sm mt-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className={`font-bold ${stuckDays > 7 ? "text-amber-800" : "text-orange-800"}`}>รอการดำเนินการ</p>
+                    {stuckDays > 7 && (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full font-semibold">
+                        <TriangleAlert className="w-3 h-3" />
+                        ค้างมา {stuckDays} วัน
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm mt-1 ${stuckDays > 7 ? "text-amber-600" : "text-orange-600"}`}>
                     ขั้นที่ {currentDisplayOrder} จาก {totalSteps}: <span className="font-semibold">{ROLE_LABELS[currentStep.role]}</span>
                   </p>
-                  <p className="text-orange-700 text-sm font-medium">{resolvePendingName()}</p>
-                  <p className="text-orange-400 text-xs mt-1">ท่านไม่ต้องดำเนินการใดในขณะนี้</p>
+                  <p className={`text-sm font-medium ${stuckDays > 7 ? "text-amber-700" : "text-orange-700"}`}>{resolvePendingName()}</p>
+                  <p className={`text-xs mt-1 ${stuckDays > 7 ? "text-amber-500" : "text-orange-400"}`}>
+                    {stuckDays > 7
+                      ? "คำร้องอาจค้างอยู่ — ลองติดต่อผู้รับผิดชอบโดยตรง"
+                      : "ท่านไม่ต้องดำเนินการใดในขณะนี้"}
+                  </p>
                 </div>
               </div>
               <button

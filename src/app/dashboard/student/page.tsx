@@ -5,7 +5,34 @@ import { ROLE_LABELS, formatDate } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Link from "next/link";
-import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers, BookOpen, GraduationCap, XCircle } from "lucide-react";
+import { ChevronRight, PlusCircle, FileText, Clock, CheckCircle2, AlertCircle, Layers, BookOpen, GraduationCap, XCircle, TriangleAlert } from "lucide-react";
+
+function daysSince(dateStr: string): number {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getLastActedDate(steps: any[]): string | null {
+  return steps
+    .filter((s) => s.actedAt)
+    .sort((a: any, b: any) => new Date(b.actedAt).getTime() - new Date(a.actedAt).getTime())[0]?.actedAt ?? null;
+}
+
+function resolveStepPerson(sub: any, step: any, users: any[]): string | null {
+  switch (step.role) {
+    case "ADVISOR":             return users.find((u: any) => u.id === sub.advisorId)?.name ?? null;
+    case "HEAD_EXAM_COMMITTEE": return users.find((u: any) => u.id === sub.headCommitteeId)?.name ?? null;
+    case "PROGRAM_CHAIR":
+      return users.find((u: any) => u.id === sub.programChairId)?.name
+          ?? users.find((u: any) => u.isProgramChair)?.name ?? null;
+    case "ADMIN":               return "เจ้าหน้าที่";
+    case "EXAM_COMMITTEE": {
+      const memberIds: string[] = step.committeeMembers?.length ? step.committeeMembers : (sub.committeeIds ?? []);
+      const done = (step.committeeActions ?? []).filter((a: any) => a.decision === "APPROVED").length;
+      return `กรรมการสอบ (${done}/${memberIds.length})`;
+    }
+    default: return null;
+  }
+}
 
 export default function StudentDashboard() {
   const { user, submissions, users } = useApp();
@@ -111,11 +138,14 @@ export default function StudentDashboard() {
       ) : (
         <div className="space-y-3">
           {mine.map((sub) => {
-            const currentStep = sub.workflowSteps.find((s) => s.status === "PENDING");
+            const currentStep = sub.workflowSteps.find((s: any) => s.status === "PENDING");
             const isMyTurn    = currentStep?.role === "STUDENT";
             const advisor     = users.find((u) => u.id === sub.advisorId);
-            const doneCount   = sub.workflowSteps.filter((s) => s.status === "APPROVED").length;
-            const totalSteps  = sub.workflowSteps.filter((s) => s.status !== "SKIPPED").length;
+            const doneCount   = sub.workflowSteps.filter((s: any) => s.status === "APPROVED").length;
+            const totalSteps  = sub.workflowSteps.filter((s: any) => s.status !== "SKIPPED").length;
+            const lastActed   = getLastActedDate(sub.workflowSteps);
+            const stuckDays   = sub.status === "IN_PROGRESS" && !isMyTurn && lastActed ? daysSince(lastActed) : 0;
+            const pendingName = currentStep && !isMyTurn ? resolveStepPerson(sub, currentStep, users) : null;
 
             const accent =
               sub.status === "COMPLETED"  ? "bg-green-400"
@@ -173,7 +203,15 @@ export default function StudentDashboard() {
                       <span className="text-sm text-red-600 font-semibold">★ กรุณาแก้ไขและยื่นใหม่</span>
                     )}
                     {!isMyTurn && sub.status === "IN_PROGRESS" && currentStep && (
-                      <span className="text-sm text-gray-500">รอ: {ROLE_LABELS[currentStep.role]}</span>
+                      <span className="text-sm text-gray-500">
+                        รอ: {pendingName ?? ROLE_LABELS[currentStep.role]}
+                      </span>
+                    )}
+                    {stuckDays > 7 && (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">
+                        <TriangleAlert className="w-3 h-3" />
+                        ค้างมา {stuckDays} วัน
+                      </span>
                     )}
                   </div>
 

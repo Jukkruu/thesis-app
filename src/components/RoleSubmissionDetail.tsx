@@ -207,13 +207,19 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
 
       {/* "Your turn" banner */}
       {isMyTurn && sub.status === "IN_PROGRESS" && (
-        <div className="flex items-center gap-3 bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4">
-          <AlertCircle className="w-6 h-6 text-blue-600 shrink-0" />
-          <div>
+        <div className="flex items-start gap-3 bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4">
+          <AlertCircle className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
             <p className="font-semibold text-blue-800">ถึงคิวของท่านแล้ว</p>
-            <p className="text-sm text-blue-600">
-              กรุณาตรวจสอบเอกสาร แล้วลงนามหรือปฏิเสธด้านล่าง
-            </p>
+            {formsToShow.length > 0 ? (
+              <p className="text-sm text-blue-600">
+                ดาวน์โหลดเอกสาร → พิมพ์และลงนาม → แสกนเป็น PDF → อัปโหลด → กดส่งต่อด้านล่าง
+              </p>
+            ) : (
+              <p className="text-sm text-blue-600">
+                กรุณาตรวจสอบเอกสาร แล้วลงนามหรือปฏิเสธด้านล่าง
+              </p>
+            )}
           </div>
         </div>
       )}
