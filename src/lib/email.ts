@@ -269,7 +269,7 @@ function buildHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br>
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br><br>
         <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
       </p>
 
@@ -333,7 +333,7 @@ function buildRejectedHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br>
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br><br>
         <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
       </p>
 
