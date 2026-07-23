@@ -104,6 +104,12 @@ export async function POST(req: NextRequest) {
         );
         if (step4) {
           const types = new Set(subWithUploads.uploads.map((u: any) => u.formType));
+
+          // Always email admin when FINANCE_DOC arrives (whether or not student has submitted yet)
+          try {
+            await sendStepEmail({ role: "ADMIN", sub: subWithUploads, stepName: "รับเอกสารการเงิน — ขั้นตอนที่ 4" });
+          } catch (e) { console.error("[email/finance-doc-admin]", e); }
+
           if (types.has("B1C") && types.has("B1D") && types.has("FINANCE_DOC")) {
             const now = new Date();
             await prisma.workflowStep.update({
