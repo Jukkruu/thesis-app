@@ -152,6 +152,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const currentStepName = getStepName(step.stepOrder, sub.submissionType) || stepRoleLabel;
 
+  // Helper: notify all admins
+  async function notifyAdmins(message: string, type: string) {
+    const admins = await prisma.user.findMany({ where: { roles: { hasSome: ["ADMIN", "SUPER_ADMIN"] } } });
+    if (admins.length) {
+      await prisma.notification.createMany({
+        data: admins.map((a: any) => ({ recipientId: a.id, message, detail: sub!.title, submissionId, type })),
+      });
+    }
+  }
+
   if (outcome === "REJECTED") {
     // Use the actual step-role label so student knows who rejected, not generic "กรรมการ"
     const rejectionNote = notes
@@ -163,6 +173,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       await sendStepEmail({ role: "STUDENT", sub, stepName: currentStepName, isRejection: true, rejectionNote: notes });
     } catch (e) { console.error("[email/reject/committee]", e); }
+    await notifyAdmins(`${stepRoleLabel}ปฏิเสธ — ${currentStepName}`, "rejected");
   }
 
   else if (outcome === "PARTIAL") {
@@ -174,9 +185,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await sendStepEmail({ role: userRole, sub, stepName: currentStepName, specificMemberId: nextMemberId });
       } catch (e) { console.error("[email/committee-chain]", e); }
     }
+    await notifyAdmins(`${stepRoleLabel}ลงนาม (${userName}) — ${currentStepName}`, "info");
   }
 
   else { // ALL_APPROVED
+    await notifyAdmins(`${stepRoleLabel}ครบทุกท่านแล้ว — ${currentStepName}`, "info");
     if (isComplete) {
       await prisma.notification.create({
         data: { recipientId: sub.studentId, message: "วิทยานิพนธ์ผ่านการอนุมัติครบทุกขั้นตอน 🎉", detail: sub.title, submissionId, type: "approved" },

@@ -392,6 +392,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         console.error("[email/finance]", e);
       }
     }
+    // Always notify all admins about every step completion
+    const completedActorLabel = ROLE_LABELS[step.role as keyof typeof ROLE_LABELS] ?? step.role;
+    await notifyRole("ADMIN", sub, `${completedActorLabel}ดำเนินการแล้ว — ${getStepName(step.stepOrder, sub.submissionType)}`, "info");
   }
 
   else if (action === "reject") {
@@ -444,6 +447,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     try {
       await sendStepEmail({ role: "STUDENT", sub, stepName: getStepName(step.stepOrder, sub.submissionType), isRejection: true, rejectionNote: body.notes });
     } catch (e) { console.error("[email/reject]", e); }
+    // Always notify all admins about every rejection
+    await notifyRole("ADMIN", sub, `${byLabel}ปฏิเสธ — ${getStepName(step.stepOrder, sub.submissionType)}`, "rejected");
   }
 
   else if (action === "return_to_prev") {
@@ -514,6 +519,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         : undefined;
       await sendStepEmail({ role: rejectedStep.role, sub, stepName, specificMemberId });
     } catch (e) { console.error("[email/resubmit]", e); }
+    // Always notify all admins when student resubmits
+    await notifyRole("ADMIN", sub, `นิสิตยื่นใหม่แล้ว — ${stepName}`, "info");
   }
 
   else if (action === "admin_set_note") {
