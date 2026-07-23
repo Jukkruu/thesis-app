@@ -348,6 +348,62 @@ function ThesisFacultyUploadPanel({ submissionId }: { submissionId: string }) {
   );
 }
 
+// ─── Proposal step-4 finance doc upload panel ────────────────────────────────
+
+function ProposalFinanceUploadPanel({ submissionId }: { submissionId: string }) {
+  const { refresh }  = useApp();
+  const { showToast } = useToast();
+  const [file,      setFile]      = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+
+  async function handleSubmit() {
+    if (!file) { setError("กรุณาเลือกไฟล์ก่อน"); return; }
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("submissionId", submissionId);
+      fd.append("formType", "FINANCE_DOC");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("upload failed");
+      await refresh();
+      showToast("อัปโหลดเอกสารการเงินเรียบร้อยแล้ว ✓");
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <UploadSlot
+        formType="FINANCE_DOC"
+        slotLabel="เอกสารการเงิน"
+        selectedFile={file}
+        onFileSelect={(f) => { setFile(f); setError(null); }}
+        disabled={uploading}
+      />
+      {error && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      <button
+        onClick={handleSubmit}
+        disabled={uploading || !file}
+        className="w-full flex items-center justify-center gap-2 py-3 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 disabled:opacity-60 transition"
+      >
+        {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+        {uploading ? "กำลังอัปโหลด..." : "อัปโหลดเอกสาร"}
+      </button>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AdminSubmissionDetail() {
@@ -832,7 +888,7 @@ export default function AdminSubmissionDetail() {
                 <p className="text-sm text-gray-600">
                   ขณะที่นิสิตกำลังอัปโหลด บ.วศ.1ค + บ.วศ.1ง — ท่านต้องอัปโหลดเอกสารการเงินด้วย
                 </p>
-                <FileUploader submissionId={sub.id} formType="FINANCE_DOC" />
+                <ProposalFinanceUploadPanel submissionId={sub.id} />
               </div>
             )
           )}

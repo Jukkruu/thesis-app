@@ -146,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       busy = true;
       try { await refresh(); } catch { /* keep last good data */ } finally { busy = false; }
     };
-    const interval = setInterval(tick, 60_000);
+    const interval = setInterval(tick, 20_000);
     const onVisible = () => { if (document.visibilityState === "visible") tick(); };
     window.addEventListener("focus", onVisible);
     document.addEventListener("visibilitychange", onVisible);
