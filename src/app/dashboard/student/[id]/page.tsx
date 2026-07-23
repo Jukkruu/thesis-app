@@ -6,12 +6,12 @@ import { useApp } from "@/context/AppContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { FileUploader } from "@/components/FileUploader";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
-import { ROLE_LABELS, FORM_LABELS, getStepName, formatDate, toUserErrorMessage } from "@/lib/utils";
+import { ROLE_LABELS, FORM_LABELS, FORM_SHORT, getStepName, formatDate, toUserErrorMessage, downloadFile } from "@/lib/utils";
 import { PROGRAM_LABELS } from "@/lib/utils";
 import { FormType } from "@/types";
 import Link from "next/link";
 import {
-  ArrowLeft, Send, Upload,
+  ArrowLeft, Send, Upload, Download,
   AlertCircle, Clock, CheckCircle2, RefreshCw, StickyNote, CalendarDays, Car, XCircle, Trash2, User, Users, TriangleAlert,
 } from "lucide-react";
 import { FileList } from "@/components/FileList";
@@ -124,6 +124,11 @@ export default function StudentSubmissionDetail() {
   const effectiveUploads = step8ActedAt !== null
     ? sub.uploads.filter((u) => u.formType !== "SIGNED" || new Date(u.uploadedAt).getTime() > step8ActedAt)
     : sub.uploads;
+
+  // Files admin uploaded at step 8 that the student needs to download, fill, and sign at step 9
+  const adminStep8Files = (step8ActedAt !== null && step8ActedAt > 0)
+    ? sub.uploads.filter((u) => u.formType === "SIGNED" && new Date(u.uploadedAt).getTime() <= step8ActedAt)
+    : [];
 
   const suggested = currentStep
     ? (SUGGESTED_BY_STEP[subType]?.[currentStep.stepOrder] ?? null)
@@ -547,6 +552,30 @@ export default function StudentSubmissionDetail() {
                   <p className="text-xs text-gray-400">เลือกไฟล์ PDF แล้วกดปุ่มส่ง</p>
                 </div>
               </div>
+
+              {/* Download section for THESIS step 9 — files admin uploaded at step 8 */}
+              {adminStep8Files.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    ดาวน์โหลดเอกสารจากเจ้าหน้าที่ (กรอกข้อมูลและลงนามก่อนอัปโหลด)
+                  </p>
+                  {adminStep8Files.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => downloadFile(u.id, u.fileName, FORM_SHORT["SIGNED"] ?? FORM_LABELS["SIGNED"], sub.title, u.fileUrl)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 border border-blue-200 rounded-xl hover:bg-blue-50 transition text-left"
+                    >
+                      <Download className="w-4 h-4 text-blue-500 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-700 truncate">{u.fileName}</p>
+                        <p className="text-xs text-gray-400 truncate">{FORM_LABELS["SIGNED"]}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Required docs checklist — only when it's the student's turn and there are required forms */}
               {isMyTurn && suggested && (
