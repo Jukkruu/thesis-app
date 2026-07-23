@@ -63,25 +63,38 @@ function buildGroups(uploads: MockUpload[]): Group[] {
   return groups;
 }
 
-// Semantic groups so users immediately know what each file is for
-const FILE_GROUPS: { key: string; label: string; types: Set<FormType> }[] = [
-  { key: "main",    label: "เอกสารหลัก",                 types: new Set<FormType>(["BW1A", "BW1B", "B1C", "B1D", "B2", "B3", "B4", "THESIS"]) },
+type FileGroup = { key: string; label: string; types: Set<FormType> };
+
+// PROPOSAL: two lettered-form phases + finance
+const FILE_GROUPS_PROPOSAL: FileGroup[] = [
+  { key: "main",    label: "เอกสารหลัก",                 types: new Set<FormType>(["BW1A", "BW1B", "B1C", "B1D"]) },
   { key: "finance", label: "เอกสารการเงิน",              types: new Set<FormType>(["FINANCE_DOC", "FINANCE_ATTACH"]) },
-  { key: "faculty", label: "เอกสารจากคณะและผลการสอบ", types: new Set<FormType>(["SIGNED", "EXAM_RESULT", "INVITE_LETTER", "VERY_GOOD_EVAL"]) },
+  { key: "faculty", label: "เอกสารอื่นๆ",                types: new Set<FormType>(["SIGNED", "EXAM_RESULT", "INVITE_LETTER", "VERY_GOOD_EVAL"]) },
+];
+
+// THESIS_DEFENSE: phase-aware — B2+B3 / finance / from faculty / thesis
+const FILE_GROUPS_THESIS: FileGroup[] = [
+  { key: "b2b3",    label: "บ.2 + บ.3 (เสนอผลการสอบ)",        types: new Set<FormType>(["B2", "B3", "FINANCE_ATTACH"]) },
+  { key: "finance", label: "เอกสารการเงิน",                     types: new Set<FormType>(["FINANCE_DOC"]) },
+  { key: "faculty", label: "เอกสารจากคณะและผลการสอบ",          types: new Set<FormType>(["SIGNED", "EXAM_RESULT", "INVITE_LETTER", "VERY_GOOD_EVAL"]) },
+  { key: "thesis",  label: "วิทยานิพนธ์ (ขั้นตอนสุดท้าย)",     types: new Set<FormType>(["B4", "THESIS"]) },
 ];
 
 interface Props {
   uploads: MockUpload[];
   submissionTitle: string;
+  submissionType?: string;
   title?: string;
   compact?: boolean;
   hideHistory?: boolean;
 }
 
-export function FileList({ uploads, submissionTitle, title = "เอกสารแนบ", compact = false, hideHistory = false }: Props) {
+export function FileList({ uploads, submissionTitle, submissionType, title = "เอกสารแนบ", compact = false, hideHistory = false }: Props) {
   const [openHistory, setOpenHistory] = useState<Set<string>>(new Set());
 
   if (!uploads.length) return null;
+
+  const FILE_GROUPS = submissionType === "THESIS_DEFENSE" ? FILE_GROUPS_THESIS : FILE_GROUPS_PROPOSAL;
 
   const groups = buildGroups(uploads);
   const sections = FILE_GROUPS.map((g) => ({

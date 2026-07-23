@@ -424,7 +424,7 @@ export default function StudentSubmissionDetail() {
             <FileList
               uploads={sub.uploads}
               submissionTitle={sub.title}
-              title={`เอกสารแนบ (${new Set(sub.uploads.map((u) => u.formType)).size} ไฟล์)`}
+              submissionType={subType}
               compact
               hideHistory
             />

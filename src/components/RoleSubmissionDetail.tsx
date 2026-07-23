@@ -260,7 +260,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             }
             const relevantUploads = Array.from(byType.values());
             return relevantUploads.length > 0 ? (
-              <FileList uploads={relevantUploads} submissionTitle={sub.title} />
+              <FileList uploads={relevantUploads} submissionTitle={sub.title} submissionType={sub.submissionType ?? "PROPOSAL"} />
             ) : null;
           })()}
 

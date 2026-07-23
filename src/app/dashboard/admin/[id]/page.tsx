@@ -1078,7 +1078,7 @@ export default function AdminSubmissionDetail() {
 
           {/* Documents — grouped by form type */}
           {sub.uploads.length > 0 && (
-            <FileList uploads={sub.uploads} submissionTitle={sub.title} />
+            <FileList uploads={sub.uploads} submissionTitle={sub.title} submissionType={sub.submissionType ?? "PROPOSAL"} />
           )}
 
           {/* Delete */}
