@@ -71,8 +71,8 @@ When a submission is created, **step 1 starts as PENDING**. The student must upl
 ### Reject button (ปฏิเสธ)
 The reject button is embedded directly inside `SignatureButton` and `CommitteeSignPanel` — **no separate send-back panel exists**. Clicking ปฏิเสธ calls `action: "reject"` and goes back one step. There is no standalone "ส่งกลับขั้นตอนก่อนหน้า" panel (it was removed as redundant).
 
-### Document versioning — 4 main file slots
-Each of the 4 form types (BW1A, BW1B, B1C, B1D) has a single display slot in `FileList`. When any user uploads a new file for a form type, it becomes the latest version; older uploads appear in a collapsible "ประวัติ" section. **Non-student roles upload with the correct `formType`** (not `"SIGNED"`) so their signed copy replaces the slot's latest version.
+### Document versioning — one slot per formType (ALL types)
+**Every** form type — including SIGNED — has a single display slot in `FileList`: latest upload is the current version, older uploads collapse under "ประวัติ". No formType is shown as individual files anymore. **`SIGNED` always means แบบรายงานการเสนอผลงานฯ** (the student report chain: admin step 8 → student step 9 → advisor step 10); the other faculty-return docs have their own types (EXAM_RESULT, INVITE_LETTER, VERY_GOOD_EVAL, FINANCE_DOC — see `FACULTY_SLOTS` in admin detail page). **Non-student roles upload with the correct `formType`** so their signed copy replaces the slot's latest version.
 
 ### Upload formType for signing roles
 `SignatureButton` and `CommitteeSignPanel` both accept `formsToShow?: string[]`. When `formsToShow` contains non-SIGNED form types, the upload is saved with that formType (versioning the correct slot). Falls back to `"SIGNED"` only when `formsToShow` is empty or contains only `"SIGNED"`.
@@ -211,7 +211,7 @@ If rejected → goes back one step (e.g. step 9 → step 8, step 8 → step 7).
 | 3 | ADVISOR | Sign บ.2 |
 | 4 | CO_ADVISOR | Sign บ.2 — **auto-SKIPPED if no co-advisors assigned** |
 | 5 | HEAD_EXAM_COMMITTEE | Sign บ.2 |
-| 6 | PROGRAM_CHAIR | Sign บ.2 → **triggers finance email** + notify admin |
+| 6 | PROGRAM_CHAIR | Sign บ.2 → **triggers finance email** + admin bell notification (admin gets exactly ONE email — the general next-step notify; the special step-6 block only creates bell notifications, its duplicate `sendStepEmail` was removed 2026-07-24) |
 
 #### Phase 4 (Steps 7–8): Faculty relay
 | Step | Role | Action |
@@ -259,7 +259,8 @@ If rejected at any step → goes back one step.
 - **Rejection** goes back exactly one step — any role can reject, no role restriction
 
 ## UI conventions (recent)
-- **FileList** groups uploads into named sections: เอกสารหลัก (lettered forms) / เอกสารการเงิน (FINANCE_*) / เอกสารจากคณะและผลการสอบ (SIGNED, EXAM_RESULT, INVITE_LETTER, VERY_GOOD_EVAL). Unknown types fall into the last section.
+- **FileList** takes a `submissionType` prop and groups uploads into phase-aware sections. PROPOSAL: เอกสารหลัก (BW1A/BW1B/B1C/B1D) / เอกสารการเงิน / เอกสารอื่นๆ. THESIS_DEFENSE: บ.2+บ.3 (B2/B3/FINANCE_ATTACH) / เอกสารการเงิน (FINANCE_DOC) / เอกสารจากคณะและผลการสอบ (SIGNED/EXAM_RESULT/INVITE_LETTER/VERY_GOOD_EVAL) / วิทยานิพนธ์ (B4/THESIS). See `FILE_GROUPS_PROPOSAL` / `FILE_GROUPS_THESIS` in `FileList.tsx`. Unknown types fall into the last section. Row labels are always Thai form names (FORM_SHORT primary, full FORM_LABELS as subtitle) — never raw filenames as titles. FileList shows its own file count in the header; callers must NOT add another count to the `title` prop.
+- **THESIS step 9 downloads**: the student page shows a download card listing admin's step-8 SIGNED files (those uploaded at/before step 8's `actedAt`) so the student can download แบบรายงานฯ, fill + sign, and re-upload. Files newer than step 8's `actedAt` count as the student's own upload (`effectiveUploads` filter).
 - **FileUploader** slots always render a `SlotHeader`: form-code badge (FORM_SHORT) + description + status chip (อัปโหลดแล้ว / เลือกไฟล์แล้ว / ยังไม่ได้เลือกไฟล์).
 - **Professor dashboard** shows the generic "อาจารย์" label on card badges (a professor can hold several roles per submission); other views keep specific role labels.
 - **Admin detail** committee panel lists every person (incl. per-submission program chair) with mailto links.
