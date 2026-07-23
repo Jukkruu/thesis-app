@@ -282,7 +282,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             await prisma.notification.createMany({
               data: adminUsers.map((a) => ({ recipientId: a.id, message: "บ.2 + บ.3 ลงนามครบแล้ว — กรุณานำส่งไปยังคณะ", detail: sub.title, submissionId: id, type: "info" })),
             });
-            await sendStepEmail({ role: "ADMIN", sub, stepName: "นำส่ง บ.2+บ.3 ไปคณะ" });
           }
         } catch (e) { console.error("[email/thesis/step5]", e); }
       }
