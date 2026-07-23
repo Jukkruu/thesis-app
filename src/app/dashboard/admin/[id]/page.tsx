@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, ReactNode } from "react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/context/ToastContext";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
@@ -423,9 +423,20 @@ export default function AdminSubmissionDetail() {
   const [actionNotes,  setActionNotes]  = useState("");
   const [rejectNotes,  setRejectNotes]  = useState("");
 
-  const [editMode,    setEditMode]    = useState(false);
-  const [editTitle,   setEditTitle]   = useState(sub?.title ?? "");
-  const [editAdvisor, setEditAdvisor] = useState(sub?.advisorId ?? "");
+  const [editMode, setEditMode] = useState(false);
+  const [editDraft, setEditDraft] = useState({
+    title: "", advisorId: "", studentFullName: "", studentCode: "", program: "",
+    studentEmail: "", studentPhone: "",
+    coAdvisorIds: ["", "", ""] as string[],
+    programChairId: "", headCommitteeId: "",
+    committeeIds: ["", "", ""] as string[],
+    invitedCommitteeId: "", invitedProfName: "", invitedProfEmail: "",
+    invitedProfAffiliation: "", invitedProfPhone: "",
+    examDate: "", examTime: "", roomNeeded: false, parkingNeeded: false, carPlate: "",
+  });
+  const upd = (key: string, val: unknown) => setEditDraft((p) => ({ ...p, [key]: val }));
+  const updArr = (key: "coAdvisorIds" | "committeeIds", i: number, val: string) =>
+    setEditDraft((p) => { const a = [...p[key]]; a[i] = val; return { ...p, [key]: a }; });
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [activeTab,   setActiveTab]   = useState<"steps" | "timeline">("steps");
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -459,9 +470,59 @@ export default function AdminSubmissionDetail() {
   const doneCount  = visibleSteps.filter((s) => s.status === "APPROVED").length;
   const totalSteps = visibleSteps.length;
 
+  function enterEditMode() {
+    if (!sub) return;
+    setEditDraft({
+      title:               sub.title               ?? "",
+      advisorId:           sub.advisorId           ?? "",
+      studentFullName:     sub.studentFullName      ?? "",
+      studentCode:         sub.studentCode          ?? "",
+      program:             sub.program              ?? "",
+      studentEmail:        sub.studentEmail         ?? "",
+      studentPhone:        sub.studentPhone         ?? "",
+      coAdvisorIds:        [...(sub.coAdvisorIds    ?? []), "", "", ""].slice(0, 3),
+      programChairId:      (sub as any).programChairId ?? "",
+      headCommitteeId:     sub.headCommitteeId      ?? "",
+      committeeIds:        [...(sub.committeeIds    ?? []), "", "", ""].slice(0, 3),
+      invitedCommitteeId:  sub.invitedCommitteeId   ?? "",
+      invitedProfName:     sub.invitedProfName      ?? "",
+      invitedProfEmail:    sub.invitedProfEmail     ?? "",
+      invitedProfAffiliation: sub.invitedProfAffiliation ?? "",
+      invitedProfPhone:    sub.invitedProfPhone     ?? "",
+      examDate:            sub.examDate             ?? "",
+      examTime:            sub.examTime             ?? "",
+      roomNeeded:          sub.roomNeeded           ?? false,
+      parkingNeeded:       sub.parkingNeeded        ?? false,
+      carPlate:            sub.carPlate             ?? "",
+    });
+    setEditMode(true);
+  }
+
   function saveEdit() {
-    if (!sub || !editTitle.trim()) return;
-    adminUpdateSubmission(sub.id, { title: editTitle.trim(), advisorId: editAdvisor || undefined });
+    if (!sub || !editDraft.title.trim()) return;
+    adminUpdateSubmission(sub.id, {
+      title:               editDraft.title.trim(),
+      advisorId:           editDraft.advisorId           || null,
+      studentFullName:     editDraft.studentFullName      || null,
+      studentCode:         editDraft.studentCode          || null,
+      program:             editDraft.program              || null,
+      studentEmail:        editDraft.studentEmail         || null,
+      studentPhone:        editDraft.studentPhone         || null,
+      coAdvisorIds:        editDraft.coAdvisorIds.filter(Boolean),
+      programChairId:      editDraft.programChairId       || null,
+      headCommitteeId:     editDraft.headCommitteeId      || null,
+      committeeIds:        editDraft.committeeIds.filter(Boolean),
+      invitedCommitteeId:  editDraft.invitedCommitteeId   || null,
+      invitedProfName:     editDraft.invitedProfName      || null,
+      invitedProfEmail:    editDraft.invitedProfEmail     || null,
+      invitedProfAffiliation: editDraft.invitedProfAffiliation || null,
+      invitedProfPhone:    editDraft.invitedProfPhone     || null,
+      examDate:            editDraft.examDate             || null,
+      examTime:            editDraft.examTime             || null,
+      roomNeeded:          editDraft.roomNeeded,
+      parkingNeeded:       editDraft.parkingNeeded,
+      carPlate:            editDraft.carPlate             || null,
+    });
     setEditMode(false);
   }
 
@@ -495,8 +556,8 @@ export default function AdminSubmissionDetail() {
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">{sub.title}</h1>
             ) : (
               <input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={editDraft.title}
+                onChange={(e) => upd("title", e.target.value)}
                 className="w-full text-xl font-bold border-2 border-blue-400 rounded-xl px-3 py-2 focus:outline-none"
                 autoFocus
               />
@@ -506,7 +567,7 @@ export default function AdminSubmissionDetail() {
             <SubmissionStatusBadge status={sub.status} />
             {!editMode ? (
               <button
-                onClick={() => { setEditMode(true); setEditTitle(sub.title); setEditAdvisor(sub.advisorId ?? ""); }}
+                onClick={enterEditMode}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition"
               >
                 <Pencil className="w-4 h-4" />
@@ -525,109 +586,187 @@ export default function AdminSubmissionDetail() {
           </div>
         </div>
 
-        {/* Meta info */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-gray-400 mb-0.5">นักศึกษา</p>
-            <p className="font-medium text-gray-800">{student?.name}</p>
-            {student?.studentId && <p className="text-gray-400 text-xs">{student.studentId}</p>}
-          </div>
-          <div>
-            <p className="text-gray-400 mb-0.5">อาจารย์ที่ปรึกษา</p>
-            {!editMode ? (
+        {/* Meta info — view mode only */}
+        {!editMode && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-gray-400 mb-0.5">นักศึกษา</p>
+              <p className="font-medium text-gray-800">{student?.name}</p>
+              {student?.studentId && <p className="text-gray-400 text-xs">{student.studentId}</p>}
+            </div>
+            <div>
+              <p className="text-gray-400 mb-0.5">อาจารย์ที่ปรึกษา</p>
               <p className="font-medium text-gray-800">{advisor?.name ?? "—"}</p>
-            ) : (
-              <select
-                value={editAdvisor}
-                onChange={(e) => setEditAdvisor(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-              >
-                <option value="">— ไม่ระบุ —</option>
-                {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            )}
+            </div>
+            <div>
+              <p className="text-gray-400 mb-0.5">วันที่ยื่น</p>
+              <p className="font-medium text-gray-800">{formatDate(sub.createdAt)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-gray-400 mb-0.5">วันที่ยื่น</p>
-            <p className="font-medium text-gray-800">{formatDate(sub.createdAt)}</p>
-          </div>
-        </div>
+        )}
 
-        {/* Exam appointment info */}
-        {(sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentFullName) && (
+        {/* View mode: detailed info sections */}
+        {!editMode && (sub.examDate || sub.program || sub.headCommitteeId || sub.committeeIds?.length || sub.studentFullName) && (
           <div className="border-t border-gray-100 pt-4 space-y-4">
-
-            {/* Student info */}
             {(sub.studentFullName || sub.studentCode || sub.program || sub.studentEmail || sub.studentPhone) && (
               <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-sm text-gray-400"><User className="w-3.5 h-3.5" />ข้อมูลนิสิต</div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
-                {sub.studentFullName && <AdminInfoItem label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
-                {sub.studentCode && <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />}
-                {sub.program && <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
-                {sub.studentEmail && <AdminInfoItem label="อีเมล" value={sub.studentEmail} />}
-                {sub.studentPhone && <AdminInfoItem label="เบอร์โทร" value={sub.studentPhone} />}
-              </div>
+                <div className="flex items-center gap-1.5 text-sm text-gray-400"><User className="w-3.5 h-3.5" />ข้อมูลนิสิต</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+                  {sub.studentFullName && <AdminInfoItem label="ชื่อ-นามสกุล" value={sub.studentFullName} />}
+                  {sub.studentCode && <AdminInfoItem label="รหัสนิสิต" value={sub.studentCode} />}
+                  {sub.program && <AdminInfoItem label="หลักสูตร" value={PROGRAM_LABELS[sub.program] ?? sub.program} />}
+                  {sub.studentEmail && <AdminInfoItem label="อีเมล" value={sub.studentEmail} />}
+                  {sub.studentPhone && <AdminInfoItem label="เบอร์โทร" value={sub.studentPhone} />}
+                </div>
               </div>
             )}
-
-            {/* Committee */}
             {(advisor || sub.headCommitteeId || (sub.coAdvisorIds?.length ?? 0) > 0 || (sub.committeeIds?.length ?? 0) > 0 || sub.invitedProfName || sub.invitedCommitteeId) && (
               <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการและผู้เกี่ยวข้อง</div>
-              <div className="space-y-1.5">
-                {([
-                  { label: "อาจารย์ที่ปรึกษา",  ids: sub.advisorId ? [sub.advisorId] : [] },
-                  { label: "อาจารย์ที่ปรึกษาร่วม", ids: sub.coAdvisorIds ?? [] },
-                  { label: "ประธานหลักสูตร",     ids: (sub as any).programChairId ? [(sub as any).programChairId] : [] },
-                  { label: "ประธานกรรมการสอบ",  ids: sub.headCommitteeId ? [sub.headCommitteeId] : [] },
-                  { label: "กรรมการสอบ",         ids: sub.committeeIds ?? [] },
-                ] as { label: string; ids: string[] }[]).flatMap(({ label, ids }) =>
-                  ids.map((uid, i) => {
-                    const u = allUsers.find((x) => x.id === uid);
-                    return (
-                      <div key={`${label}-${uid}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1 border-b border-gray-50 last:border-0">
-                        <p className="text-xs text-gray-400 w-32 shrink-0">{ids.length > 1 ? `${label} ${i + 1}` : label}</p>
-                        <p className="text-sm font-medium text-gray-800">{u?.name ?? uid}</p>
-                        {u?.email && (
-                          <a href={`mailto:${u.email}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline">
-                            {u.email}
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-                {(sub.invitedProfName || sub.invitedCommitteeId) && (
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1">
-                    <p className="text-xs text-gray-400 w-32 shrink-0">กรรมการภายนอก</p>
-                    <p className="text-sm font-medium text-gray-800">
-                      {sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}
-                      {sub.invitedProfAffiliation && <span className="text-gray-400 font-normal"> · {sub.invitedProfAffiliation}</span>}
-                    </p>
-                    {sub.invitedProfEmail && (
-                      <a href={`mailto:${sub.invitedProfEmail}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline">
-                        {sub.invitedProfEmail}
-                      </a>
-                    )}
-                    {sub.invitedProfPhone && <span className="text-xs text-gray-500">📞 {sub.invitedProfPhone}</span>}
-                  </div>
-                )}
-              </div>
+                <div className="flex items-center gap-1.5 text-sm text-gray-400"><Users className="w-3.5 h-3.5" />คณะกรรมการและผู้เกี่ยวข้อง</div>
+                <div className="space-y-1.5">
+                  {([
+                    { label: "อาจารย์ที่ปรึกษา",    ids: sub.advisorId ? [sub.advisorId] : [] },
+                    { label: "อาจารย์ที่ปรึกษาร่วม", ids: sub.coAdvisorIds ?? [] },
+                    { label: "ประธานหลักสูตร",       ids: (sub as any).programChairId ? [(sub as any).programChairId] : [] },
+                    { label: "ประธานกรรมการสอบ",    ids: sub.headCommitteeId ? [sub.headCommitteeId] : [] },
+                    { label: "กรรมการสอบ",           ids: sub.committeeIds ?? [] },
+                  ] as { label: string; ids: string[] }[]).flatMap(({ label, ids }) =>
+                    ids.map((uid, i) => {
+                      const u = allUsers.find((x) => x.id === uid);
+                      return (
+                        <div key={`${label}-${uid}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1 border-b border-gray-50 last:border-0">
+                          <p className="text-xs text-gray-400 w-32 shrink-0">{ids.length > 1 ? `${label} ${i + 1}` : label}</p>
+                          <p className="text-sm font-medium text-gray-800">{u?.name ?? uid}</p>
+                          {u?.email && <a href={`mailto:${u.email}`} className="text-xs text-blue-500 hover:underline">{u.email}</a>}
+                        </div>
+                      );
+                    })
+                  )}
+                  {(sub.invitedProfName || sub.invitedCommitteeId) && (
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-1">
+                      <p className="text-xs text-gray-400 w-32 shrink-0">กรรมการภายนอก</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {sub.invitedProfName ?? allUsers.find((u) => u.id === sub.invitedCommitteeId)?.name ?? sub.invitedCommitteeId}
+                        {sub.invitedProfAffiliation && <span className="text-gray-400 font-normal"> · {sub.invitedProfAffiliation}</span>}
+                      </p>
+                      {sub.invitedProfEmail && <a href={`mailto:${sub.invitedProfEmail}`} className="text-xs text-blue-500 hover:underline">{sub.invitedProfEmail}</a>}
+                      {sub.invitedProfPhone && <span className="text-xs text-gray-500">📞 {sub.invitedProfPhone}</span>}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-
-            {/* Schedule */}
             {(sub.examDate || sub.roomNeeded || (sub.parkingNeeded && sub.carPlate)) && (
               <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-sm text-gray-400"><CalendarDays className="w-3.5 h-3.5" />กำหนดการสอบ</div>
-              <div className="space-y-2">
-                {sub.examDate && <AdminInfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />}
-                {sub.roomNeeded && <AdminInfoRow label="ห้องประชุม" value="ต้องการ" />}
-                {sub.parkingNeeded && sub.carPlate && <AdminInfoRow label="ทะเบียนรถ" value={sub.carPlate} />}
-              </div>
+                <div className="flex items-center gap-1.5 text-sm text-gray-400"><CalendarDays className="w-3.5 h-3.5" />กำหนดการสอบ</div>
+                <div className="space-y-2">
+                  {sub.examDate && <AdminInfoRow label="วันที่สอบ" value={`${sub.examDate}${sub.examTime ? ` เวลา ${sub.examTime} น.` : ""}`} />}
+                  {sub.roomNeeded && <AdminInfoRow label="ห้องประชุม" value="ต้องการ" />}
+                  {sub.parkingNeeded && sub.carPlate && <AdminInfoRow label="ทะเบียนรถ" value={sub.carPlate} />}
+                </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Edit mode: full edit form */}
+        {editMode && (
+          <div className="border-t border-gray-100 pt-4 space-y-5">
+
+            {/* Student info */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium"><User className="w-3.5 h-3.5" />ข้อมูลนิสิต</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <EField label="ชื่อ-นามสกุล"><input value={editDraft.studentFullName} onChange={(e) => upd("studentFullName", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                <EField label="รหัสนิสิต"><input value={editDraft.studentCode} onChange={(e) => upd("studentCode", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                <EField label="หลักสูตร">
+                  <select value={editDraft.program} onChange={(e) => upd("program", e.target.value)} className={EDIT_INPUT_CLS}>
+                    <option value="">— ไม่ระบุ —</option>
+                    {Object.entries(PROGRAM_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </EField>
+                <EField label="อีเมล"><input type="email" value={editDraft.studentEmail} onChange={(e) => upd("studentEmail", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                <EField label="เบอร์โทร"><input value={editDraft.studentPhone} onChange={(e) => upd("studentPhone", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+              </div>
+            </div>
+
+            {/* Committee */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium"><Users className="w-3.5 h-3.5" />คณะกรรมการและผู้เกี่ยวข้อง</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <EField label="อาจารย์ที่ปรึกษา">
+                  <select value={editDraft.advisorId} onChange={(e) => upd("advisorId", e.target.value)} className={EDIT_INPUT_CLS}>
+                    <option value="">— ไม่ระบุ —</option>
+                    {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </EField>
+                {[0, 1, 2].map((i) => (
+                  <EField key={i} label={`อาจารย์ที่ปรึกษาร่วม ${i + 1}`}>
+                    <select value={editDraft.coAdvisorIds[i] ?? ""} onChange={(e) => updArr("coAdvisorIds", i, e.target.value)} className={EDIT_INPUT_CLS}>
+                      <option value="">— ไม่ระบุ —</option>
+                      {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </EField>
+                ))}
+                <EField label="ประธานหลักสูตร">
+                  <select value={editDraft.programChairId} onChange={(e) => upd("programChairId", e.target.value)} className={EDIT_INPUT_CLS}>
+                    <option value="">— ไม่ระบุ —</option>
+                    {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </EField>
+                <EField label="ประธานกรรมการสอบ">
+                  <select value={editDraft.headCommitteeId} onChange={(e) => upd("headCommitteeId", e.target.value)} className={EDIT_INPUT_CLS}>
+                    <option value="">— ไม่ระบุ —</option>
+                    {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </EField>
+                {[0, 1, 2].map((i) => (
+                  <EField key={i} label={`กรรมการสอบ ${i + 1}`}>
+                    <select value={editDraft.committeeIds[i] ?? ""} onChange={(e) => updArr("committeeIds", i, e.target.value)} className={EDIT_INPUT_CLS}>
+                      <option value="">— ไม่ระบุ —</option>
+                      {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </EField>
+                ))}
+              </div>
+
+              {/* Invited external committee */}
+              <div className="border border-gray-200 rounded-xl p-3 space-y-2 bg-gray-50">
+                <p className="text-xs font-medium text-gray-500">กรรมการภายนอก</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <EField label="ในระบบ (เลือก)">
+                    <select value={editDraft.invitedCommitteeId} onChange={(e) => upd("invitedCommitteeId", e.target.value)} className={EDIT_INPUT_CLS}>
+                      <option value="">— ไม่ระบุ —</option>
+                      {advisors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </EField>
+                  <EField label="ชื่อ (ภายนอก)"><input value={editDraft.invitedProfName} onChange={(e) => upd("invitedProfName", e.target.value)} className={EDIT_INPUT_CLS} placeholder="ถ้าไม่อยู่ในระบบ" /></EField>
+                  <EField label="อีเมล"><input type="email" value={editDraft.invitedProfEmail} onChange={(e) => upd("invitedProfEmail", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                  <EField label="สังกัด"><input value={editDraft.invitedProfAffiliation} onChange={(e) => upd("invitedProfAffiliation", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                  <EField label="เบอร์โทร"><input value={editDraft.invitedProfPhone} onChange={(e) => upd("invitedProfPhone", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                </div>
+              </div>
+            </div>
+
+            {/* Exam schedule */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium"><CalendarDays className="w-3.5 h-3.5" />กำหนดการสอบ</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <EField label="วันที่สอบ"><input type="date" value={editDraft.examDate} onChange={(e) => upd("examDate", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                <EField label="เวลา"><input type="time" value={editDraft.examTime} onChange={(e) => upd("examTime", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                <label className="flex items-center gap-2 cursor-pointer pt-4">
+                  <input type="checkbox" checked={editDraft.roomNeeded} onChange={(e) => upd("roomNeeded", e.target.checked)} className="w-4 h-4 rounded" />
+                  <span className="text-sm text-gray-700">ต้องการห้องประชุม</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={editDraft.parkingNeeded} onChange={(e) => upd("parkingNeeded", e.target.checked)} className="w-4 h-4 rounded" />
+                  <span className="text-sm text-gray-700">ต้องการที่จอดรถ</span>
+                </label>
+                {editDraft.parkingNeeded && (
+                  <EField label="ทะเบียนรถ"><input value={editDraft.carPlate} onChange={(e) => upd("carPlate", e.target.value)} className={EDIT_INPUT_CLS} /></EField>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1003,6 +1142,17 @@ function AdminInfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex gap-3">
       <p className="text-xs text-gray-400 w-24 sm:w-32 shrink-0 pt-0.5">{label}</p>
       <p className="text-sm text-gray-800 flex-1 break-all">{value}</p>
+    </div>
+  );
+}
+
+const EDIT_INPUT_CLS = "w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white";
+
+function EField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-xs text-gray-400">{label}</p>
+      {children}
     </div>
   );
 }

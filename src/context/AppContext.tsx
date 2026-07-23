@@ -65,7 +65,7 @@ interface AppContextType {
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
   adminSetNote: (submissionId: string, note: string) => Promise<void>;
-  adminUpdateSubmission: (id: string, updates: { title?: string; advisorId?: string }) => Promise<void>;
+  adminUpdateSubmission: (id: string, updates: Record<string, unknown>) => Promise<void>;
   adminDeleteSubmission: (id: string) => Promise<void>;
   adminResetSubmission: (id: string) => Promise<void>;
   adminOverrideStep: (submissionId: string, stepOrder: number, action: "APPROVED" | "REJECTED", notes?: string) => Promise<void>;
@@ -293,7 +293,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? sub : s)));
   }
 
-  async function adminUpdateSubmission(id: string, updates: { title?: string; advisorId?: string }) {
+  async function adminUpdateSubmission(id: string, updates: Record<string, unknown>) {
     const sub = await api<MockSubmission>(`/api/submissions/${id}`, "PATCH", { action: "admin_update", ...updates });
     setSubmissions((prev) => prev.map((s) => (s.id === id ? sub : s)));
   }

@@ -530,9 +530,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   else if (action === "admin_update") {
     if (!userRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const b = body;
+    const nullOrVal = (v: unknown) => (v === undefined ? undefined : (v || null));
     await prisma.submission.update({
       where: { id },
-      data: { title: body.title ?? undefined, advisorId: body.advisorId === undefined ? undefined : (body.advisorId || null) },
+      data: {
+        title:                b.title               ?? undefined,
+        advisorId:            nullOrVal(b.advisorId),
+        studentFullName:      b.studentFullName      !== undefined ? (b.studentFullName || null) : undefined,
+        studentCode:          b.studentCode          !== undefined ? (b.studentCode     || null) : undefined,
+        program:              b.program              !== undefined ? (b.program          || null) : undefined,
+        studentEmail:         b.studentEmail         !== undefined ? (b.studentEmail     || null) : undefined,
+        studentPhone:         b.studentPhone         !== undefined ? (b.studentPhone     || null) : undefined,
+        coAdvisorIds:         b.coAdvisorIds         !== undefined ? b.coAdvisorIds             : undefined,
+        programChairId:       nullOrVal(b.programChairId),
+        headCommitteeId:      nullOrVal(b.headCommitteeId),
+        committeeIds:         b.committeeIds         !== undefined ? b.committeeIds              : undefined,
+        invitedCommitteeId:   nullOrVal(b.invitedCommitteeId),
+        invitedProfName:      b.invitedProfName      !== undefined ? (b.invitedProfName      || null) : undefined,
+        invitedProfEmail:     b.invitedProfEmail     !== undefined ? (b.invitedProfEmail     || null) : undefined,
+        invitedProfAffiliation: b.invitedProfAffiliation !== undefined ? (b.invitedProfAffiliation || null) : undefined,
+        invitedProfPhone:     b.invitedProfPhone     !== undefined ? (b.invitedProfPhone     || null) : undefined,
+        examDate:             b.examDate             !== undefined ? (b.examDate             || null) : undefined,
+        examTime:             b.examTime             !== undefined ? (b.examTime             || null) : undefined,
+        roomNeeded:           b.roomNeeded           !== undefined ? Boolean(b.roomNeeded)          : undefined,
+        parkingNeeded:        b.parkingNeeded        !== undefined ? Boolean(b.parkingNeeded)        : undefined,
+        carPlate:             b.carPlate             !== undefined ? (b.carPlate             || null) : undefined,
+      },
     });
   }
 
