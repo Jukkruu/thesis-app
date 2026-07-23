@@ -5,9 +5,8 @@ import { Eye, Download, FileText, History, ChevronDown, ChevronUp } from "lucide
 import { FORM_LABELS, FORM_SHORT, formatBytes, formatDate, previewFile } from "@/lib/utils";
 import type { MockUpload, FormType } from "@/types";
 
-/** Short primary label — the form code for known types, filename for SIGNED. */
+/** Short primary label — the form code for known types. */
 function fileLabel(formType: string, fileName: string): string {
-  if (formType === "SIGNED") return fileName.replace(/\.pdf$/i, "");
   return FORM_SHORT[formType as FormType] ?? FORM_LABELS[formType as FormType] ?? formType;
 }
 
@@ -16,7 +15,10 @@ function fileDesc(formType: string): string {
   const full = FORM_LABELS[formType as FormType];
   if (!full) return "";
   const parts = full.split(" — ");
-  return parts.length > 1 ? parts[1] : "";
+  if (parts.length > 1) return parts[1];
+  // No dash separator — show the full name when the short label truncates it
+  const short = FORM_SHORT[formType as FormType];
+  return short && short !== full ? full : "";
 }
 
 interface Group {
@@ -29,24 +31,15 @@ function buildGroups(uploads: MockUpload[]): Group[] {
   const groups: Group[] = [];
   const seen = new Set<string>();
 
-  // Preserve FORM_LABELS order first
+  // Preserve FORM_LABELS order first — every type is one slot with version history,
+  // same concept for both submission types (SIGNED = แบบรายงานฯ chain)
   for (const ft of Object.keys(FORM_LABELS) as FormType[]) {
     const byType = uploads
       .filter((u) => u.formType === ft)
       .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
     if (!byType.length) continue;
-
-    if (ft === "SIGNED") {
-      // Each SIGNED file is a different document — show individually (no grouping)
-      for (const u of byType) {
-        if (seen.has(u.id)) continue;
-        seen.add(u.id);
-        groups.push({ formType: ft, latest: u, history: [] });
-      }
-    } else {
-      seen.add(ft);
-      groups.push({ formType: ft, latest: byType[0], history: byType.slice(1) });
-    }
+    seen.add(ft);
+    groups.push({ formType: ft, latest: byType[0], history: byType.slice(1) });
   }
 
   // Catch any types not in FORM_LABELS order
@@ -119,7 +112,6 @@ export function FileList({ uploads, submissionTitle, submissionType, title = "�
     const isOpen = openHistory.has(key);
     const label = fileLabel(formType, latest.fileName);
     const desc  = fileDesc(formType);
-    const isSignedType = formType === "SIGNED";
 
     return (
       <div key={key} className="rounded-xl border border-gray-100 overflow-hidden">
@@ -129,9 +121,7 @@ export function FileList({ uploads, submissionTitle, submissionType, title = "�
             <p className="text-sm font-semibold text-gray-800 leading-snug truncate">{label}</p>
             {desc && <p className="text-xs text-gray-500 truncate">{desc}</p>}
             <p className="text-xs text-gray-400 truncate">
-              {isSignedType
-                ? `${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`
-                : `${latest.fileName} · ${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`}
+              {`${latest.fileName} · ${formatBytes(latest.fileSize)} · ${formatDate(latest.uploadedAt)}`}
             </p>
           </div>
           <button

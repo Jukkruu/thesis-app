@@ -569,8 +569,8 @@ export default function StudentSubmissionDetail() {
                     >
                       <Download className="w-4 h-4 text-blue-500 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-700 truncate">{u.fileName}</p>
-                        <p className="text-xs text-gray-400 truncate">{FORM_LABELS["SIGNED"]}</p>
+                        <p className="text-sm font-medium text-gray-700 truncate">{FORM_LABELS["SIGNED"]}</p>
+                        <p className="text-xs text-gray-400 truncate">{u.fileName}</p>
                       </div>
                     </button>
                   ))}

@@ -176,14 +176,8 @@ export function CommitteeSignPanel({ submissionId, step, onSuccess, formsToShow,
                       if (!latestByType.has(u.formType)) latestByType.set(u.formType, u);
                     }
                     return Array.from(latestByType.values()).map((u) => {
-                      // SIGNED files: use filename as label; other types: use Thai form name
-                      const isSignedType = u.formType === "SIGNED";
-                      const label = isSignedType
-                        ? u.fileName.replace(/\.pdf$/i, "")
-                        : (FORM_SHORT[u.formType as FormType] ?? FORM_LABELS[u.formType as FormType] ?? u.formType);
-                      const sublabel = isSignedType
-                        ? FORM_LABELS["SIGNED"]
-                        : (FORM_LABELS[u.formType as FormType] ?? u.fileName);
+                      const label = FORM_SHORT[u.formType as FormType] ?? FORM_LABELS[u.formType as FormType] ?? u.formType;
+                      const sublabel = FORM_LABELS[u.formType as FormType] ?? u.fileName;
                       return (
                         <button
                           key={u.id}
