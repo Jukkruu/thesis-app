@@ -157,7 +157,6 @@ export function SignatureButton({ submissionId, label = "ส่งต่อ", on
               <Pen className="w-3.5 h-3.5 shrink-0" />
               ลงนามในเอกสาร
             </p>
-            <p className="text-xs text-amber-700 mt-0.5">พิมพ์เอกสาร → ลงนามด้วยปากกา → แสกนกลับเป็น PDF</p>
           </div>
         </div>
       )}
