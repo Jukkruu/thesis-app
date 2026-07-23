@@ -37,6 +37,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.roles = body.roles;
   }
 
+  if (body.name !== undefined) {
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    if (!name || name.length > 200)
+      return NextResponse.json({ error: "กรุณากรอกชื่อ-นามสกุล (ไม่เกิน 200 ตัวอักษร)" }, { status: 400 });
+    data.name = name;
+  }
+
+  if (body.studentId !== undefined) {
+    if (!sRoles.includes("SUPER_ADMIN"))
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const sid = typeof body.studentId === "string" ? body.studentId.trim() : "";
+    // Allow clearing studentId by sending empty string
+    if (sid && !/^\d{10}$/.test(sid))
+      return NextResponse.json({ error: "รหัสนิสิตต้องเป็นตัวเลข 10 หลัก" }, { status: 400 });
+    data.studentId = sid || null;
+  }
+
   if (body.password !== undefined) {
     if (!sRoles.includes("SUPER_ADMIN"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

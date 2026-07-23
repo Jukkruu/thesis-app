@@ -2,14 +2,19 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
+import { useToast } from "@/context/ToastContext";
 import { SubmissionStatusBadge } from "@/components/StatusBadge";
 import { ROLE_LABELS, getStepName, formatDate } from "@/lib/utils";
 import { MockSubmission, Role } from "@/types";
 import {
   ArrowLeft, ChevronRight, FileText, Clock,
-  CheckCircle2, XCircle, AlertCircle,
+  CheckCircle2, XCircle, AlertCircle, Pencil, X, Loader2,
 } from "lucide-react";
+
+const INPUT_CLS = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition placeholder:text-gray-300";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +50,16 @@ function getRelatedSubmissions(
 
 export default function AdminUserProfilePage() {
   const { uid }                  = useParams<{ uid: string }>();
-  const { submissions, users }   = useApp();
+  const { submissions, users, adminUpdateUserInfo } = useApp();
+  const { showToast } = useToast();
+  const { data: session } = useSession();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editStudentId, setEditStudentId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const sessionRoles: string[] = (session?.user as any)?.roles ?? [(session?.user as any)?.role ?? ""];
+  const isSuperAdmin = sessionRoles.includes("SUPER_ADMIN");
 
   const user = users.find((u) => u.id === uid);
   if (!user) {
@@ -57,6 +71,30 @@ export default function AdminUserProfilePage() {
         </Link>
       </div>
     );
+  }
+
+  function openEdit() {
+    setEditName(user?.name ?? "");
+    setEditStudentId(user?.studentId ?? "");
+    setEditOpen(true);
+  }
+
+  async function handleSaveInfo(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const updates: { name?: string; studentId?: string } = {};
+      if (editName.trim() !== user?.name) updates.name = editName.trim();
+      if (isSuperAdmin && editStudentId.trim() !== (user?.studentId ?? "")) updates.studentId = editStudentId.trim();
+      if (Object.keys(updates).length === 0) { setEditOpen(false); return; }
+      await adminUpdateUserInfo(uid, updates);
+      showToast("แก้ไขข้อมูลสำเร็จ", "success");
+      setEditOpen(false);
+    } catch (err: any) {
+      showToast(err.message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่", "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const related   = getRelatedSubmissions(submissions, uid, user.roles);
@@ -98,9 +136,19 @@ export default function AdminUserProfilePage() {
               <p className="text-sm text-gray-400 mt-0.5">รหัสนักศึกษา: {user.studentId}</p>
             )}
           </div>
-          <span className="shrink-0 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-full">
-            {user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={openEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
+              title="แก้ไขชื่อ / รหัสนิสิต"
+            >
+              <Pencil className="w-4 h-4" />
+              แก้ไข
+            </button>
+            <span className="text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-full">
+              {user.roles.map((r) => ROLE_LABELS[r]).join(" / ")}
+            </span>
+          </div>
         </div>
 
         {/* Quick stats */}
@@ -235,6 +283,71 @@ export default function AdminUserProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Edit name / studentId modal */}
+      {editOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setEditOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">แก้ไขข้อมูลผู้ใช้</h2>
+              <button onClick={() => setEditOpen(false)} className="text-gray-400 hover:text-gray-600 transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveInfo} className="space-y-4">
+              <div>
+                <label className="text-xs text-gray-500 mb-1.5 block">ชื่อ-นามสกุล *</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className={INPUT_CLS}
+                />
+              </div>
+
+              {isSuperAdmin && (
+                <div>
+                  <label className="text-xs text-gray-500 mb-1.5 block">รหัสนิสิต (10 หลัก)</label>
+                  <input
+                    type="text"
+                    value={editStudentId}
+                    onChange={(e) => setEditStudentId(e.target.value)}
+                    placeholder="เว้นว่างเพื่อลบรหัส"
+                    maxLength={10}
+                    className={INPUT_CLS}
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+                >
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {saving ? "กำลังบันทึก..." : "บันทึก"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
