@@ -160,9 +160,13 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
 
   for (const recipient of recipients) {
-    // Plain login URL only — magic-link URLs (long random token, vercel.app domain)
-    // are blocked by Chula's Office365 filtering, so recipients use email + password.
-    const magicLink = `${getAppUrl()}/login`;
+    // Direct deep-link to the submission page for this role.
+    // Plain-login URLs (no token) are safe through Chula's Office365 filter.
+    const base = getAppUrl();
+    const magicLink =
+      role === "ADMIN"   ? `${base}/dashboard/admin/${sub.id}` :
+      role === "STUDENT" ? `${base}/dashboard/student/${sub.id}` :
+                           `${base}/dashboard/professor/${sub.id}`;
 
     const subject = isRejection
       ? `[ระบบจัดการวิทยานิพนธ์] คำร้องถูกปฏิเสธ — ${sub.title}`
@@ -248,7 +252,7 @@ function buildHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br>
         <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
       </p>
 
@@ -312,7 +316,7 @@ function buildRejectedHtml(
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ ${magicLink}<br>
+        ท่านสามารถเข้าสู่ระบบเพื่อดูคำร้องได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br>
         <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมล ${rEmail} และรหัสผ่านของท่าน — หากลืมรหัสผ่าน สามารถขอรหัสผ่านใหม่ได้ที่หน้าเข้าสู่ระบบ (ลืมรหัสผ่าน)</span>
       </p>
 
@@ -374,7 +378,7 @@ function buildWelcomeHtml(name: string, email: string, password: string, loginLi
       </div>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
+        ท่านสามารถเข้าสู่ระบบได้ที่ <a href="${loginLink}" style="color:#1d4ed8;word-break:break-all;">${loginLink}</a><br>
         <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านด้านบนเพื่อเข้าสู่ระบบ</span>
       </p>
 
@@ -436,7 +440,7 @@ function buildForgotPasswordHtml(name: string, email: string, password: string, 
       <p style="color:#6b7280;font-size:14px;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบทันที</p>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบได้ที่ ${loginLink}<br>
+        ท่านสามารถเข้าสู่ระบบได้ที่ <a href="${loginLink}" style="color:#1d4ed8;word-break:break-all;">${loginLink}</a><br>
         <span style="color:#6b7280;font-size:13px;">ใช้อีเมลและรหัสผ่านใหม่ด้านบนเพื่อเข้าสู่ระบบ</span>
       </p>
 
@@ -597,7 +601,7 @@ export interface ExamReminderEmailData {
 }
 
 export async function sendExamReminderEmail(data: ExamReminderEmailData): Promise<void> {
-  const magicLink = `${getAppUrl()}/login`;
+  const magicLink = `${getAppUrl()}${data.redirectTo}`;
   const is7 = data.daysUntil === 7;
   const subject = is7
     ? `[แจ้งเตือน] เหลือ 7 วันก่อนวันสอบ — ${data.thesisTitle}`
@@ -659,7 +663,7 @@ function buildExamReminderHtml(data: ExamReminderEmailData, magicLink: string): 
       </table>
 
       <p style="color:#374151;margin:24px 0;">
-        ท่านสามารถเข้าสู่ระบบเพื่อตรวจสอบสถานะได้ที่ ${magicLink}<br>
+        ท่านสามารถเข้าสู่ระบบเพื่อตรวจสอบสถานะได้ที่ <a href="${magicLink}" style="color:#1d4ed8;word-break:break-all;">${magicLink}</a><br>
         <span style="color:#6b7280;font-size:13px;">เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของท่าน</span>
       </p>
 
