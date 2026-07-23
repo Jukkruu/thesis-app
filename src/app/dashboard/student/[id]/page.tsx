@@ -796,7 +796,7 @@ export default function StudentSubmissionDetail() {
                 onClick={handleCancelConfirm}
                 className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
               >
-                ยืนยันยกเลิก
+                ยกเลิกคำร้อง
               </button>
               <button
                 onClick={() => setShowCancelModal(false)}
