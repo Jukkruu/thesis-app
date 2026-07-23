@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
 import { ROLE_LABELS } from "./utils";
 
@@ -160,13 +161,29 @@ export async function sendStepEmail(options: StepEmailOptions): Promise<void> {
   const roleLabel = ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role;
 
   for (const recipient of recipients) {
-    // Direct deep-link to the submission page for this role.
-    // Plain-login URLs (no token) are safe through Chula's Office365 filter.
     const base = getAppUrl();
-    const magicLink =
-      role === "ADMIN"   ? `${base}/dashboard/admin/${sub.id}` :
-      role === "STUDENT" ? `${base}/dashboard/student/${sub.id}` :
-                           `${base}/dashboard/professor/${sub.id}`;
+    const destinationPath =
+      role === "ADMIN"   ? `/dashboard/admin/${sub.id}` :
+      role === "STUDENT" ? `/dashboard/student/${sub.id}` :
+                           `/dashboard/professor/${sub.id}`;
+
+    // Generate a one-click magic link: auto-logs recipient in and lands on the submission.
+    // Token is NOT consumed on use (SafeLinks prefetch safety) — expires after 48h.
+    let magicLink = `${base}/login`; // fallback if token creation fails
+    try {
+      const tokenValue = randomBytes(32).toString("hex");
+      await prisma.magicToken.create({
+        data: {
+          token:      tokenValue,
+          userId:     recipient.id,
+          redirectTo: destinationPath,
+          expiresAt:  new Date(Date.now() + 48 * 60 * 60 * 1000),
+        },
+      });
+      magicLink = `${base}/api/auth/magic?t=${tokenValue}`;
+    } catch (e) {
+      console.error("[email/step] Failed to create magic token for", recipient.email, e);
+    }
 
     const subject = isRejection
       ? `[ระบบจัดการวิทยานิพนธ์] คำร้องถูกปฏิเสธ — ${sub.title}`
