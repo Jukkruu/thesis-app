@@ -179,15 +179,6 @@ export default function StudentSubmissionDetail() {
     }
   }
 
-  async function handleResubmit() {
-    try {
-      await studentResubmit(sub!.id);
-      showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
-    } catch (err) {
-      showToast(toUserErrorMessage(err), "error");
-    }
-  }
-
   async function handleCancelConfirm() {
     try {
       await cancelSubmission(sub!.id);
@@ -463,17 +454,44 @@ export default function StudentSubmissionDetail() {
                       submissionId={sub.id}
                       formType={ft}
                       existingUpload={existing}
+                      selectedFile={selectedFiles[ft] ?? null}
+                      onFileSelect={(file) =>
+                        setSelectedFiles((prev) => {
+                          if (!file) { const next = { ...prev }; delete next[ft]; return next; }
+                          return { ...prev, [ft]: file };
+                        })
+                      }
                     />
                   </div>
                 );
               })}
 
               <button
-                onClick={handleResubmit}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    for (const [ft, file] of Object.entries(selectedFiles) as [FormType, File][]) {
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      formData.append("submissionId", sub.id);
+                      formData.append("formType", ft);
+                      const res = await fetch("/api/upload", { method: "POST", body: formData });
+                      if (!res.ok) throw new Error(`upload failed: ${ft}`);
+                    }
+                    setSelectedFiles({});
+                    await studentResubmit(sub.id);
+                    showToast("ยื่นคำร้องใหม่แล้ว — กรุณาแนบเอกสารที่แก้ไข", "info");
+                  } catch (err) {
+                    showToast(toUserErrorMessage(err), "error");
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 transition"
               >
-                <RefreshCw className="w-5 h-5" />
-                ยืนยันและยื่นใหม่อีกครั้ง
+                {submitting ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : <RefreshCw className="w-5 h-5" />}
+                {submitting ? "กำลังส่ง..." : "ยืนยันและยื่นใหม่อีกครั้ง"}
               </button>
             </div>
           )}
@@ -633,7 +651,18 @@ export default function StudentSubmissionDetail() {
                         {FORM_UPLOAD_WARNINGS[ft]}
                       </p>
                     )}
-                    <FileUploader submissionId={sub.id} formType={ft} existingUpload={existing} />
+                    <FileUploader
+                      submissionId={sub.id}
+                      formType={ft}
+                      existingUpload={existing}
+                      selectedFile={selectedFiles[ft] ?? null}
+                      onFileSelect={(file) =>
+                        setSelectedFiles((prev) => {
+                          if (!file) { const next = { ...prev }; delete next[ft]; return next; }
+                          return { ...prev, [ft]: file };
+                        })
+                      }
+                    />
                   </div>
                 );
               })}
