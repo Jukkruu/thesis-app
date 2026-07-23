@@ -681,12 +681,19 @@ export default function AdminSubmissionDetail() {
                   .slice(0, allIdx)
                   .reverse()
                   .find((s) => s.actedAt != null)?.actedAt ?? null;
-                const stepUploads = sub.uploads.filter((u) => {
+                const allStepUploads = sub.uploads.filter((u) => {
                   const t = new Date(u.uploadedAt).getTime();
                   const from = prevActedAt ? new Date(prevActedAt).getTime() : 0;
                   const to = step.actedAt ? new Date(step.actedAt).getTime() : Infinity;
                   return t >= from && t <= to;
                 });
+                // Deduplicate: one entry per formType (most recent wins)
+                const _byType = new Map<string, MockUpload>();
+                for (const u of allStepUploads) {
+                  const ex = _byType.get(u.formType);
+                  if (!ex || new Date(u.uploadedAt) > new Date(ex.uploadedAt)) _byType.set(u.formType, u);
+                }
+                const stepUploads = Array.from(_byType.values());
 
                 // Resolve who is assigned to this step
                 let assignedName: string | null = null;
