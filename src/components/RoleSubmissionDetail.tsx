@@ -213,7 +213,7 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
             <p className="font-semibold text-blue-800">ถึงคิวของท่านแล้ว</p>
             {formsToShow.length > 0 ? (
               <p className="text-sm text-blue-600">
-                ดาวน์โหลดเอกสาร → พิมพ์และลงนาม → แสกนเป็น PDF → อัปโหลด → กดส่งต่อด้านล่าง
+                ดาวน์โหลดเอกสาร → ลงนาม → อัปโหลด → ส่งต่อ
               </p>
             ) : (
               <p className="text-sm text-blue-600">
