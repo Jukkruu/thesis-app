@@ -188,7 +188,9 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("th-TH", {
+  const lang = typeof window !== "undefined" ? localStorage.getItem("ui-lang") : null;
+  const locale = lang === "en" ? "en-GB" : "th-TH";
+  return new Date(date).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
