@@ -246,19 +246,12 @@ export function RoleSubmissionDetail({ submissionId, backPath }: Props) {
 
         {/* Sidebar — first on mobile */}
         <div className="order-1 lg:order-none space-y-4">
-          {/* Documents — latest version of each required form for this submission type */}
+          {/* Documents — all versions per form type (FileList handles dedup + history) */}
           {(() => {
             const PROPOSAL_FORMS = ["BW1A", "BW1B", "B1C", "B1D"];
-            const filtered = (sub.submissionType ?? "PROPOSAL") === "PROPOSAL"
+            const relevantUploads = (sub.submissionType ?? "PROPOSAL") === "PROPOSAL"
               ? sub.uploads.filter((u) => PROPOSAL_FORMS.includes(u.formType))
               : sub.uploads;
-            // Deduplicate: one entry per formType (most recent wins)
-            const byType = new Map<string, typeof filtered[0]>();
-            for (const u of filtered) {
-              const ex = byType.get(u.formType);
-              if (!ex || new Date(u.uploadedAt) > new Date(ex.uploadedAt)) byType.set(u.formType, u);
-            }
-            const relevantUploads = Array.from(byType.values());
             return relevantUploads.length > 0 ? (
               <FileList uploads={relevantUploads} submissionTitle={sub.title} submissionType={sub.submissionType ?? "PROPOSAL"} />
             ) : null;
