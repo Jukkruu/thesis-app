@@ -18,8 +18,31 @@ export async function GET() {
   const sessionRoles: string[] = (session.user as any).roles ?? [session.user.role];
   const isAdmin = sessionRoles.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r));
 
-  // Admins get the full user list; everyone else gets only faculty/committee roles
-  const where = isAdmin ? undefined : { roles: { hasSome: FACULTY_ROLES as any[] } };
+  let where: any;
+  if (isAdmin) {
+    where = undefined;
+  } else {
+    // Non-admins get all PROFESSOR-role users plus anyone specifically linked to
+    // their own submissions (committee members may exist under a different role).
+    const userId = (session.user as any).id;
+    const subs = await prisma.submission.findMany({
+      where: { studentId: userId },
+      select: { advisorId: true, headCommitteeId: true, committeeIds: true, coAdvisorIds: true, invitedCommitteeId: true, programChairId: true },
+    });
+    const linkedIds = new Set<string>();
+    for (const s of subs) {
+      if (s.advisorId)         linkedIds.add(s.advisorId);
+      if (s.headCommitteeId)   linkedIds.add(s.headCommitteeId);
+      if (s.invitedCommitteeId) linkedIds.add(s.invitedCommitteeId);
+      if ((s as any).programChairId) linkedIds.add((s as any).programChairId);
+      for (const id of s.committeeIds ?? [])  linkedIds.add(id);
+      for (const id of s.coAdvisorIds ?? [])  linkedIds.add(id);
+    }
+    where = linkedIds.size > 0
+      ? { OR: [{ roles: { hasSome: FACULTY_ROLES as any[] } }, { id: { in: [...linkedIds] } }] }
+      : { roles: { hasSome: FACULTY_ROLES as any[] } };
+  }
+
   const users = await prisma.user.findMany({ where, orderBy: { name: "asc" } });
   return NextResponse.json(users.map(mapUser));
 }
