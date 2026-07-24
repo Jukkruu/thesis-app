@@ -12,7 +12,8 @@ interface Props {
 }
 
 export function DashboardHeader({ role, name, title, highlight }: Props) {
-  const today = new Date().toLocaleDateString("th-TH", {
+  const lang = typeof window !== "undefined" ? localStorage.getItem("ui-lang") : null;
+  const today = new Date().toLocaleDateString(lang === "en" ? "en-GB" : "th-TH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
